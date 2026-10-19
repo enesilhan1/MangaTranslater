@@ -6,7 +6,7 @@ eklentisi. Seçtiğin sitelerde kendiliğinden ve hızlı çalışır.
 
 - Chrome (ve Chromium tabanlılar) + Firefox 140+
 - İki motor: görsel yapay zekâ (Gemini / Claude / ChatGPT) ya da anahtarsız
-  yerel OCR + Google Translate
+  yerel OCR + çeviri (Chrome'da yerleşik çevirmen, Firefox'ta MyMemory)
 - Çeviri balonların üstüne yazılır; bir kısayolla orijinale dönülür
 
 Geliştirme sürüyor; kararlaştırılan özellikler [docs/SPEC.md](docs/SPEC.md),

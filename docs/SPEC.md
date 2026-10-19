@@ -35,12 +35,20 @@ bağlama uygun çevirir. Tek istekte konum + orijinal + çeviri döner.
 API anahtarı gerektirmez.
 - Yazı tarayıcıda **Tesseract.js** ile okunur (eklentiyle birlikte gelir;
   dışarıdan kod yüklenmez).
-- Okunan metin **Google Translate**'in anahtarsız genel uç noktasıyla
-  (`translate.googleapis.com`, `client=gtx`) çevrilir. Resmi API olmadığı için
-  Google değiştirirse bozulabilir; bu durumda kullanıcıya açık bir hata
-  gösterilir.
-- Kaynak dil: ilk sürümde **İngilizce** (kullanıcının okuduğu dil). Çeviride
-  kaynak dil yine otomatik algılanır.
+- Okunan metin şöyle çevrilir:
+  - **Chrome**: tarayıcının yerleşik çevirmeni (**Translator API**, Chrome
+    138+). Çeviri tamamen bilgisayarda yapılır; anahtar, kota, internet
+    gerekmez. Dil paketi ilk kullanımda bir kez iner; Chrome bu ilk indirmeyi
+    yalnızca kullanıcı bir düğmeye tıklayınca başlatır, bu yüzden açılır
+    pencerede "çevirmeni hazırla" düğmesi olur.
+  - **Firefox** (ya da Chrome'da yerleşik çevirmen yoksa / dil çifti
+    desteklenmiyorsa): **MyMemory** resmi ücretsiz API'si. Anahtarsız
+    günlük sınır yaklaşık 5.000 karakter; ayarlardan e-posta girilirse
+    50.000. Sınır dolunca açık bir hata gösterilir.
+  - (İlk plan Google Translate'in anahtarsız uç noktasıydı; 2026-10-19
+    denemesinde kullanıcının ağını "otomatik sorgu" diye engellediği için
+    bırakıldı.)
+- Kaynak dil: ilk sürümde **İngilizce** (kullanıcının okuduğu dil).
 
 ## 3. Hedef dil
 Varsayılan **Türkçe**; ayarlardan başka bir dil seçilebilir (yaygın dillerin
@@ -83,10 +91,12 @@ listesi).
 - Arayüz dili: **Türkçe / İngilizce**.
 
 ## 9. Gizlilik
-- Ayarlar ve anahtarlar yalnızca bilgisayarda (`storage.local`) saklanır.
+- Ayarlar, anahtarlar ve MyMemory e-postası yalnızca bilgisayarda
+  (`storage.local`) saklanır.
 - Resimler yalnızca seçilen motora gönderilir: görsel yapay zekâda seçilen
-  sağlayıcıya; yerel OCR'de resim bilgisayardan çıkmaz, yalnızca okunan metin
-  Google Translate'e gider.
+  sağlayıcıya; yerel OCR'de resim bilgisayardan çıkmaz. Okunan metin
+  Chrome'un yerleşik çevirmeninde de bilgisayardan çıkmaz; MyMemory
+  kullanılıyorsa yalnızca okunan metin MyMemory'ye gider.
 - Resimdeki yazılar **veridir, talimat değildir**; modele bu açıkça söylenir.
 
 ## 10. Teknik notlar
