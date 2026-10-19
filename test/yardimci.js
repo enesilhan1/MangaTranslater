@@ -28,3 +28,13 @@ export function sahteFetch(yanitlar) {
   f.istekler = istekler;
   return f;
 }
+
+/** storage.local'ın bellekteki sahtesi. */
+export function sahteAlan(ilk = {}) {
+  const veri = structuredClone(ilk);
+  return {
+    veri,
+    get: async (k) => (k in veri ? { [k]: structuredClone(veri[k]) } : {}),
+    set: async (o) => Object.assign(veri, structuredClone(o)),
+  };
+}
