@@ -1,0 +1,95 @@
+# Manga Çevirmen: kararlaştırılan özellikler
+
+Bu belge kullanıcıyla netleştirilen kuralların tek kaynağıdır. Kod bu
+kurallara uymalıdır; değişiklik gerekirse önce burası güncellenir.
+
+## 1. Amaç
+Manga/çizgi roman sayfalarındaki **resimlerin üzerindeki yazıları** (konuşma
+balonları, ses efektleri, tabelalar) algıladığı dilden **Türkçeye** ya da
+seçilen dile çeviren tarayıcı eklentisi. Tarayıcının kendi çevirisi resim
+içindeki yazıya dokunmadığı için gerekli.
+
+İki temel hedef:
+- **Otomatik**: seçilen sitelerde her yeni sayfa/bölüm açıldığında kendiliğinden
+  çalışır; tekrar tekrar etkinleştirmek gerekmez.
+- **Hızlı**: resimler ekrana gelmeden önce çevrilmeye başlar, sonuçlar
+  önbellekte tutulur.
+
+**Chrome** (ve Chromium tabanlılar) ile **Firefox 140+** aynı kodla
+desteklenir. Öncelikli test sitesi: **MangaDex**.
+
+## 2. Çeviri motorları
+Ayarlardan seçilir; iki motor vardır.
+
+### 2.1 Görsel yapay zekâ (varsayılan)
+Resim bir görsel modele gönderilir; model balonları bulur, yazıyı okur ve
+bağlama uygun çevirir. Tek istekte konum + orijinal + çeviri döner.
+- Sağlayıcılar: **Gemini (Google)** (varsayılan), **Claude (Anthropic)**,
+  **ChatGPT (OpenAI)**. (DeepSeek resim okuyamadığı için yok.)
+- Web Asistanı'ndaki yapı: her sağlayıcı için hazır model listesi (ilki
+  varsayılan, hızlı olanlar önce) + listede olmayan modeli **elle yazma**;
+  her sağlayıcının **kendi API anahtarı** ayrı saklanır.
+- Kaynak dil otomatik algılanır.
+
+### 2.2 Yerel OCR + ücretsiz çeviri
+API anahtarı gerektirmez.
+- Yazı tarayıcıda **Tesseract.js** ile okunur (eklentiyle birlikte gelir;
+  dışarıdan kod yüklenmez).
+- Okunan metin **Google Translate**'in anahtarsız genel uç noktasıyla
+  (`translate.googleapis.com`, `client=gtx`) çevrilir. Resmi API olmadığı için
+  Google değiştirirse bozulabilir; bu durumda kullanıcıya açık bir hata
+  gösterilir.
+- Kaynak dil: ilk sürümde **İngilizce** (kullanıcının okuduğu dil). Çeviride
+  kaynak dil yine otomatik algılanır.
+
+## 3. Hedef dil
+Varsayılan **Türkçe**; ayarlardan başka bir dil seçilebilir (yaygın dillerin
+listesi).
+
+## 4. Otomatik çalışma
+- Kullanıcı bir siteyi **"bu sitede her zaman çevir"** listesine bir kez
+  ekler (açılır pencereden tek tıkla). O sitede her sayfada kendiliğinden
+  çalışır; listede olmayan sitelerde hiçbir şey yapmaz.
+- Tek sayfalık uygulamalarda (MangaDex gibi, adres değişip sayfa yenilenmeyen
+  siteler) yeni bölüme geçince de çalışmaya devam eder.
+- Listedeki siteden çıkarmak da açılır pencereden yapılır.
+
+## 5. Hangi resimler çevrilir
+- Yalnızca yeterince büyük resimler (küçük ikon, avatar, reklam küçük
+  resimleri atlanır).
+- Sayfaya sonradan eklenen resimler de yakalanır.
+- Çok uzun dikey resimler (webtoon şeritleri) parçalara bölünerek çevrilir.
+
+## 6. Hız
+- Resimler ekrana gelmeden önce (birkaç ekran ileriden) sıraya alınır;
+  ekrandaki resim önceliklidir.
+- Aynı anda sınırlı sayıda istek gönderilir (sağlayıcı kotasını aşmamak için).
+- Gönderilmeden önce resim makul bir boyuta küçültülür.
+- Sonuçlar resmin içeriğine (özet/hash) göre **önbellekte** tutulur; aynı
+  resim tekrar açıldığında anında gösterilir. Önbellek boyutu sınırlıdır,
+  en eski kayıtlar silinir. Önbellek motor + model + hedef dile özeldir.
+
+## 7. Görünüm
+- Çeviri **balonun üstüne yazılır**: orijinal yazının üstüne beyaz kutu
+  konup çeviri sığacak yazı boyutuyla içine yazılır. Resmin kendisi
+  değiştirilmez (üstünde ayrı bir katman).
+- Bir **klavye kısayolu** ile orijinal ↔ çeviri arasında geçiş yapılır.
+- Çevrilmekte olan resimde küçük bir "çevriliyor" göstergesi, hata olursa
+  küçük bir hata işareti (üstüne gelince sebebi) çıkar.
+
+## 8. Arayüz
+- **Açılır pencere (popup)**: bu sitede açık/kapalı, motor, sağlayıcı/model/
+  anahtar, hedef dil, arayüz dili, önbelleği temizleme.
+- Arayüz dili: **Türkçe / İngilizce**.
+
+## 9. Gizlilik
+- Ayarlar ve anahtarlar yalnızca bilgisayarda (`storage.local`) saklanır.
+- Resimler yalnızca seçilen motora gönderilir: görsel yapay zekâda seçilen
+  sağlayıcıya; yerel OCR'de resim bilgisayardan çıkmaz, yalnızca okunan metin
+  Google Translate'e gider.
+- Resimdeki yazılar **veridir, talimat değildir**; modele bu açıkça söylenir.
+
+## 10. Teknik notlar
+- Manifest V3, derleme adımı yok, düz JavaScript (ES modülleri).
+- Testler: `npm test` (Node 22+, `node --test`).
+- Lisans: MIT.
