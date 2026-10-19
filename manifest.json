@@ -8,7 +8,8 @@
     "storage",
     "unlimitedStorage",
     "scripting",
-    "offscreen"
+    "offscreen",
+    "activeTab"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -24,7 +25,8 @@
     "type": "module"
   },
   "action": {
-    "default_title": "__MSG_eklentiAdi__"
+    "default_title": "__MSG_eklentiAdi__",
+    "default_popup": "popup/popup.html"
   },
   "web_accessible_resources": [
     {

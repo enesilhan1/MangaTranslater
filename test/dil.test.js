@@ -32,6 +32,13 @@ describe('Dil', () => {
     for (const a of kullanilan) assert.ok(METINLER.tr[a], a);
   });
 
+  it('açılır pencerede kullanılan her ui/durum anahtarının metni var', () => {
+    const kod = readFileSync(new URL('../popup/popup.js', import.meta.url), 'utf8');
+    const anahtarlar = new Set([...kod.matchAll(/'((?:ui|durum)\.[A-Za-z.]+)'/g)].map((m) => m[1]));
+    assert.ok(anahtarlar.size >= 30, String(anahtarlar.size));
+    for (const a of anahtarlar) assert.ok(METINLER.tr[a] && METINLER.en[a], a);
+  });
+
   it('parametreleri yerleştirir, boş parametre fazla boşluk bırakmaz', () => {
     assert.equal(cevir('tr', 'hata.yogun', { ad: 'Claude' }), 'Claude şu an çok yoğun. Birkaç dakika sonra tekrar dene.');
     assert.equal(cevir('en', 'hata.model', { mesaj: '' }), 'Model not found. Check the model name in the extension window.');
