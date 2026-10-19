@@ -1,6 +1,7 @@
 // Çevrilebilecek hedef diller (docs/SPEC.md §3). `ingilizce` modele giden
-// istemde kullanılır; `ad` arayüzde gösterilir. `kod` Google Translate'in
-// dil kodlarıyla aynıdır (yerel motor da aynı listeyi kullanır).
+// istemde kullanılır; `ad` arayüzde gösterilir. `kod` MyMemory'nin kabul ettiği
+// ISO/RFC 3066 kodu; Chrome yerleşik çevirmeni için farklı olanlar
+// metin_cevirmenleri.js'te eşlenir (zh-CN → zh).
 
 export const HEDEF_DILLER = [
   { kod: 'tr', ingilizce: 'Turkish', ad: { tr: 'Türkçe', en: 'Turkish' } },
