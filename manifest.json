@@ -26,6 +26,25 @@
   "action": {
     "default_title": "__MSG_eklentiAdi__"
   },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/base64.js",
+        "src/dilimleme.js",
+        "src/icerik/aday.js",
+        "src/icerik/ana.js",
+        "src/icerik/gorunum.js",
+        "src/icerik/mesaj.js",
+        "src/icerik/resim_al.js",
+        "src/kuyruk.js",
+        "src/tarayici.js",
+        "src/yz/ortak.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
   "commands": {
     "orijinal-ceviri": {
       "suggested_key": {

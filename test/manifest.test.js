@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { posix } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { SITE_IZNI, siteIzniVarMi } from '../src/tarayici.js';
@@ -57,5 +58,30 @@ describe('yerel OCR için manifest', () => {
     ]) {
       assert.ok(existsSync(new URL(`../${yol}`, import.meta.url)), yol);
     }
+  });
+});
+
+describe('içerik betiği modülleri', () => {
+  /** ana.js'ten içe aktarmalarla erişilen bütün dosyalar (depo köküne göre). */
+  const erisilenler = (dosya, kume = new Set()) => {
+    if (kume.has(dosya)) return kume;
+    kume.add(dosya);
+    const icerik = readFileSync(new URL(`../${dosya}`, import.meta.url), 'utf8');
+    for (const m of icerik.matchAll(/^(?:import|export)[^'"]*from ['"](\.[^'"]+)['"]|^import ['"](\.[^'"]+)['"]/gm)) {
+      erisilenler(posix.join(posix.dirname(dosya), m[1] ?? m[2]), kume);
+    }
+    return kume;
+  };
+
+  it('ana.js\'in içe aktardığı her dosya sayfalardan yüklenebilir (web_accessible_resources)', () => {
+    const war = oku('manifest.json').web_accessible_resources.flatMap((w) => w.resources);
+    const d = erisilenler('src/icerik/ana.js');
+    assert.ok(d.size >= 8);
+    for (const x of d) assert.ok(war.includes(x), x);
+  });
+
+  it('içerik tarafı Tesseract\'ı ya da sağlayıcı kodunu yüklemez', () => {
+    const d = [...erisilenler('src/icerik/ana.js')];
+    assert.ok(!d.some((x) => x.startsWith('vendor/') || x.startsWith('src/yerel/') || x.includes('/yz/istemciler')), d.join());
   });
 });
