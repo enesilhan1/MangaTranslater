@@ -60,6 +60,11 @@ export class Kuyruk {
     if (b) b.oncelik = oncelik;
   }
 
+  /** Kimliği [onEk] ile başlayan bekleyen işlerin (bir resmin dilimleri) önceliği. */
+  onEkOncelik(onEk, oncelik) {
+    for (const [id, b] of this.bekleyen) if (id.startsWith(onEk)) b.oncelik = oncelik;
+  }
+
   /** Bekleyen işi kuyruktan çıkarır, çalışanı durdurur. */
   iptal(id) {
     const b = this.bekleyen.get(id);

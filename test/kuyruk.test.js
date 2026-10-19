@@ -44,7 +44,21 @@ describe('Kuyruk', () => {
     k.ekle('a', Oncelik.GORUNUR, a);
     k.ekle('b', Oncelik.YAKIN, elleIs('b', baslayan));
     k.ekle('c', Oncelik.GIZLI, elleIs('c', baslayan));
-    k.oncelikDegistir('c', Oncelik.GORUNUR); // okuyucu c'ye kaydırdı
+    k.onEkOncelik('c', Oncelik.GORUNUR); // okuyucu c'ye kaydırdı (tüm dilimleri)
+    await bekle();
+    a.bitir();
+    await bekle();
+    assert.deepEqual(baslayan, ['a', 'c']);
+  });
+
+  it('oncelikDegistir tek işin önceliğini değiştirir', async () => {
+    const baslayan = [];
+    const k = new Kuyruk({ esZaman: 1 });
+    const a = elleIs('a', baslayan);
+    k.ekle('a', Oncelik.GORUNUR, a);
+    k.ekle('b', Oncelik.YAKIN, elleIs('b', baslayan));
+    k.ekle('c', Oncelik.GIZLI, elleIs('c', baslayan));
+    k.oncelikDegistir('c', Oncelik.GORUNUR);
     await bekle();
     a.bitir();
     await bekle();
