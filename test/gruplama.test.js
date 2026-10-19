@@ -51,6 +51,11 @@ describe('balonlaraGrupla', () => {
     assert.deepEqual(b.map((x) => x.orijinal), ['OKAY']);
   });
 
+  it('tek başına kısa kelime yalnızca yüksek güvenle balon sayılır', () => {
+    const b = balonlaraGrupla([k('ASE', 100, 100, 82), k('NO!', 600, 600, 93), k('IT', 100, 900, 81), k('IS', 135, 900, 90)], BOYUT);
+    assert.deepEqual(b.map((x) => x.orijinal), ['NO!', 'IT IS']);
+  });
+
   it('ortalama güveni düşük balonu tamamen atar', () => {
     const b = balonlaraGrupla([k('ABCD', 100, 100, 55), k('EFGH', 160, 100, 60)], BOYUT);
     assert.deepEqual(b, []);

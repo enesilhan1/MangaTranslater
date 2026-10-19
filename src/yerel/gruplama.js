@@ -32,6 +32,8 @@ export function kelimeleriTopla(bloklar) {
 const EN_AZ_KELIME_GUVENI = 50;
 /** Balonun ortalama güveni bunun altındaysa tamamı atılır. */
 const EN_AZ_BALON_GUVENI = 65;
+/** Tek kelimelik, en çok 3 harfli balon için gereken güven. */
+const EN_AZ_KISA_BALON_GUVENI = 85;
 
 /**
  * @param {OcrKelimesi[]} kelimeler
@@ -52,6 +54,10 @@ export function balonlaraGrupla(kelimeler, { genislik, yukseklik }) {
     const harf = (metin.match(/\p{L}/gu) ?? []).length;
     const guven = kume.reduce((t, k) => t + k.guven, 0) / kume.length;
     if (harf < 2 || guven < EN_AZ_BALON_GUVENI) continue;
+    // Tek başına kısa bir "kelime" çoğunlukla çizimden çıkan parçadır
+    // (gerçek denemede çizgilerden "ne", "ASE" okundu); "NO!" gibi gerçek
+    // kısa balonlar ise yüksek güvenle okunuyor.
+    if (kume.length === 1 && harf <= 3 && guven < EN_AZ_KISA_BALON_GUVENI) continue;
 
     // Kutu çeviri yazısının sığması ve orijinali örtmesi için biraz büyütülür.
     const pay = ortalamaYukseklik(kume) * 0.35;
