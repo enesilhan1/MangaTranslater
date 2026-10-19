@@ -1,0 +1,9 @@
+{
+  "name": "manga-cevirmen",
+  "private": true,
+  "type": "module",
+  "description": "Manga Çevirmen tarayıcı eklentisi (Chrome + Firefox; derleme adımı yok; testler için Node 22+)",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\""
+  }
+}
