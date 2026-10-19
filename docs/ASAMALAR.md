@@ -9,13 +9,13 @@ Her aşama birden çok küçük commit'e bölünür; her commit'ten sonra push e
 | 2 | Yerel motor: Tesseract.js (Chrome'da offscreen belge, Firefox'ta arka plan sayfası), kelimeleri balonlara gruplama, Chrome yerleşik çevirmeni + MyMemory istemcileri, testler | ✅ |
 | 3 | İçerik betiği: resim bulma, resmin baytlarını alma, küçültme/şerit bölme, öncelikli sıra + önceden çevirme, önbellek (IndexedDB) | ✅ |
 | 4 | Görünüm: balonların üstüne çeviri katmanı, yazıyı sığdırma, kısayolla orijinal ↔ çeviri, durum/hata göstergeleri | ✅ |
-| 5 | Açılır pencere: site listesi, motor/sağlayıcı/model/anahtar, hedef dil, arayüz dili, önbelleği temizleme; site listesine göre içerik betiğini kaydetme | ⏳ |
+| 5 | Açılır pencere: site listesi, motor/sağlayıcı/model/anahtar, hedef dil, arayüz dili, önbelleği temizleme; site listesine göre içerik betiğini kaydetme | ✅ |
 | 6 | Firefox, paketleme, README/kurulum rehberi, MangaDex üzerinde gerçek tarayıcı doğrulaması, sürüm 1.0.0 | ⏳ |
 
 ## Notlar
 - Hata metinleri (TR/EN) Aşama 4'te src/dil.js'e yazıldı; test, koddaki her
   `hata.*` anahtarının metni olduğunu denetliyor. Açılır pencere metinleri
-  Aşama 5'te aynı dosyaya eklenecek.
+  de aynı dosyada; test popup.js'teki her ui anahtarını denetliyor.
 - Sağlayıcılar yalnızca sahte fetch ile test edildi; gerçek API'lerle
   deneme Aşama 6'da (API anahtarı gerekir).
 - Yerel motor Node'da gerçek Tesseract ile üretilmiş bir test sayfasında
@@ -28,10 +28,14 @@ Her aşama birden çok küçük commit'e bölünür; her commit'ten sonra push e
   MutationObserver akışı, OffscreenCanvas dilimleme, IndexedDB önbellek,
   içerik betiğinin dinamik modül yüklemesi) Node'da test edilemiyor;
   saf mantık (öncelik kuyruğu, dilim planı, aday süzgeci, önbellek,
-  mesajlar) test edildi. Gerçek sayfada deneme içerik betiği kaydı
-  (Aşama 5) gelince yapılabilecek.
+  mesajlar) test edildi. İçerik betiği kaydı Aşama 5'te yapıldı;
+  gerçek sitede deneme Aşama 6'da.
 - Şimdilik yalnızca <img> resimleri destekleniyor; resmi <canvas>'a
   çizen okuyucular sonraya.
 - Görünüm katmanı test/onizleme.html'de gerçek tarayıcıda denendi (kaydırma
   takibi, yazı sığdırma, Alt+T, hata/çevriliyor işaretleri). Gerçek bir manga
   sitesinde eklenti olarak denenmesi Aşama 5'ten sonra.
+- Açılır pencere test/popup_onizleme.html'de (gerçek tarayıcı, sahte eklenti
+  API'si) denendi. Bu sırada bulunan: gömülü Chromium'da
+  Translator.availability() hiç dönmüyor → 3 sn zaman aşımı eklendi.
+- Henüz yok: eklenti simgeleri (Aşama 6).
