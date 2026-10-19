@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { balonlaraGrupla, cumleDuzeni } from '../src/yerel/gruplama.js';
+import { balonlaraGrupla, cumleDuzeni, kelimeleriTopla } from '../src/yerel/gruplama.js';
 
 const BOYUT = { genislik: 1000, yukseklik: 2000 };
 /** x, y: sol üst köşe; kelime 20 px yüksek, harf başına 12 px. */
@@ -70,5 +70,17 @@ describe('cumleDuzeni', () => {
   it('zaten karışık harfliyse dokunmaz', () => {
     assert.equal(cumleDuzeni('Hello there, NASA'), 'Hello there, NASA');
     assert.equal(cumleDuzeni('!?'), '!?');
+  });
+});
+
+describe('kelimeleriTopla', () => {
+  it('Tesseract blok ağacını düz kelime listesine çevirir, eksik dalları atlar', () => {
+    const bbox = { x0: 1, y0: 2, x1: 3, y1: 4 };
+    const bloklar = [
+      { paragraphs: [{ lines: [{ words: [{ text: 'HI', confidence: 91, bbox }] }, {}] }] },
+      {},
+    ];
+    assert.deepEqual(kelimeleriTopla(bloklar), [{ metin: 'HI', guven: 91, kutu: bbox }]);
+    assert.deepEqual(kelimeleriTopla(null), []);
   });
 });

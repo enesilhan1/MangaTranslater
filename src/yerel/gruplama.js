@@ -13,6 +13,21 @@
  *   Piksel koordinatlı kelime (Tesseract'ın word nesnesinden).
  */
 
+/** Tesseract'ın blok → paragraf → satır → kelime ağacını düz listeye çevirir. */
+export function kelimeleriTopla(bloklar) {
+  const kelimeler = [];
+  for (const b of bloklar ?? []) {
+    for (const p of b.paragraphs ?? []) {
+      for (const s of p.lines ?? []) {
+        for (const k of s.words ?? []) {
+          kelimeler.push({ metin: k.text, guven: k.confidence, kutu: k.bbox });
+        }
+      }
+    }
+  }
+  return kelimeler;
+}
+
 /** Bu güvenin altındaki kelimeler büyük olasılıkla çizimdir. */
 const EN_AZ_KELIME_GUVENI = 50;
 /** Balonun ortalama güveni bunun altındaysa tamamı atılır. */
