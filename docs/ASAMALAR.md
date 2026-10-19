@@ -10,7 +10,7 @@ Her aşama birden çok küçük commit'e bölünür; her commit'ten sonra push e
 | 3 | İçerik betiği: resim bulma, resmin baytlarını alma, küçültme/şerit bölme, öncelikli sıra + önceden çevirme, önbellek (IndexedDB) | ✅ |
 | 4 | Görünüm: balonların üstüne çeviri katmanı, yazıyı sığdırma, kısayolla orijinal ↔ çeviri, durum/hata göstergeleri | ✅ |
 | 5 | Açılır pencere: site listesi, motor/sağlayıcı/model/anahtar, hedef dil, arayüz dili, önbelleği temizleme; site listesine göre içerik betiğini kaydetme | ✅ |
-| 6 | Firefox, paketleme, README/kurulum rehberi, MangaDex üzerinde gerçek tarayıcı doğrulaması, sürüm 1.0.0 | ⏳ |
+| 6 | Firefox, paketleme, README/kurulum rehberi, MangaDex üzerinde gerçek tarayıcı doğrulaması, sürüm 1.0.0 | ✅ |
 
 ## Notlar
 - Hata metinleri (TR/EN) Aşama 4'te src/dil.js'e yazıldı; test, koddaki her
@@ -20,8 +20,7 @@ Her aşama birden çok küçük commit'e bölünür; her commit'ten sonra push e
   deneme Aşama 6'da (API anahtarı gerekir).
 - Yerel motor Node'da gerçek Tesseract ile üretilmiş bir test sayfasında
   denendi (üç balon doğru, çizgi gürültüsü tamamen ayıklandı, ~1,5 sn).
-  Offscreen belge, eklenti içinden WASM yükleme ve Chrome Translator API'nin
-  offscreen belgede çalışması henüz gerçek tarayıcıda denenmedi (Aşama 6).
+  Aşama 6'da gerçek Chrome 155'te de doğrulandı (aşağıda).
 - Bilinen sınır: çizimin üstüne yazılmış ses efektlerini yerel OCR
   okuyamıyor; görsel YZ modu bunları da çeviriyor.
 - Aşama 3'ün tarayıcıya bağlı kısımları (IntersectionObserver/
@@ -38,4 +37,17 @@ Her aşama birden çok küçük commit'e bölünür; her commit'ten sonra push e
 - Açılır pencere test/popup_onizleme.html'de (gerçek tarayıcı, sahte eklenti
   API'si) denendi. Bu sırada bulunan: gömülü Chromium'da
   Translator.availability() hiç dönmüyor → 3 sn zaman aşımı eklendi.
-- Henüz yok: eklenti simgeleri (Aşama 6).
+
+## Sürüm 1.0.0 doğrulaması (Aşama 6)
+- Gerçek Chrome 155, geçici profil, CDP ile paketlenmemiş yükleme (paketin
+  kendisi): deneme sayfasında ve MangaDex'te (blob: resimler, sağ okla sayfa
+  değiştirme) yerel motor uçtan uca çalıştı: kendiliğinden yükleme, offscreen
+  OCR, Chrome çevirmeni (gerçek tıklamayla hazırlandı), balon üstü çizim,
+  önbellek, Alt+T, SPA'da sayfa değişince eski çevirilerin kalkması.
+- Firefox: web-ext lint 0 hata (uyarılar: Firefox'un tanımadığı offscreen
+  izni ve service_worker alanı — beklenen; Tesseract'taki Function yapıcısı
+  yalnızca eski ortam yedeği, çalışmıyor). Gerçek Firefox'ta henüz denenmedi.
+- Görsel YZ sağlayıcıları gerçek API anahtarıyla henüz denenmedi.
+- MangaDex'te görülen yerel motor zayıflıkları: çeviri grubu künye
+  sayfasında süslü yazıdan büyük tek kelimelik kutu çıktı; stilize afiş
+  yazısı okunmadı. Hikâye sayfalarında anlatım kutuları ve balonlar doğru.
