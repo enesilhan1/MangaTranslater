@@ -92,3 +92,21 @@ describe('içerik betiği modülleri', () => {
     assert.ok(!d.some((x) => x.startsWith('vendor/') || x.startsWith('src/yerel/') || x.includes('/yz/istemciler')), d.join());
   });
 });
+
+describe('paket', () => {
+  it('manifestin ve sayfaların gösterdiği her dosya paket klasörlerinde', () => {
+    const paket = ['manifest.json', '_locales', 'icons', 'popup', 'offscreen', 'src', 'vendor', 'LICENSE'];
+    const m = oku('manifest.json');
+    const yollar = [
+      m.background.service_worker,
+      ...Object.values(m.icons),
+      m.action.default_popup,
+      ...m.web_accessible_resources.flatMap((w) => w.resources),
+      'offscreen/yerel.html',
+      'src/icerik/yukleyici.js',
+    ];
+    for (const y of yollar) assert.ok(paket.some((p) => y === p || y.startsWith(`${p}/`)), y);
+    const betik = readFileSync(new URL('../scripts/paketle.mjs', import.meta.url), 'utf8');
+    for (const p of paket) assert.ok(betik.includes(`'${p}'`), p);
+  });
+});

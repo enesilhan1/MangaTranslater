@@ -5,7 +5,8 @@
   "description": "Manga Çevirmen tarayıcı eklentisi (Chrome + Firefox; derleme adımı yok; testler için Node 22+)",
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
-    "tesseract": "node scripts/tesseract_kopyala.mjs"
+    "tesseract": "node scripts/tesseract_kopyala.mjs",
+    "paketle": "node scripts/paketle.mjs"
   },
   "devDependencies": {
     "@tesseract.js-data/eng": "1.0.0",
