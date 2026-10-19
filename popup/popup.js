@@ -193,11 +193,13 @@ function yerelAyarlari() {
   if (chromeCevirmeni.varMi && durum.a.hedefDil !== KAYNAK_DIL) {
     const d = durum.cevirmen;
     let icerik;
-    if (d === 'available') icerik = el('p', { class: 'aciklama' }, t('ui.cevirmen.hazir'));
+    if (d === 'denetleniyor') icerik = el('p', { class: 'aciklama' }, t('ui.cevirmen.denetleniyor'));
+    else if (d === 'available') icerik = el('p', { class: 'aciklama' }, t('ui.cevirmen.hazir'));
     else if (d === 'unavailable') icerik = el('p', { class: 'aciklama' }, t('ui.cevirmen.yok'));
     else if (d === 'iniyor') {
       icerik = el('p', { class: 'aciklama' }, t('ui.cevirmen.iniyor', { oran: Math.round(durum.indirmeOrani * 100) }));
     } else {
+      // downloadable / downloading
       icerik = el('div', { style: 'display:grid;gap:6px' },
         el('p', { class: 'aciklama' }, t('ui.cevirmen.indirAciklama')),
         el('button', { class: 'ana', onclick: cevirmeniHazirla }, t('ui.cevirmen.indir')));
@@ -233,13 +235,27 @@ async function cevirmeniHazirla() {
   } catch (e) {
     durum.cevirmenHatasi = String(e?.message ?? e);
   }
+  // İndirme bitti: "iniyor" işareti kalkmalı ki gerçek durum (hazır vb.) okunsun.
+  durum.cevirmen = 'downloadable';
   await cevirmenDurumunuOku();
   ciz();
 }
 
+/**
+ * Chrome çevirmeninin durumunu okuyup yeniden çizer. availability() yavaş
+ * olabildiği için (bkz. DURUM_ZAMAN_ASIMI_MS) çağıranlar beklemeden önce
+ * çizer; bu arada "denetleniyor" gösterilir.
+ */
 async function cevirmenDurumunuOku() {
   if (durum.cevirmen === 'iniyor') return;
-  durum.cevirmen = durum.a.motor === Motor.YEREL ? await chromeCevirmeni.durum(KAYNAK_DIL, durum.a.hedefDil) : 'unavailable';
+  if (durum.a.motor !== Motor.YEREL || !chromeCevirmeni.varMi) {
+    durum.cevirmen = 'unavailable';
+    return;
+  }
+  durum.cevirmen = 'denetleniyor';
+  ciz();
+  const sonuc = await chromeCevirmeni.durum(KAYNAK_DIL, durum.a.hedefDil);
+  if (durum.cevirmen === 'denetleniyor') durum.cevirmen = sonuc;
 }
 
 function dilBolumu() {
@@ -296,7 +312,7 @@ function altBilgi() {
 
 function ciz() {
   document.documentElement.lang = durum.a.arayuzDili;
-  kok.replaceChildren(
+  const bolumler = [
     el('h1', {}, cevir(durum.a.arayuzDili, 'ui.baslik')),
     izinBolumu(),
     siteBolumu(),
@@ -304,13 +320,16 @@ function ciz() {
     dilBolumu(),
     siteListesi(),
     altBilgi(),
-  );
+  ];
+  // Gösterilmeyen bölümler null; replaceChildren onları "null" yazısı yapardı.
+  kok.replaceChildren(...bolumler.filter(Boolean));
 }
 
 async function baslat() {
   durum.a = await depo.oku();
   [durum.sekme] = await tarayici.tabs.query({ active: true, currentWindow: true });
   durum.izin = await siteIzniVarMi();
+  ciz();
   await cevirmenDurumunuOku();
   ciz();
 }
