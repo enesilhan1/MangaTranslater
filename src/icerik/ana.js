@@ -57,13 +57,6 @@ class Cevirmen {
 
   async baslat() {
     await this._ayarlariOku();
-    tarayici.storage.onChanged.addListener((d, alan) => {
-      if (alan === 'local' && d.ayarlar) this.ayarlar = ayarlariTamamla(d.ayarlar.newValue);
-    });
-    // Alt+T (arka plandaki commands kısayolu) → orijinal ↔ çeviri.
-    tarayici.runtime.onMessage.addListener((m) => {
-      if (m?.tip === 'gecis') this.gorunum.gecis();
-    });
     this.degisimGozcu.observe(document.documentElement, {
       childList: true,
       subtree: true,
@@ -72,7 +65,8 @@ class Cevirmen {
     });
     document.querySelectorAll('img').forEach((img) => this._incele(img));
     // Sayfadan çıkılırken (sekme kapanmadan başka sayfaya geçiş) işler boşa çevrilmesin.
-    addEventListener('pagehide', () => arkaPlanaBildir({ tip: 'iptal' }));
+    this._sayfadanCikis = () => arkaPlanaBildir({ tip: 'iptal' });
+    addEventListener('pagehide', this._sayfadanCikis);
   }
 
   async _ayarlariOku() {
@@ -230,11 +224,45 @@ class Cevirmen {
     this.degisimGozcu.disconnect();
     this.gorunurGozcu.disconnect();
     this.yakinGozcu.disconnect();
+    removeEventListener('pagehide', this._sayfadanCikis);
+  }
+
+  /** Site listeden çıkarıldı: işleri iptal et, çevirileri sayfadan kaldır. */
+  kapat() {
+    this.durdur();
+    arkaPlanaBildir({ tip: 'iptal' });
+    for (const img of [...this.takipte]) this._birak(img, this.kayitlar.get(img));
+    this.gorunum.yokEt();
   }
 }
 
-// Aynı sayfaya iki kez yüklenirse (ör. eklenti güncellemesi) ikincisi çalışmasın.
-if (!globalThis.__mangaCevirmen) {
-  globalThis.__mangaCevirmen = new Cevirmen();
-  globalThis.__mangaCevirmen.baslat();
+/** Bu sayfadaki çalışan örnek (yoksa null: site kapalı ya da henüz başlamadı). */
+let etkin = null;
+
+/**
+ * Yükleyicinin (icerik/yukleyici.js) çağırdığı giriş noktası. ES modülü
+ * sayfada yalnızca bir kez çalıştığı için başlatma bu fonksiyonla yapılır:
+ * site kapatılıp aynı sayfada yeniden açılınca yükleyici tekrar çağırır.
+ * Zaten çalışıyorsa (ör. hem kayıtlı betik hem anında enjeksiyon) ikinci
+ * çağrı bir şey yapmaz.
+ */
+export function baslat() {
+  if (etkin) return;
+  etkin = new Cevirmen();
+  etkin.baslat();
 }
+
+// Dinleyiciler modül düzeyinde bir kez kurulur ve o anki örneğe iletir.
+tarayici.runtime.onMessage.addListener((m) => {
+  if (!etkin) return;
+  // Alt+T (arka plandaki commands kısayolu) → orijinal ↔ çeviri.
+  if (m?.tip === 'gecis') etkin.gorunum.gecis();
+  // Açılır pencerede "bu sitede çevir" kapatıldı.
+  if (m?.tip === 'kapat') {
+    etkin.kapat();
+    etkin = null;
+  }
+});
+tarayici.storage.onChanged.addListener((d, alan) => {
+  if (etkin && alan === 'local' && d.ayarlar) etkin.ayarlar = ayarlariTamamla(d.ayarlar.newValue);
+});

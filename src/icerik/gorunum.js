@@ -160,6 +160,19 @@ export class Gorunum {
     }
   }
 
+  /** Katmanı ve bütün dinleyicileri tamamen kaldırır (site kapatıldı). */
+  yokEt() {
+    for (const img of [...this.resimler.keys()]) this.kaldir(img);
+    this.boyutGozcu.disconnect();
+    if (this._kare) cancelAnimationFrame(this._kare);
+    this._kare = 0;
+    removeEventListener('scroll', this._kaydirma, { capture: true });
+    removeEventListener('resize', this._kaydirma);
+    this.ev?.remove();
+    this.ev = null;
+    this.kok = null;
+  }
+
   /** Kısayol: orijinal ↔ çeviri. */
   gecis() {
     this.orijinalGoster = !this.orijinalGoster;
