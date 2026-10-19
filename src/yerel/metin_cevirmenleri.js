@@ -5,6 +5,13 @@
 import { YzHatasi } from '../yz/ortak.js';
 
 /** Chrome Translator API dil kodları BCP 47; listemizde yalnızca Çince farklı. */
+/**
+ * availability() bazı ortamlarda hiç dönmüyor (gömülü Chromium'da 4 sn'de
+ * bile yanıt vermediği görüldü). Bu sürede dönmezse çevirmen kullanılamaz
+ * sayılır; çeviri MyMemory'ye düşer, açılır pencere de takılmaz.
+ */
+export const DURUM_ZAMAN_ASIMI_MS = 3000;
+
 const CHROME_KODLARI = { 'zh-CN': 'zh' };
 
 /**
@@ -15,9 +22,13 @@ const CHROME_KODLARI = { 'zh-CN': 'zh' };
  * düğmesi bunun için (hazirla).
  */
 export class ChromeCevirmeni {
-  /** @param {any} api  Translator global'i (testlerde sahtesi). */
-  constructor(api = globalThis.Translator) {
+  /**
+   * @param {any} api  Translator global'i (testlerde sahtesi).
+   * @param {{zamanAsimiMs?: number}} [p]
+   */
+  constructor(api = globalThis.Translator, { zamanAsimiMs = DURUM_ZAMAN_ASIMI_MS } = {}) {
     this.api = api;
+    this.zamanAsimiMs = zamanAsimiMs;
     /** @type {Map<string, Promise<any>>} dil çifti → çevirmen */
     this.cevirmenler = new Map();
   }
@@ -32,10 +43,16 @@ export class ChromeCevirmeni {
    */
   async durum(kaynak, hedef) {
     if (!this.varMi) return 'unavailable';
+    let sayac;
+    const zamanAsimi = new Promise((coz) => {
+      sayac = setTimeout(() => coz('unavailable'), this.zamanAsimiMs);
+    });
     try {
-      return await this.api.availability(this.secenek(kaynak, hedef));
+      return await Promise.race([this.api.availability(this.secenek(kaynak, hedef)), zamanAsimi]);
     } catch {
       return 'unavailable';
+    } finally {
+      clearTimeout(sayac);
     }
   }
 

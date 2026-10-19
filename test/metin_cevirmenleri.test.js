@@ -42,6 +42,14 @@ describe('ChromeCevirmeni', () => {
     assert.equal(await new ChromeCevirmeni(bozuk).durum('en', 'tr'), 'unavailable');
   });
 
+  it('availability hiç dönmezse zaman aşımında unavailable, MyMemory seçilir', async () => {
+    const asili = { create() {}, availability: () => new Promise(() => {}) };
+    const c = new ChromeCevirmeni(asili, { zamanAsimiMs: 20 });
+    assert.equal(await c.durum('en', 'tr'), 'unavailable');
+    const myMemory = new MyMemoryCevirmeni({ fetch: async () => ({ text: async () => '{}' }) });
+    assert.equal(await metinCevirmeniSec({ chrome: c, myMemory, kaynak: 'en', hedef: 'tr' }), myMemory);
+  });
+
   it('paket inmemişken tıklamasız kurulum → hazirla hatası; sonra yeniden denenir', async () => {
     const hata = Object.assign(new Error('Requires user activation'), { name: 'NotAllowedError' });
     const api = sahteTranslator({ durum: 'downloadable', createHatasi: hata });
