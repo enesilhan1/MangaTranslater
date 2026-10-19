@@ -18,3 +18,12 @@ export function sayi(nesne, anahtar) {
   const v = nesne?.[anahtar];
   return typeof v === 'number' ? Math.trunc(v) : 0;
 }
+
+/**
+ * Hata mesajla (runtime.sendMessage) taşınabilsin diye düz nesneye
+ * çevrilir; alan taraf new YzHatasi(anahtar, parametreler) ile geri kurar.
+ */
+export function hatayiPaketle(e) {
+  if (e instanceof YzHatasi) return { anahtar: e.anahtar, parametreler: e.parametreler };
+  return { anahtar: 'hata.beklenmeyen', parametreler: { mesaj: String(e?.message ?? e) } };
+}

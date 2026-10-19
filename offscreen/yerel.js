@@ -1,8 +1,9 @@
 // Arka plandan gelen yerel çeviri isteklerini karşılar (src/yerel/kopru.js).
 
 import { tarayici } from '../src/tarayici.js';
-import { hatayiPaketle, yerelCevirmenOlustur } from '../src/yerel/calistir.js';
+import { yerelCevirmenOlustur } from '../src/yerel/calistir.js';
 import { OFFSCREEN_HEDEFI } from '../src/yerel/kopru.js';
+import { hatayiPaketle } from '../src/yz/ortak.js';
 
 /** E-posta değişince MyMemory istemcisi yeniden kurulur; OCR işçisi ortak kalır. */
 let motor = null;
