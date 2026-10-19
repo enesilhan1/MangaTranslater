@@ -29,15 +29,20 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "src/ayarlar.js",
         "src/base64.js",
+        "src/dil.js",
         "src/dilimleme.js",
+        "src/diller.js",
         "src/icerik/aday.js",
         "src/icerik/ana.js",
         "src/icerik/gorunum.js",
         "src/icerik/mesaj.js",
         "src/icerik/resim_al.js",
+        "src/icerik/sigdir.js",
         "src/kuyruk.js",
         "src/tarayici.js",
+        "src/yz/katalog.js",
         "src/yz/ortak.js"
       ],
       "matches": [

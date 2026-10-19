@@ -9,8 +9,10 @@
 // - resmin adresi değişince ya da resim sayfadan kalkınca işini iptal eder,
 // - uzun şeritlerin dilim sonuçlarını geldikçe birleştirip görünüme verir.
 
+import { ayarlariTamamla } from '../ayarlar.js';
 import { dilimBalonlariniYerlestir } from '../dilimleme.js';
 import { Kuyruk, Oncelik } from '../kuyruk.js';
+import { tarayici } from '../tarayici.js';
 import { hatayiPaketle } from '../yz/ortak.js';
 import { adayMi } from './aday.js';
 import { Gorunum } from './gorunum.js';
@@ -28,7 +30,12 @@ const ES_ZAMANLI_HAZIRLIK = 2;
 
 class Cevirmen {
   constructor() {
-    this.gorunum = new Gorunum();
+    this.ayarlar = ayarlariTamamla(null);
+    this.gorunum = new Gorunum({
+      dil: () => this.ayarlar.arayuzDili,
+      hedefDil: () => this.ayarlar.hedefDil,
+      tekrarDene: (img) => this._tekrarDene(img),
+    });
     /** @type {WeakMap<HTMLImageElement, {kimlik: string, adres: string, oncelik: number,
      *   durum: import('./gorunum.js').ResimDurumu}>} */
     this.kayitlar = new WeakMap();
@@ -48,7 +55,15 @@ class Cevirmen {
     this.degisimGozcu = new MutationObserver((d) => this._degisimler(d));
   }
 
-  baslat() {
+  async baslat() {
+    await this._ayarlariOku();
+    tarayici.storage.onChanged.addListener((d, alan) => {
+      if (alan === 'local' && d.ayarlar) this.ayarlar = ayarlariTamamla(d.ayarlar.newValue);
+    });
+    // Alt+T (arka plandaki commands kısayolu) → orijinal ↔ çeviri.
+    tarayici.runtime.onMessage.addListener((m) => {
+      if (m?.tip === 'gecis') this.gorunum.gecis();
+    });
     this.degisimGozcu.observe(document.documentElement, {
       childList: true,
       subtree: true,
@@ -58,6 +73,21 @@ class Cevirmen {
     document.querySelectorAll('img').forEach((img) => this._incele(img));
     // Sayfadan çıkılırken (sekme kapanmadan başka sayfaya geçiş) işler boşa çevrilmesin.
     addEventListener('pagehide', () => arkaPlanaBildir({ tip: 'iptal' }));
+  }
+
+  async _ayarlariOku() {
+    try {
+      this.ayarlar = ayarlariTamamla((await tarayici.storage.local.get('ayarlar')).ayarlar);
+    } catch {
+      // varsayılanlarla devam
+    }
+  }
+
+  /** Hata işaretine tıklandı: resmi baştan çevir. */
+  _tekrarDene(img) {
+    const kayit = this.kayitlar.get(img);
+    if (kayit) this._birak(img, kayit);
+    this._incele(img);
   }
 
   _degisimler(degisimler) {

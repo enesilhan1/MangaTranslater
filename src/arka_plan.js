@@ -24,6 +24,14 @@ tarayici.runtime.onMessage.addListener((mesaj, gonderen, yanitla) => {
   return true; // yanıt eşzamansız
 });
 
+// Alt+T: etkin sekmedeki içerik betiğine orijinal ↔ çeviri geçişi.
+tarayici.commands.onCommand.addListener(async (komut, sekme) => {
+  if (komut !== 'orijinal-ceviri') return;
+  const id = sekme?.id ?? (await tarayici.tabs.query({ active: true, currentWindow: true }))[0]?.id;
+  // Çeviri açık olmayan sitede içerik betiği yok; hata önemsiz.
+  if (id != null) tarayici.tabs.sendMessage(id, { tip: 'gecis' }).catch(() => {});
+});
+
 // Kapanan sekmenin bekleyen işleri boşuna çevrilmesin.
 tarayici.tabs.onRemoved.addListener((sekme) => kuyruk.onEkIptal(`${sekme}:`));
 
