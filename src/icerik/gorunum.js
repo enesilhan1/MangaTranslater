@@ -33,9 +33,12 @@ const STIL = `
 .balon {
   position: absolute; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
-  padding: 4% 8%; overflow: hidden;
-  background: #fff; color: #111; border-radius: 40% / 45%;
-  box-shadow: 0 0 2px 3px #fff;
+  /* Dolgu em ile: yüzde, balonun değil kabın (resmin) genişliğine göre
+     hesaplanıp kutunun çoğunu yiyordu. Köşeler az yuvarlak: çok yuvarlak
+     köşe metin kutusunun köşelerindeki orijinal harfleri açıkta bırakıyor. */
+  padding: 0.15em 0.3em; overflow: hidden;
+  background: #fff; color: #111; border-radius: 0.6em;
+  box-shadow: 0 0 3px 4px #fff;
   font-family: "Comic Sans MS", "Comic Neue", "Chalkboard SE", "Segoe UI", system-ui, sans-serif;
   font-weight: 700; line-height: 1.12; text-align: center;
   overflow-wrap: anywhere; hyphens: auto; white-space: normal;
