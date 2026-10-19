@@ -32,6 +32,13 @@ describe('manifest ve Chrome + Firefox uyumu', () => {
     }
   });
 
+  it('simgeler ve açılır pencere dosyaları var', () => {
+    const m = oku('manifest.json');
+    const dosyalar = [...Object.values(m.icons), ...Object.values(m.action.default_icon), m.action.default_popup];
+    assert.equal(Object.keys(m.icons).length, 4);
+    for (const d of dosyalar) assert.ok(existsSync(new URL(`../${d}`, import.meta.url)), d);
+  });
+
   it('siteIzniVarMi izin API sonucunu döndürür, API yoksa engel saymaz', async () => {
     const api = (sonuc) => ({ permissions: { contains: async () => sonuc } });
     assert.equal(await siteIzniVarMi(api(false)), false);
