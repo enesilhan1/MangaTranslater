@@ -1,0 +1,63 @@
+<!doctype html>
+<!-- Görünüm katmanının (src/icerik/gorunum.js) elle/görsel denemesi.
+     Eklenti API'si gerekmez: python -m http.server ile depo kökünden açılır
+     (.claude/launch.json "manga-cevirmen-onizleme"). Resim, kendi
+     ürettiğimiz test sayfası; kutular gerçek Tesseract çıktısından. -->
+<html lang="tr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Görünüm önizleme</title>
+<style>
+  body { margin: 0; font: 14px system-ui, sans-serif; background: #222; color: #eee; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; flex-wrap: wrap;
+           padding: 8px 16px; background: #333; }
+  button { font: inherit; padding: 4px 10px; }
+  /* Okuyucuların çoğu gibi resimleri kendi kaydırma kabında gösterir. */
+  #okuyucu { height: calc(100vh - 46px); overflow-y: auto; }
+  #okuyucu img { display: block; margin: 16px auto; width: min(640px, calc(100vw - 32px)); }
+</style>
+<header>
+  <button id="gecis">Alt+T (orijinal ↔ çeviri)</button>
+  <button id="hata">2. resimde hata</button>
+  <button id="cevriliyor">2. resim çevriliyor</button>
+  <button id="genislet">Genişlik değiştir</button>
+</header>
+<div id="okuyucu">
+  <img id="r1" src="ornek_sayfa.png" alt="">
+  <img id="r2" src="ornek_sayfa.png" alt="">
+</div>
+<script type="module">
+  import { Gorunum } from '../src/icerik/gorunum.js';
+
+  const G = 800, Y = 1100;
+  const kutu = (x, y, g, h) => ({ x: x / G, y: y / Y, g: g / G, h: h / Y });
+  const balonlar = [
+    { ...kutu(90, 83, 228, 112), orijinal: 'WHERE DID YOU HIDE THE MAP?', ceviri: 'Haritayı nereye sakladın?' },
+    { ...kutu(481, 273, 226, 111), orijinal: "I TOLD YOU, I DON'T HAVE IT", ceviri: 'Sana söyledim, bende değil!' },
+    { ...kutu(130, 607, 218, 112), orijinal: 'THEN WE ARE ALREADY LATE...',
+      ceviri: 'O zaman şimdiden çok geç kaldık demektir, acele etmemiz lazım...' },
+  ];
+  const gorunum = new Gorunum({ tekrarDene: (img) => tamam(img) });
+  const r1 = document.getElementById('r1');
+  const r2 = document.getElementById('r2');
+  const tamam = (img) => gorunum.guncelle(img, { kimlik: img.id, durum: 'tamam', balonlar, hata: null });
+  await Promise.all([r1, r2].map((i) => i.decode()));
+  tamam(r1);
+  tamam(r2);
+  globalThis.gorunum = gorunum;
+
+  document.getElementById('gecis').onclick = () => gorunum.gecis();
+  document.getElementById('hata').onclick = () => {
+    gorunum.kaldir(r2);
+    gorunum.guncelle(r2, { kimlik: 'r2', durum: 'hata', balonlar: [],
+      hata: { anahtar: 'hata.kota.gemini', parametreler: {} } });
+  };
+  document.getElementById('cevriliyor').onclick = () => {
+    gorunum.kaldir(r2);
+    gorunum.guncelle(r2, { kimlik: 'r2', durum: 'cevriliyor', balonlar: balonlar.slice(0, 1), hata: null });
+  };
+  document.getElementById('genislet').onclick = () => {
+    for (const i of [r1, r2]) i.style.width = i.style.width === '420px' ? '' : '420px';
+  };
+</script>
+</html>
