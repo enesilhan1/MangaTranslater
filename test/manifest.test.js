@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { SITE_IZNI, siteIzniVarMi } from '../src/tarayici.js';
@@ -36,5 +36,26 @@ describe('manifest ve Chrome + Firefox uyumu', () => {
     assert.equal(await siteIzniVarMi(api(false)), false);
     assert.equal(await siteIzniVarMi(api(true)), true);
     assert.equal(await siteIzniVarMi({}), true);
+  });
+});
+
+describe('yerel OCR için manifest', () => {
+  it('eklenti sayfalarında WASM çalışabilir, uzaktan betik yok', () => {
+    const csp = oku('manifest.json').content_security_policy.extension_pages;
+    assert.match(csp, /script-src 'self' 'wasm-unsafe-eval'/);
+    assert.doesNotMatch(csp, /https?:|unsafe-inline|'unsafe-eval'/);
+  });
+
+  it('Tesseract dosyaları pakette', () => {
+    for (const yol of [
+      'vendor/tesseract/tesseract.esm.min.js',
+      'vendor/tesseract/worker.min.js',
+      'vendor/tesseract/cekirdek/tesseract-core-lstm.wasm.js',
+      'vendor/tesseract/cekirdek/tesseract-core-simd-lstm.wasm.js',
+      'vendor/tesseract/cekirdek/tesseract-core-relaxedsimd-lstm.wasm.js',
+      'vendor/tesseract/dil/eng.traineddata.gz',
+    ]) {
+      assert.ok(existsSync(new URL(`../${yol}`, import.meta.url)), yol);
+    }
   });
 });
