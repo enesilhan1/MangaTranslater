@@ -79,3 +79,17 @@ export function satirSkoru(rgba) {
   const ort = t / n;
   return Math.sqrt(Math.max(0, t2 / n - ort * ort));
 }
+
+/**
+ * Dilimlerin balonlarını (dilime oranla 0-1) bütün resme oranla 0-1'e
+ * çevirir. Dilimler yatayda resmin tamamıdır; yalnızca dikey konum ve
+ * yükseklik ölçeklenir.
+ * @param {{y0: number, y1: number}} dilim  Özgün piksellerle.
+ * @param {number} yukseklik  Resmin özgün yüksekliği.
+ * @param {import('./yz/cozumle.js').Balon[]} balonlar
+ */
+export function dilimBalonlariniYerlestir(dilim, yukseklik, balonlar) {
+  const bas = dilim.y0 / yukseklik;
+  const oran = (dilim.y1 - dilim.y0) / yukseklik;
+  return balonlar.map((b) => ({ ...b, y: bas + b.y * oran, h: b.h * oran }));
+}
