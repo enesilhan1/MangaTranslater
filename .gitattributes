@@ -1,2 +1,6 @@
 * text=auto eol=lf
 *.png binary
+*.gz binary
+*.wasm binary
+# Hazır (küçültülmüş) üçüncü taraf dosyaları olduğu gibi kalsın.
+vendor/** -text -diff
