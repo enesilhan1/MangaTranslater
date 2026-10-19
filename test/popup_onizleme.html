@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- Açılır pencerenin (popup/popup.js) eklenti yüklemeden denenmesi: gerçek
+     kod, bellek içi sahte bir chrome API'siyle çalışır. Etkin sekme
+     MangaDex'miş gibi davranır.
+     Parametreler: ?cevirmen=available|downloadable|unavailable (sahte Chrome
+     Translator; verilmezse yok, Firefox gibi), ?izin=0 (site izni yok),
+     ?sekme=<adres>. Yapılan çağrılar window.kayit'ta. -->
+<html lang="tr">
+<meta charset="utf-8">
+<title>Açılır pencere önizleme</title>
+<link rel="stylesheet" href="../popup/popup.css">
+<style> html { background: #888; } body { margin: 16px auto; box-shadow: 0 4px 20px rgba(0,0,0,.4); } </style>
+<script>
+  (() => {
+    const p = new URLSearchParams(location.search);
+    const kayit = (window.kayit = []);
+    const veri = {};
+    const dinleyiciler = [];
+    window.chrome = {
+      runtime: {
+        id: 'onizleme',
+        getURL: (y) => `/${y}`,
+        sendMessage: async (m) => (kayit.push(['runtime.sendMessage', m]), { sonuc: true }),
+        onMessage: { addListener() {} },
+      },
+      storage: {
+        local: {
+          get: async (k) => (k in veri ? { [k]: structuredClone(veri[k]) } : {}),
+          set: async (o) => {
+            const eski = structuredClone(veri);
+            Object.assign(veri, structuredClone(o));
+            for (const f of dinleyiciler) {
+              f(Object.fromEntries(Object.keys(o).map((k) => [k, { oldValue: eski[k], newValue: veri[k] }])), 'local');
+            }
+          },
+        },
+        onChanged: { addListener: (f) => dinleyiciler.push(f) },
+      },
+      tabs: {
+        query: async () => [{ id: 42, url: p.get('sekme') ?? 'https://mangadex.org/chapter/abc/1' }],
+        sendMessage: async (id, m) => kayit.push(['tabs.sendMessage', id, m]),
+      },
+      scripting: { executeScript: async (o) => kayit.push(['scripting.executeScript', o]) },
+      permissions: {
+        contains: async () => p.get('izin') !== '0',
+        request: async () => (kayit.push(['permissions.request']), true),
+      },
+    };
+    window.depo = veri;
+    const c = p.get('cevirmen');
+    if (c) {
+      let durum = c;
+      window.Translator = {
+        availability: async () => durum,
+        create: async (s) => {
+          for (const oran of [0.25, 0.6, 1]) {
+            await new Promise((r) => setTimeout(r, 300));
+            s.monitor?.({ addEventListener: (_, f) => f({ loaded: oran }) });
+          }
+          durum = 'available';
+          return { translate: async (m) => m };
+        },
+      };
+    }
+  })();
+</script>
+<main id="uygulama"></main>
+<script type="module" src="../popup/popup.js"></script>
+</html>
