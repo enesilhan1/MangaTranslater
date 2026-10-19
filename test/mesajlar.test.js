@@ -46,6 +46,15 @@ describe('mesajIsle', () => {
     assert.deepEqual(kayit.iptal, ['7:r1#', '7:']);
   });
 
+  it('açılır pencere önbelleği temizleyebilir; sekme mesajlarını gönderemez', async () => {
+    let temizlendi = 0;
+    const { ortam } = ortamKur();
+    ortam.onbellek = { temizle: async () => void temizlendi++ };
+    assert.deepEqual(await mesajIsle({ tip: 'onbellekTemizle' }, {}, ortam), { sonuc: true });
+    assert.equal(temizlendi, 1);
+    assert.equal(mesajIsle({ tip: 'cevir' }, {}, ortam), null);
+  });
+
   it('sekmesiz gönderen (açılır pencere, offscreen) ve bilinmeyen tip bizim değil', () => {
     const { ortam } = ortamKur();
     assert.equal(mesajIsle({ tip: 'cevir' }, {}, ortam), null);

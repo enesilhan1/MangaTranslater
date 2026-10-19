@@ -8,6 +8,9 @@
 //   {tip: 'iptal', resimKimligi?}             (yoksa sekmenin tüm işleri)
 //   {tip: 'resimGetir', adres}                → {veri, tur}
 //
+// Açılır pencereden (sekmesiz gönderen):
+//   {tip: 'onbellekTemizle'}
+//
 // Kuyruk kimliği "<sekme>:<resimKimligi>#<dilim>": böylece bir sekmenin ya
 // da bir resmin bütün dilimleri ön ekle bulunur.
 
@@ -23,17 +26,23 @@ const kimlik = (sekme, resim, dilim) => `${sekme}:${resim}#${dilim}`;
  * @param {any} mesaj
  * @param {{tab?: {id: number}}} gonderen
  * @param {{cevirici: import('./cevirici.js').Cevirici,
- *   kuyruk: import('./kuyruk.js').Kuyruk, fetch?: typeof fetch}} ortam
+ *   kuyruk: import('./kuyruk.js').Kuyruk, onbellek?: import('./onbellek.js').Onbellek,
+ *   fetch?: typeof fetch}} ortam
  * @returns {Promise<object> | null}  Yanıt (null: bu mesaj bizim değil).
  */
-export function mesajIsle(mesaj, gonderen, { cevirici, kuyruk, fetch: f = globalThis.fetch }) {
-  const sekme = gonderen?.tab?.id;
-  if (sekme == null || typeof mesaj?.tip !== 'string') return null;
-
+export function mesajIsle(mesaj, gonderen, { cevirici, kuyruk, onbellek, fetch: f = globalThis.fetch }) {
+  if (typeof mesaj?.tip !== 'string') return null;
   const sar = (is) =>
     Promise.resolve()
       .then(is)
       .then((sonuc) => ({ sonuc }), (e) => ({ hata: hatayiPaketle(e) }));
+
+  const sekme = gonderen?.tab?.id;
+  if (sekme == null) {
+    // Açılır pencere ya da başka bir eklenti sayfası.
+    if (mesaj.tip === 'onbellekTemizle') return sar(() => onbellek.temizle().then(() => true));
+    return null;
+  }
 
   switch (mesaj.tip) {
     case 'cevir':
