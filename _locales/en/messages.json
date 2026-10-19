@@ -1,0 +1,5 @@
+{
+  "eklentiAdi": { "message": "Manga Translator" },
+  "eklentiAciklamasi": { "message": "Translates the text on manga page images into your language; runs automatically on the sites you choose." },
+  "kisayolAciklamasi": { "message": "Switch between original and translation" }
+}

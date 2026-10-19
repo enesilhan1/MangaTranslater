@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_eklentiAdi__",
+  "description": "__MSG_eklentiAciklamasi__",
+  "version": "0.1.0",
+  "default_locale": "tr",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "scripting",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/arka_plan.js",
+    "scripts": [
+      "src/arka_plan.js"
+    ],
+    "type": "module"
+  },
+  "action": {
+    "default_title": "__MSG_eklentiAdi__"
+  },
+  "commands": {
+    "orijinal-ceviri": {
+      "suggested_key": {
+        "default": "Alt+T"
+      },
+      "description": "__MSG_kisayolAciklamasi__"
+    }
+  },
+  "minimum_chrome_version": "120",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "manga-cevirmen@enesilhan1",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "websiteContent"
+        ]
+      }
+    }
+  }
+}
