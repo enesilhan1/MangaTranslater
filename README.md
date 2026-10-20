@@ -103,6 +103,7 @@ Bir sayfa çevrilmediyse ya da çeviri yanlış yere düştüyse:
   çalışır. Firefox'ta (ya da Chrome çevirmeni o dili desteklemiyorsa) yalnızca
   okunan metin MyMemory'ye gider.
 - Eklenti yalnızca listene eklediğin sitelerde çalışır.
+- Ayrıntılı gizlilik politikası: [docs/PRIVACY.md](docs/PRIVACY.md) (Türkçe ve İngilizce).
 
 ## Bilinen sınırlar
 - Yalnızca `<img>` olarak gösterilen resimler çevrilir; sayfayı `<canvas>`'a
@@ -137,7 +138,8 @@ npm test
   depo kökünden bir HTTP sunucusuyla açılan önizleme/deneme sayfaları.
 
 Kararlaştırılan özellikler [docs/SPEC.md](docs/SPEC.md), geliştirme aşamaları
-[docs/ASAMALAR.md](docs/ASAMALAR.md).
+[docs/ASAMALAR.md](docs/ASAMALAR.md). Chrome Web Store yayını için metinler, izin
+gerekçeleri ve görseller: [docs/MAGAZA.md](docs/MAGAZA.md).
 
 ## Lisans
 MIT. Gömülü [Tesseract.js](https://github.com/naptha/tesseract.js) Apache-2.0
