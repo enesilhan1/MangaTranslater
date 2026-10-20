@@ -33,6 +33,12 @@ const EN_AZ_ORTUSME = 0.25;
  */
 export const ASINDIRMA = 3;
 
+/**
+ * İşaret dairesinin denenecek yarıçapları (gri kopyanın pikselleriyle; 500 px
+ * genişlikte 8 px, gönderilen resimde genişliğin ~%1,6'sı). Yer yoksa küçülür.
+ */
+const ISARET_YARICAPLARI = [8, 6, 4];
+
 /** Sahipsiz balon eşleştirmesinde en çok uzaklık (resmin köşegenine oranla). */
 const SAHIPSIZ_UZAKLIK = 0.3;
 
@@ -89,7 +95,8 @@ const SEKIL = Object.freeze({
  *   Satır satır parlaklık değerleri (0 siyah, 255 beyaz).
  * @typedef {{x0: number, y0: number, x1: number, y1: number}} PikselKutu
  *   Uçlar dahil.
- * @typedef {{kutu: PikselKutu, yazi: PikselKutu, elips: boolean, parca?: number}} BulunanBalon
+ * @typedef {{kutu: PikselKutu, yazi: PikselKutu, elips: boolean, parca?: number,
+ *   isaret?: {x: number, y: number, r: number} | null}} BulunanBalon
  *   Balonun içi, içindeki yazının sınırları (gri resmin pikselleriyle) ve
  *   şekli (oval mi, dikdörtgen anlatım kutusu mu).
  */
@@ -126,9 +133,9 @@ export function balonlariBul(resim, tani) {
       if (sonuc.bloklar) {
         // Ortak beyaz alanda birden çok blok: her bloğun zemini kendi kutusu
         // (ortak balon şekli iki çeviriyi üst üste bindirirdi).
-        for (const b of sonuc.bloklar) bulunan.push({ kutu: b.kutu, yazi: b.kutu, elips: false, parca: b.parca });
+        for (const b of sonuc.bloklar) bulunan.push({ kutu: b.kutu, yazi: b.kutu, elips: false, parca: b.parca, isaret: b.isaret });
       } else if (sonuc.yazi) {
-        bulunan.push({ kutu: sonuc.kutu, yazi: sonuc.yazi, elips: sonuc.elips, parca: sonuc.ozellik.parca });
+        bulunan.push({ kutu: sonuc.kutu, yazi: sonuc.yazi, elips: sonuc.elips, parca: sonuc.ozellik.parca, isaret: sonuc.isaret });
       }
     }
   }
@@ -570,6 +577,7 @@ function balonMu(resim, etiket, bolge) {
     ortancaBoy: +(ortanca / h).toFixed(3),
     tutarli: +tutarli.toFixed(2),
     yaziOrani: +(((yazi.x1 - yazi.x0 + 1) * (yazi.y1 - yazi.y0 + 1)) / (w * h)).toFixed(2),
+    yogunluk: +(delik / ((yazi.x1 - yazi.x0 + 1) * (yazi.y1 - yazi.y0 + 1))).toFixed(3),
   };
   const payli = (k) => ({
     x0: x0 + Math.max(0, k.x0 - pay),
@@ -579,13 +587,17 @@ function balonMu(resim, etiket, bolge) {
   });
   const yaziKutusu = payli(yazi);
   const bloklar = yaziBloklari(parcalar, ortanca);
+  const bolgeIntegrali = integral(durum, w, h);
+  const kacinilacak = (bloklar.length > 1 ? bloklar.map(payli) : [yaziKutusu]);
+  const yer = (hedef) => isaretYeri(bolgeIntegrali, w, h, x0, y0, hedef, kacinilacak);
   return {
     ozellik,
     doluluk,
     yazi: yaziKutusu,
+    isaret: bloklar.length > 1 ? null : yer(yaziKutusu),
     // Bölgede birbirinden ayrık birden çok yazı bloğu varsa (iç içe geçmiş
     // balonlar tek beyaz alan görünür) her biri ayrı balon sayılır.
-    bloklar: bloklar.length > 1 ? bloklar.map((b) => ({ kutu: payli(b), parca: b.n })) : null,
+    bloklar: bloklar.length > 1 ? bloklar.map((b) => ({ kutu: payli(b), parca: b.n, isaret: yer(payli(b)) })) : null,
     // Çizilecek balon kutusu: gövde, yazıyı da kesinlikle kapsayacak şekilde.
     kutu: {
       x0: Math.min(gv.x0, yaziKutusu.x0),
@@ -596,6 +608,52 @@ function balonMu(resim, etiket, bolge) {
     // Dolu şekil gövde kutusunun ~%79'u: elips; ~%95+: dikdörtgen anlatım kutusu.
     elips: doluluk < SEKIL.dikdortgenDoluluk,
   };
+}
+
+/** Bölge piksellerinin (durum === 2) integral görüntüsü. */
+function integral(durum, w, h) {
+  const I = new Int32Array((w + 1) * (h + 1));
+  for (let y = 0; y < h; y++) {
+    let satir = 0;
+    for (let x = 0; x < w; x++) {
+      satir += durum[y * w + x] === 2 ? 1 : 0;
+      I[(y + 1) * (w + 1) + x + 1] = I[y * (w + 1) + x + 1] + satir;
+    }
+  }
+  return I;
+}
+
+/**
+ * İşaret dairesinin yeri (gri kopyanın pikselleriyle): çevresindeki kenarı
+ * 2r+1 olan karenin tamamı bölge (beyaz balon içi) olan ve hiçbir yazı
+ * kutusuyla kesişmeyen noktalardan, hedef yazının hemen üstündeki ortalı
+ * olan; üstte yoksa en yakını. Yer yoksa yarıçap küçültülür. (Önceden
+ * işaret yazı kutusuna göre konuyordu; çizgiye değen harfler kutunun
+ * dışında kaldığında işaret dar bir balonun ilk satırının üstüne biniyor,
+ * model o balonu okuyamıyordu.)
+ * @returns {{x: number, y: number, r: number} | null}
+ */
+function isaretYeri(I, w, h, x0, y0, hedef, kacinilacak) {
+  const dolu = (ax, ay, bx, by) =>
+    I[(by + 1) * (w + 1) + bx + 1] - I[ay * (w + 1) + bx + 1] - I[(by + 1) * (w + 1) + ax] + I[ay * (w + 1) + ax];
+  const yerel = (k) => ({ x0: k.x0 - x0, y0: k.y0 - y0, x1: k.x1 - x0, y1: k.y1 - y0 });
+  const hd = yerel(hedef);
+  const kac = kacinilacak.map(yerel);
+  const hcx = (hd.x0 + hd.x1) / 2;
+  for (const r of ISARET_YARICAPLARI) {
+    let enIyi = null;
+    for (let y = r; y < h - r; y++) {
+      for (let x = r; x < w - r; x++) {
+        if (dolu(x - r, y - r, x + r, y + r) !== (2 * r + 1) * (2 * r + 1)) continue;
+        if (kac.some((k) => x + r >= k.x0 && x - r <= k.x1 && y + r >= k.y0 && y - r <= k.y1)) continue;
+        const ustte = y + r < hd.y0;
+        const maliyet = (ustte ? hd.y0 - (y + r) : 1000 + Math.abs(y - (hd.y0 + hd.y1) / 2)) + 0.5 * Math.abs(x - hcx);
+        if (!enIyi || maliyet < enIyi.m) enIyi = { m: maliyet, x, y };
+      }
+    }
+    if (enIyi) return { x: x0 + enIyi.x, y: y0 + enIyi.y, r };
+  }
+  return null;
 }
 
 /**

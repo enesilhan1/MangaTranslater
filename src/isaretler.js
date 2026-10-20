@@ -25,6 +25,15 @@ export function isaretKonumlari(bulunanlar, olcek, genislik, yukseklik = Infinit
   const gerekli = 2 * r + 2;
   const sinirla = (v, ust) => Math.min(Math.max(r, Math.round(v)), ust - r);
   return bulunanlar.map((b, i) => {
+    // Balon bulunurken piksellerden seçilmiş, hiçbir harfe değmeyen yer.
+    if (b.isaret) {
+      return {
+        no: i + 1,
+        x: Math.round(b.isaret.x * olcek),
+        y: Math.round(b.isaret.y * olcek),
+        r: Math.max(6, Math.min(r, Math.round(b.isaret.r * olcek))),
+      };
+    }
     const k = { x0: b.kutu.x0 * olcek, y0: b.kutu.y0 * olcek, x1: (b.kutu.x1 + 1) * olcek, y1: (b.kutu.y1 + 1) * olcek };
     const y = { x0: b.yazi.x0 * olcek, y0: b.yazi.y0 * olcek, x1: (b.yazi.x1 + 1) * olcek, y1: (b.yazi.y1 + 1) * olcek };
     let x;

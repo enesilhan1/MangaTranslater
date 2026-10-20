@@ -254,3 +254,34 @@ describe('sahipsiz balon ve yersiz metin', () => {
     assert.notEqual(s.find((b) => b.ceviri === 'uzun').oturdu, true);
   });
 });
+
+describe('işaret yeri', () => {
+  const temizMi = (r, i) => {
+    for (let y = i.y - i.r; y <= i.y + i.r; y++) {
+      for (let x = i.x - i.r; x <= i.x + i.r; x++) if (r.gri[y * G + x] < 190) return false;
+    }
+    return true;
+  };
+  const kesisir = (i, k) => i.x + i.r >= k.x0 && i.x - i.r <= k.x1 && i.y + i.r >= k.y0 && i.y - i.r <= k.y1;
+
+  it('işaret beyaz balon içinde, hiçbir harfe ve yazı kutusuna değmeden, yazının üstünde', () => {
+    const r = ikiBalon();
+    for (const b of balonlariBul(r)) {
+      assert.ok(b.isaret, 'işaret yeri bulunmalı');
+      assert.ok(temizMi(r, b.isaret), JSON.stringify(b.isaret));
+      assert.ok(!kesisir(b.isaret, b.yazi));
+      assert.ok(b.isaret.y < b.yazi.y0, 'yazının üstünde');
+    }
+  });
+
+  it('yazı balonun tepesine dayanmışsa işaret yazının üstüne değil altına gider', () => {
+    const r = resim();
+    balonCiz(r, 110, 140, 45, 70); // dar, uzun balon
+    yaziCiz(r, 85, 80, 135); // ilk satır balonun tepesinde
+    yaziCiz(r, 85, 95, 135);
+    const [b] = balonlariBul(r);
+    assert.ok(b && b.isaret, JSON.stringify(b));
+    assert.ok(temizMi(r, b.isaret));
+    assert.ok(b.isaret.y > b.yazi.y1, JSON.stringify({ isaret: b.isaret, yazi: b.yazi }));
+  });
+});
