@@ -251,6 +251,25 @@ describe('ortak beyaz alanda birden çok metin', () => {
   });
 });
 
+describe('güvenilmez numara', () => {
+  it('uzun metin uzaktaki birkaç parçalık küçük balonun numarasını alırsa oraya konmaz; yakınsa ya da metin kısaysa konur', () => {
+    const r = resim();
+    // Kedinin gözü gibi küçük beyaz alan: içinde iki leke.
+    balonCiz(r, 100, 300, 28, 22);
+    for (const x of [88, 104]) for (let y = 293; y < 305; y++) for (let dx = 0; dx < 5; dx++) boya(r, x + dx, y, 20);
+    const bulunanlar = balonlariBul(r);
+    assert.equal(bulunanlar.length, 1, 'göz balon sayılmalı (testin varsayımı)');
+    const uzun = 'FORSE PENSAVANO FOSSI MORTO';
+    const [uzakta] = kutulariOturt(r, [balon(220, 280, 330, 330, { bolge: 1, orijinal: uzun })], bulunanlar);
+    assert.notEqual(uzakta.oturdu, true);
+    assert.ok(piksel(uzakta).x0 > 200, JSON.stringify(piksel(uzakta)));
+    const [yakinda] = kutulariOturt(r, [balon(80, 290, 120, 310, { bolge: 1, orijinal: uzun })], bulunanlar);
+    assert.equal(yakinda.oturdu, true);
+    const [kisa] = kutulariOturt(r, [balon(220, 280, 330, 330, { bolge: 1, orijinal: 'EH?' })], bulunanlar);
+    assert.equal(kisa.oturdu, true);
+  });
+});
+
 describe('kutusuz kayıt', () => {
   it('numarasıyla balona oturur; numarası geçersizse gösterilmez', () => {
     const r = ikiBalon();

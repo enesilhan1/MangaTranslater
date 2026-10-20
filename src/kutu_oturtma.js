@@ -52,6 +52,12 @@ const SAHIPSIZ_UZAKLIK = 0.3;
  * bulgu metnin yarısını kapmasın.
  */
 const SAHIPSIZ_BIRLESME_UZAKLIK = 0.15;
+/**
+ * Numaralı balondaki harf parçası metnin harf sayısının bundan azsa metin o
+ * balona sığmaz sayılır (bkz. numarayaGuvenilmez). Kullanıcının sayfalarında
+ * ölçtüğüm gerçek balonlarda oran 0,5-0,9 (düşük çözünürlükte harfler birleşiyor).
+ */
+const NUMARA_PARCA_ORANI = 0.35;
 
 /** Bir sayfada işaretlenecek en çok balon (fazlası çoğunlukla yanlış bulgu). */
 export const AZAMI_BALON = 40;
@@ -207,7 +213,8 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
   /** kayıt sırası → yerinden edildiği balon numarası */
   const yerinden = new Map();
   balonlar.forEach((b, i) => {
-    const n = Number.isInteger(b.bolge) && b.bolge >= 1 && b.bolge <= bulunanlar.length ? b.bolge : 0;
+    let n = Number.isInteger(b.bolge) && b.bolge >= 1 && b.bolge <= bulunanlar.length ? b.bolge : 0;
+    if (n && !b.kutusuz && numarayaGuvenilmez(b, bulunanlar[n - 1], tahminKutusu(b))) n = 0;
     if (!n || b.tur === 'ses') {
       numarasiz.push(i);
       return;
@@ -360,6 +367,25 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
   // Kutusu bozuk gelip numarasıyla da bir balona oturamayan kayıt için
   // gösterilecek yer yok.
   return sonuc.filter((x) => x && !(x.kutusuz && !x.oturdu));
+}
+
+/**
+ * Modelin verdiği numara açıkça yanlış mı: metin o balona sığmayacak kadar
+ * uzun (balondaki harf parçası metnin harflerinin NUMARA_PARCA_ORANI'ndan
+ * az) VE modelin kutusu balondan uzakta (balonun her yandan yarım boyu
+ * kadar genişletilmiş kutusuna hiç değmiyor). Kullanıcının sayfasında
+ * kedinin gözü balon sanılıp numaralandı; model yanındaki çizim üstü
+ * "FORSE PENSAVANO FOSSI MORTO..." yazısına o numarayı verdi, çeviri göze
+ * sıkıştı. Yalnızca biri tek başına yetmez: modelin kutusu sık sık
+ * kayıyor, düşük çözünürlükte harfler de birleşip az parça sayılıyor.
+ */
+function numarayaGuvenilmez(b, bulunan, tahmin) {
+  const harf = String(b.orijinal).replace(/[^\p{L}\p{N}]/gu, '').length;
+  if (!harf || (bulunan.parca ?? harf) >= NUMARA_PARCA_ORANI * harf) return false;
+  const k = bulunan.kutu;
+  const yg = (k.x1 - k.x0) / 2;
+  const yh = (k.y1 - k.y0) / 2;
+  return kesisimAlani(tahmin, { x0: k.x0 - yg, y0: k.y0 - yh, x1: k.x1 + yg, y1: k.y1 + yh }) === 0;
 }
 
 /**
