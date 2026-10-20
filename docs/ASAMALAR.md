@@ -208,3 +208,12 @@ ortak alandaki her numara kendi metnine öbür metinlerden belirgin yakın
 ve öbür numaralara değmiyor. Gri analiz kopyası da genişliğe göre değil
 alana göre boyutlanıyor; geniş resimlerde balonlar daha ayrıntılı
 görülüyor.
+
+## Sürüm 1.7.6 (2026-10-20)
+Kullanıcının sayfasında model "È ALICE!" yazısının kutusunu üstteki
+balonun "...ALICE?!" satırına koydu. Çeviri o balonun üstüne bindi, asıl
+yazı çevrilmeden kaldı. Balonsuz bir metnin kelimeleri modelin kutusu
+çevresinde bulunamazsa artık bütün sayfada aranıyor. Taşıma yalnızca tek
+ve kesin bir eşleşme varsa yapılıyor; numaralı balonlardaki kelimeler
+sayılmıyor. Önbellekteki eski sonuçlar bir kez daha OCR'den geçiyor; model
+yeniden çağrılmıyor.
