@@ -109,6 +109,15 @@ describe('Cevirici: balonsuz metinlerde OCR', () => {
   const numarali = { x: 0.1, y: 0.1, g: 0.1, h: 0.1, tur: 'balon', bolge: 1, orijinal: 'HI', ceviri: 'Selam' };
   const balonsuz = { x: 0.5, y: 0.5, g: 0.1, h: 0.05, tur: 'anlatim', bolge: 0, orijinal: 'HELLO', ceviri: 'Merhaba' };
 
+  it('Latin harfli ses efekti OCR çalıştırır, Japonca efekt çalıştırmaz', async () => {
+    const latin = kur([{ ...balonsuz, tur: 'ses', orijinal: 'HELLO' }]);
+    await latin.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(latin.ocrCagri.length, 1);
+    const japonca = kur([{ ...balonsuz, tur: 'ses', orijinal: 'ガシャ' }]);
+    await japonca.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(japonca.ocrCagri.length, 0);
+  });
+
   it('yalnızca numaralı metinler varsa OCR çalışmaz', async () => {
     const t = kur([numarali]);
     await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });

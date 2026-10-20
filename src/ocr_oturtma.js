@@ -24,9 +24,11 @@ const EN_AZ_ESLESME = 0.4;
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
  */
-export const OCR_SURUMU = 5;
+export const OCR_SURUMU = 6;
 /** Model kutusundan uzakta bu uzunlukta (ve üstü) kelimeler "uzun" sayılır. */
 const UZAK_KELIME = 4;
+/** Ses efektinde OCR ile aranacak en kısa Latin harf dizisi. */
+const SES_EN_AZ_HARF = 3;
 /** Uzaktaki kümede en az bu kadar uzun kelime (metinde o kadar varsa). */
 const UZAK_EN_AZ_UZUN = 2;
 /** Sayfa genelindeki aramada eşleşen kelimeler arası en çok boşluk (kelime boyu cinsinden). */
@@ -77,6 +79,22 @@ function duzenlemeUzakligi(a, b) {
 export const ocrGerekirMi = (b) => !b.bolge && b.tur !== 'ses';
 
 /**
+ * Latin harfli ses efekti mi ("AAAHH!", "BOOM")? İngilizce OCR yalnızca
+ * bunları okuyabilir; Japonca efektler (ザ, ガシャ) modelin kutusunda kalır.
+ */
+export const latinSesMi = (b) => b.tur === 'ses' && (String(b.orijinal).match(/[A-Za-z]/g) ?? []).length >= SES_EN_AZ_HARF;
+
+/**
+ * Ses efekti için gevşek benzerlik: harfleri uzatılmış, süslü yazıyı OCR
+ * bozuk okuyor (kullanıcının sayfasında "AAAHH!" → "PARHH"). Uzunluklar
+ * yakın ve harflerin en çok %40'ı farklı.
+ */
+export function sesBenzer(a, b) {
+  if (a.length < SES_EN_AZ_HARF || b.length < SES_EN_AZ_HARF || Math.abs(a.length - b.length) > 2) return false;
+  return duzenlemeUzakligi(a, b) <= Math.floor(0.4 * Math.max(a.length, b.length));
+}
+
+/**
  * @param {import('./yz/cozumle.js').Balon[]} balonlar  0-1 oranlı.
  * @param {{kelimeler: import('./yerel/gruplama.js').OcrKelimesi[],
  *   genislik: number, yukseklik: number}} ocr  OCR sonucu (piksel kutular).
@@ -93,7 +111,36 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
     .filter((k) => k.sade.length >= 4 || (k.sade.length >= 2 && k.guven >= EN_AZ_GUVEN));
   const kullanildi = new Set();
 
+  /** Ses efekti: modelin kutusu çevresinde en yakın benzer kelime; yoksa sayfada tek benzer kelime. */
+  const sesOturt = (b) => {
+    const parcalar = String(b.orijinal).split(/\s+/).map(sadelestir).filter((t) => t.length >= SES_EN_AZ_HARF);
+    if (!parcalar.length) return b;
+    const t = { x0: b.x * G, y0: b.y * Y, x1: (b.x + b.g) * G, y1: (b.y + b.h) * Y };
+    const pay = Math.max(t.x1 - t.x0, t.y1 - t.y0, 0.15 * G);
+    const tcx = (t.x0 + t.x1) / 2;
+    const tcy = (t.y0 + t.y1) / 2;
+    const adaylar = hepsi
+      .map((k, i) => ({ k, i, cx: (k.kutu.x0 + k.kutu.x1) / 2, cy: (k.kutu.y0 + k.kutu.y1) / 2 }))
+      .filter(({ k, i }) => !sesKullanildi.has(i) && parcalar.some((p) => sesBenzer(p, k.sade)));
+    const yakin = adaylar
+      .filter(({ cx, cy }) => Math.abs(cx - tcx) <= (t.x1 - t.x0) / 2 + pay && Math.abs(cy - tcy) <= (t.y1 - t.y0) / 2 + pay)
+      .sort((a, c) => Math.hypot(a.cx - tcx, a.cy - tcy) - Math.hypot(c.cx - tcx, c.cy - tcy));
+    const sayfada = adaylar.filter(({ cx, cy }) => !isaretliMi(cx, cy));
+    const secilen = yakin[0] ?? (sayfada.length === 1 ? sayfada[0] : null);
+    if (!secilen) return b;
+    sesKullanildi.add(secilen.i);
+    const { kutu } = secilen.k;
+    const p = 0.15 * (kutu.y1 - kutu.y0);
+    const x0 = Math.max(0, kutu.x0 - p);
+    const y0 = Math.max(0, kutu.y0 - p);
+    const x1 = Math.min(G, kutu.x1 + p);
+    const y1 = Math.min(Y, kutu.y1 + p);
+    return { ...b, x: x0 / G, y: y0 / Y, g: (x1 - x0) / G, h: (y1 - y0) / Y, ocrOturdu: true };
+  };
+  const sesKullanildi = new Set();
+
   return balonlar.map((b) => {
+    if (latinSesMi(b) && !b.ocrOturdu) return sesOturt(b);
     if (!ocrGerekirMi(b)) return b;
     const kelimelerB = String(b.orijinal).split(/\s+/).map(sadelestir).filter((t) => t.length >= 2);
     if (!kelimelerB.length) return b;

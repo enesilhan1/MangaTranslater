@@ -4,7 +4,7 @@
 
 import { Motor, motorKimligi, seciliModel } from './ayarlar.js';
 import { metinSigmaz } from './kutu_oturtma.js';
-import { OCR_SURUMU, ocrGerekirMi, ocrIleOturt } from './ocr_oturtma.js';
+import { OCR_SURUMU, latinSesMi, ocrGerekirMi, ocrIleOturt } from './ocr_oturtma.js';
 import { kayitAnahtari, ozetCikar } from './onbellek.js';
 import { yerelCevirmenKopru } from './yerel/kopru.js';
 import { istemciOlustur } from './yz/istemciler.js';
@@ -65,7 +65,7 @@ export class Cevirici {
     // modelin kutusuna koyabiliyordu; OCR asıl yazıyı bulur.
     const bolgeler = resim.bolgeler ?? [];
     const supheli = (b) => b.bolge > 0 && b.tur !== 'ses' && metinSigmaz(b.orijinal, bolgeler[b.bolge - 1]?.parca);
-    const gerekli = (b) => (ocrGerekirMi(b) || supheli(b)) && !b.ocrOturdu && Number(b.ocrDenendi ?? 0) < OCR_SURUMU;
+    const gerekli = (b) => (ocrGerekirMi(b) || supheli(b) || latinSesMi(b)) && !b.ocrOturdu && Number(b.ocrDenendi ?? 0) < OCR_SURUMU;
     if (a.motor !== Motor.GORSEL || !balonlar.some(gerekli)) return { balonlar, degisti: false };
     let ocr;
     try {

@@ -56,9 +56,10 @@ describe('ocrIleOturt', () => {
     assert.ok(b.x * G > 380, JSON.stringify(b));
   });
 
-  it('numaralı kayıt, ses efekti, yeterince eşleşmeyen metin değişmez', () => {
+  it('numaralı kayıt, Japonca ses efekti, yeterince eşleşmeyen metin değişmez', () => {
     const numarali = balon(400, 690, 560, 725, { orijinal: 'THE TRUTH', bolge: 3 });
-    const ses = balon(400, 690, 560, 725, { orijinal: 'THE TRUTH', tur: 'ses' });
+    // Japonca ses efekti: İngilizce OCR okuyamaz, aranmaz.
+    const ses = balon(400, 690, 560, 725, { orijinal: 'ガシャ', tur: 'ses' });
     const yabanci = balon(400, 690, 560, 725, { orijinal: 'SOMETHING COMPLETELY DIFFERENT HERE NOW' });
     assert.deepEqual(ocrIleOturt([numarali, ses, yabanci], ocr), [numarali, ses, yabanci]);
   });
@@ -104,6 +105,18 @@ describe('ocrIleOturt', () => {
     const isaretli = [{ x0: 80 / G, y0: 430 / Y, x1: 200 / G, y1: 480 / Y }];
     const [c] = ocrIleOturt([tahmin()], { kelimeler: iki, genislik: G, yukseklik: Y }, { isaretli });
     assert.ok(c.ocrOturdu && c.y * Y > 590, JSON.stringify(c));
+  });
+
+  it('Latin harfli ses efekti bozuk okunsa da yazısının yanına taşınır; sayfada iki aday varsa taşınmaz', () => {
+    // Kullanıcının sayfası: "AAAHH!" OCR'de "PARHH"; modelin kutusu 270 px aşağıda.
+    const kelimeler = [k('PARHH', 300, 200, 40), k('FATTO', 100, 600)];
+    const sfx = () => balon(290, 600, 360, 630, { orijinal: 'AAAHH!', tur: 'ses' });
+    const [b] = ocrIleOturt([sfx()], { kelimeler, genislik: G, yukseklik: Y });
+    assert.equal(b.ocrOturdu, true);
+    assert.equal(b.tur, 'ses');
+    assert.ok(b.y * Y < 210, JSON.stringify(b));
+    const iki = [...kelimeler, k('AAHHH', 100, 300)];
+    assert.notEqual(ocrIleOturt([sfx()], { kelimeler: iki, genislik: G, yukseklik: Y })[0].ocrOturdu, true);
   });
 
   it('sayfa genelinde kısa kelimeler de sayılır ama en az iki uzun kelime gerekir', () => {
