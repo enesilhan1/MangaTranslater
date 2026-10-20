@@ -105,4 +105,15 @@ describe('ocrIleOturt', () => {
     const [c] = ocrIleOturt([tahmin()], { kelimeler: iki, genislik: G, yukseklik: Y }, { isaretli });
     assert.ok(c.ocrOturdu && c.y * Y > 590, JSON.stringify(c));
   });
+
+  it('sayfa genelinde: arada bozuk okunmuş satır olsa da metnin satırları bir arada bulunur', () => {
+    // Kullanıcının sayfası: "NON RIESCO A RICOR-DARLO MOLTO BENE, MA..."; "DARLO" satırı "LARLO" okundu.
+    const kelimeler = [
+      k('NON', 430, 390), k('RIESCO', 420, 430), k('LARLO', 420, 470), k('MOLTO', 420, 510), k('BENE,', 425, 550),
+      k('PERCHE', 100, 700),
+    ];
+    const [b] = ocrIleOturt([balon(250, 650, 330, 700, { orijinal: 'NON RIESCO A RICORDARLO MOLTO BENE, MA...' })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.equal(b.ocrOturdu, true);
+    assert.ok(b.x * G > 400 && b.y * Y < 435 && (b.y + b.h) * Y > 565, JSON.stringify(b));
+  });
 });

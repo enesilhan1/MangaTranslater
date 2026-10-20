@@ -24,9 +24,11 @@ const EN_AZ_ESLESME = 0.4;
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
  */
-export const OCR_SURUMU = 2;
+export const OCR_SURUMU = 3;
 /** Model kutusundan uzakta yalnızca bu uzunlukta (ve üstü) kelimeler sayılır. */
 const UZAK_KELIME = 4;
+/** Sayfa genelindeki aramada eşleşen kelimeler arası en çok boşluk (kelime boyu cinsinden). */
+const UZAK_ARALIK = 4;
 
 /** Karşılaştırma için: yalnızca harf ve rakam, büyük harf. */
 export function sadelestir(metin) {
@@ -111,7 +113,7 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
       });
       return liste;
     };
-    const kumeler = (liste) => tumKumeler(liste.map((i) => sozluk[i]), liste).filter((km) => km.length >= gerekli);
+    const kumeler = (liste, aralik) => tumKumeler(liste.map((i) => sozluk[i]), liste, aralik).filter((km) => km.length >= gerekli);
     // Eşleşen kelimelerin en kalabalık yakın kümesi (aynı metnin satırları).
     let kume = kumeler(eslesmeAra((cx, cy) => cx >= alan.x0 && cx <= alan.x1 && cy >= alan.y0 && cy <= alan.y1))[0];
     // Yakında yoksa bütün sayfada, yalnızca tek ve uzun kelimelerle kesin
@@ -119,7 +121,9 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
     // (kullanıcının sayfasında "È ALICE!" kutusu üstteki balonun "...ALICE?!"
     // satırındaydı; asıl yazı panelin altındaydı).
     if (!kume) {
-      const sayfada = kumeler(eslesmeAra((cx, cy) => !isaretliMi(cx, cy), true));
+      // Aralık geniş: aradaki satırlar bozuk okunup eşleşmese de ("RICOR-
+      // DARLO" → "LARLO") aynı metnin satırları bir arada kalsın.
+      const sayfada = kumeler(eslesmeAra((cx, cy) => !isaretliMi(cx, cy), true), UZAK_ARALIK);
       if (sayfada.length === 1) kume = sayfada[0];
     }
     if (!kume) return b;
@@ -180,9 +184,10 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
 
 /**
  * Kelimeleri yakınlığa göre kümeler (aralarındaki boşluk iki kelime boyunu
- * geçmeyenler aynı kümede); kümelerin sıra numaraları, kalabalıktan aza.
+ * geçmeyenler aynı kümede; [aralik] kelime boyu cinsinden); kümelerin sıra
+ * numaraları, kalabalıktan aza.
  */
-function tumKumeler(kelimeler, numaralar) {
+function tumKumeler(kelimeler, numaralar, aralik = 2) {
   if (!kelimeler.length) return [];
   const ata = kelimeler.map((_, i) => i);
   const bul = (i) => (ata[i] === i ? i : (ata[i] = bul(ata[i])));
@@ -190,7 +195,7 @@ function tumKumeler(kelimeler, numaralar) {
     for (let j = i + 1; j < kelimeler.length; j++) {
       const a = kelimeler[i].kutu;
       const c = kelimeler[j].kutu;
-      const boy = 2 * Math.max(a.y1 - a.y0, c.y1 - c.y0);
+      const boy = aralik * Math.max(a.y1 - a.y0, c.y1 - c.y0);
       if (a.x0 - boy <= c.x1 && c.x0 - boy <= a.x1 && a.y0 - boy <= c.y1 && c.y0 - boy <= a.y1) ata[bul(i)] = bul(j);
     }
   }
