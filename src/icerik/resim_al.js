@@ -10,6 +10,12 @@ import { arkaPlanaGonder } from './mesaj.js';
 const JPEG_KALITESI = 0.85;
 /** Kesim yeri aramak için resmin küçültüldüğü genişlik (hız için). */
 const ANALIZ_GENISLIGI = 64;
+/**
+ * Kutu oturtma (src/kutu_oturtma.js) için dilimin gri tonlu kopyasının
+ * genişliği: balon çizgileri ve harfler seçilecek kadar ayrıntılı, flood
+ * fill hızlı kalacak kadar küçük.
+ */
+const OTURTMA_GENISLIGI = 500;
 
 /**
  * Resmin baytları. blob:/data: ve aynı kökenli adresler doğrudan okunur
@@ -42,9 +48,9 @@ export async function resimBaytlari(img) {
 
 /**
  * @typedef {{veri: string, tur: string, genislik: number, yukseklik: number,
- *   y0: number, y1: number}} Dilim
+ *   y0: number, y1: number, gri: import('../kutu_oturtma.js').GriResim}} Dilim
  *   Base64 JPEG + gönderilen resmin piksel boyutu + dilimin özgün resimdeki
- *   dikey aralığı (piksel).
+ *   dikey aralığı (piksel) + kutu oturtma için gri kopya (gönderilmez).
  */
 
 /**
@@ -74,12 +80,35 @@ export async function dilimlereAyir(blob) {
       ctx.fillRect(0, 0, g, h);
       ctx.drawImage(bitmap, 0, d.y0, genislik, d.y1 - d.y0, 0, 0, g, h);
       const jpeg = await tuval.convertToBlob({ type: 'image/jpeg', quality: JPEG_KALITESI });
-      sonuc.push({ veri: bayttanBase64(await jpeg.arrayBuffer()), tur: 'image/jpeg', genislik: g, yukseklik: h, y0: d.y0, y1: d.y1 });
+      sonuc.push({
+        veri: bayttanBase64(await jpeg.arrayBuffer()),
+        tur: 'image/jpeg',
+        genislik: g,
+        yukseklik: h,
+        y0: d.y0,
+        y1: d.y1,
+        gri: griKopya(tuval),
+      });
     }
     return { dilimler: sonuc, genislik, yukseklik };
   } finally {
     bitmap.close();
   }
+}
+
+/** Tuvalin OTURTMA_GENISLIGI'ne küçültülmüş gri tonlu kopyası. */
+function griKopya(kaynak) {
+  const g = Math.min(OTURTMA_GENISLIGI, kaynak.width);
+  const h = Math.max(1, Math.round((kaynak.height * g) / kaynak.width));
+  const tuval = new OffscreenCanvas(g, h);
+  const ctx = tuval.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(kaynak, 0, 0, g, h);
+  const { data } = ctx.getImageData(0, 0, g, h);
+  const gri = new Uint8Array(g * h);
+  for (let i = 0, j = 0; j < gri.length; i += 4, j++) {
+    gri[j] = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
+  }
+  return { gri, genislik: g, yukseklik: h };
 }
 
 /** Uzun resmi dar bir tuvale çizip her satırın tek düzelik skorunu çıkarır. */

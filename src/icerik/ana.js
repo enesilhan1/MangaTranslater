@@ -11,6 +11,7 @@
 
 import { ayarlariTamamla } from '../ayarlar.js';
 import { dilimBalonlariniYerlestir } from '../dilimleme.js';
+import { kutulariOturt } from '../kutu_oturtma.js';
 import { Kuyruk, Oncelik } from '../kuyruk.js';
 import { tarayici } from '../tarayici.js';
 import { hatayiPaketle } from '../yz/ortak.js';
@@ -189,7 +190,9 @@ class Cevirmen {
             oncelik: kayit.oncelik,
             resim: { veri: d.veri, tur: d.tur, genislik: d.genislik, yukseklik: d.yukseklik },
           });
-          guncelle({ balonlar: [...durum.balonlar, ...dilimBalonlariniYerlestir(d, yukseklik, balonlar)] });
+          // Modelin kutuları resimdeki balonlara oturtulur (önbellekteki sonuç da).
+          const oturmus = kutulariOturt(d.gri, balonlar);
+          guncelle({ balonlar: [...durum.balonlar, ...dilimBalonlariniYerlestir(d, yukseklik, oturmus)] });
         }),
       );
       guncelle({ durum: 'tamam' });
