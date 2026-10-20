@@ -65,4 +65,18 @@ describe('yerelCevirmenKopru (Firefox, doğrudan)', () => {
     await k.cevir(ISTEK);
     assert.equal(kurulum, 1);
   });
+
+  it('yalnızca OCR: Firefox yolunda doğrudan, Chrome yolunda işlem: ocr mesajıyla', async () => {
+    const k = yerelCevirmenKopru({ api: { runtime: {} }, dogrudanOcr: async (r) => ({ kelimeler: [], genislik: r.n }) });
+    assert.deepEqual(await k.kelimeleriOku({ n: 5 }), { kelimeler: [], genislik: 5 });
+  });
+});
+
+describe('yerelCevirmenKopru OCR (Chrome)', () => {
+  it('offscreen belgeye islem: ocr ile gider', async () => {
+    const api = sahteChrome({ sonuc: { kelimeler: [1] } });
+    const s = await yerelCevirmenKopru({ api }).kelimeleriOku(ISTEK.resim);
+    assert.deepEqual(s, { kelimeler: [1] });
+    assert.deepEqual(api.mesajlar[0], { hedef: OFFSCREEN_HEDEFI, islem: 'ocr', resim: ISTEK.resim });
+  });
 });

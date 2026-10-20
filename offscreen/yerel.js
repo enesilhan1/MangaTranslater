@@ -1,7 +1,7 @@
 // Arka plandan gelen yerel çeviri isteklerini karşılar (src/yerel/kopru.js).
 
 import { tarayici } from '../src/tarayici.js';
-import { yerelCevirmenOlustur } from '../src/yerel/calistir.js';
+import { kelimeleriOku, yerelCevirmenOlustur } from '../src/yerel/calistir.js';
 import { OFFSCREEN_HEDEFI } from '../src/yerel/kopru.js';
 import { hatayiPaketle } from '../src/yz/ortak.js';
 
@@ -11,6 +11,12 @@ let motorEpostasi = null;
 
 tarayici.runtime.onMessage.addListener((mesaj, _gonderen, yanitla) => {
   if (mesaj?.hedef !== OFFSCREEN_HEDEFI) return false;
+  if (mesaj.islem === 'ocr') {
+    kelimeleriOku(mesaj.resim)
+      .then((sonuc) => yanitla({ sonuc }))
+      .catch((e) => yanitla({ hata: hatayiPaketle(e) }));
+    return true;
+  }
   if (!motor || motorEpostasi !== mesaj.eposta) {
     motor = yerelCevirmenOlustur({ eposta: mesaj.eposta });
     motorEpostasi = mesaj.eposta;

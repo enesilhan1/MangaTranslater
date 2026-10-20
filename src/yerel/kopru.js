@@ -4,6 +4,8 @@
 // - Firefox: offscreen API yok ama arka plan zaten DOM'lu bir sayfa;
 //   motor doğrudan çalıştırılır.
 // İki durumda da dışarıya görsel istemcilerle aynı cevir() arayüzü sunulur.
+// Ayrıca yalnızca OCR (kelimeleriOku): görsel YZ'nin balonsuz metinlerini
+// harflerin yerine oturtmak için (src/ocr_oturtma.js).
 
 import { tarayici } from '../tarayici.js';
 import { YzHatasi } from '../yz/ortak.js';
@@ -32,15 +34,23 @@ async function offscreenHazirla(api) {
 
 /**
  * @param {{api?: any, eposta?: string,
- *   dogrudanOlustur?: (p: {eposta: string}) => Promise<{cevir: Function}>}} [p]
- *   [dogrudanOlustur] Firefox yolunda motoru kurar (testlerde sahtesi).
+ *   dogrudanOlustur?: (p: {eposta: string}) => Promise<{cevir: Function}>,
+ *   dogrudanOcr?: (resim: object) => Promise<object>}} [p]
+ *   [dogrudanOlustur]/[dogrudanOcr] Firefox yolunda motoru/OCR'yi kurar (testlerde sahtesi).
  */
-export function yerelCevirmenKopru({ api = tarayici, eposta = '', dogrudanOlustur } = {}) {
+export function yerelCevirmenKopru({ api = tarayici, eposta = '', dogrudanOlustur, dogrudanOcr } = {}) {
   if (api.offscreen?.createDocument) {
     return {
       async cevir({ resim, hedefDil }) {
         await offscreenHazirla(api);
         const yanit = await api.runtime.sendMessage({ hedef: OFFSCREEN_HEDEFI, resim, hedefDil, eposta });
+        if (!yanit) throw new YzHatasi('hata.beklenmeyen', { mesaj: 'offscreen yanıt vermedi' });
+        if (yanit.hata) throw new YzHatasi(yanit.hata.anahtar, yanit.hata.parametreler);
+        return yanit.sonuc;
+      },
+      async kelimeleriOku(resim) {
+        await offscreenHazirla(api);
+        const yanit = await api.runtime.sendMessage({ hedef: OFFSCREEN_HEDEFI, islem: 'ocr', resim });
         if (!yanit) throw new YzHatasi('hata.beklenmeyen', { mesaj: 'offscreen yanıt vermedi' });
         if (yanit.hata) throw new YzHatasi(yanit.hata.anahtar, yanit.hata.parametreler);
         return yanit.sonuc;
@@ -51,11 +61,13 @@ export function yerelCevirmenKopru({ api = tarayici, eposta = '', dogrudanOlustu
   // Firefox: Tesseract yalnızca yerel motor ilk kez kullanılınca yüklenir.
   const olustur =
     dogrudanOlustur ?? (async (p) => (await import('./calistir.js')).yerelCevirmenOlustur(p));
+  const ocr = dogrudanOcr ?? (async (resim) => (await import('./calistir.js')).kelimeleriOku(resim));
   let motor = null;
   return {
     async cevir(istek) {
       motor ??= olustur({ eposta });
       return (await motor).cevir(istek);
     },
+    kelimeleriOku: (resim) => ocr(resim),
   };
 }

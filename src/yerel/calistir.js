@@ -13,3 +13,6 @@ const chrome = new ChromeCevirmeni();
 export function yerelCevirmenOlustur({ eposta = '' } = {}) {
   return new YerelCevirmen({ ocr: kelimeleriOku, chrome, myMemory: new MyMemoryCevirmeni({ eposta }) });
 }
+
+// Yalnızca OCR (görsel YZ'nin balonsuz metinlerini oturtmak için).
+export { kelimeleriOku };
