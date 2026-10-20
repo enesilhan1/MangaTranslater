@@ -150,6 +150,53 @@ describe('Cevirici: balonsuz metinlerde OCR', () => {
   });
 });
 
+describe('Cevirici: model balonların çoğunu atladı', () => {
+  const bolgeler = (n) => Array.from({ length: n }, (_, i) => ({ no: i + 1, kutu: [0, 0, 10, 10] }));
+  const kayit = (bolge) => ({ x: 0.1, y: 0.1, g: 0.1, h: 0.1, tur: 'balon', bolge, orijinal: 'A', ceviri: 'B' + bolge });
+  function kur(yanitlar) {
+    const cagri = [];
+    const c = new Cevirici({
+      ayarDeposu: new AyarDeposu(sahteAlan({ ayarlar: { anahtarlar: { gemini: 'k' } } })),
+      onbellek: bellekOnbellek(),
+      kuyruk: new Kuyruk(),
+      gorselOlustur: () => ({ cevir: async () => ({ balonlar: yanitlar[Math.min(cagri.push(1), yanitlar.length) - 1] }) }),
+    });
+    return { c, cagri };
+  }
+
+  it('7 işaretten 1 metin: bir kez daha sorulur, daha çok kapsayan yanıt kalır, önbellekten tekrar sorulmaz', async () => {
+    const t = kur([[kayit(1)], [1, 2, 3, 4, 5, 6, 7].map(kayit)]);
+    const resim = { ...RESIM, bolgeler: bolgeler(7) };
+    const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim });
+    assert.equal(t.cagri.length, 2);
+    assert.equal(s.balonlar.length, 7);
+    assert.equal(s.tani.yenidenSoruldu, true);
+    await t.c.dilimCevir({ id: 'b', oncelik: 1, resim });
+    assert.equal(t.cagri.length, 2);
+  });
+
+  it('ikinci yanıt da eksikse kaydedilir ve bir daha sorulmaz; az işaretli dilimde yeniden sorulmaz', async () => {
+    const t = kur([[kayit(1)]]);
+    const resim = { ...RESIM, bolgeler: bolgeler(7) };
+    await t.c.dilimCevir({ id: 'a', oncelik: 1, resim });
+    await t.c.dilimCevir({ id: 'b', oncelik: 1, resim });
+    assert.equal(t.cagri.length, 2);
+    const az = kur([[kayit(1)]]);
+    await az.c.dilimCevir({ id: 'a', oncelik: 1, resim: { ...RESIM, bolgeler: bolgeler(2) } });
+    assert.equal(az.cagri.length, 1);
+  });
+
+  it('kurala önceki sürümden kalan eksik önbellek kaydı bir kez daha sorulur', async () => {
+    const t = kur([[1, 2, 3, 4, 5].map(kayit)]);
+    const resim = { ...RESIM, bolgeler: bolgeler(5) };
+    const ozet = await ozetCikar(RESIM.veri);
+    await t.c.onbellek.koy(kayitAnahtari(ozet, 'gorsel:gemini:gemini-3.8-flash', 'tr'), [kayit(1)]);
+    const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim });
+    assert.equal(t.cagri.length, 1);
+    assert.equal(s.balonlar.length, 5);
+  });
+});
+
 describe('Cevirici: boş sonuç', () => {
   it('yazısız sonuç önbelleğe yazılmaz; eski boş kayıt yok sayılır, model yeniden sorulur', async () => {
     const cagri = [];

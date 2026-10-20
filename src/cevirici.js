@@ -10,6 +10,20 @@ import { istemciOlustur } from './yz/istemciler.js';
 import { saglayiciBul } from './yz/katalog.js';
 import { YzHatasi } from './yz/ortak.js';
 
+/**
+ * İşaretli balonların bu oranından azına metin döndüyse model sayfanın
+ * çoğunu atlamış sayılır ve bir kez daha sorulur (kullanıcının sayfasında 7
+ * işaretli balondan yalnızca 1'inin metni gelmişti).
+ */
+const EN_AZ_KAPSAMA = 0.5;
+/** Bu kadar işaretten az olan dilimde yeniden sorulmaz (az sayıda balonda oran yanıltıcı). */
+const KAPSAMA_ICIN_EN_AZ_ISARET = 3;
+
+/** Sonuçta metin verilmiş farklı işaret numarası sayısı. */
+function kapsananIsaret(balonlar) {
+  return new Set(balonlar.map((b) => b.bolge).filter((n) => n > 0)).size;
+}
+
 /** Aynı anda en çok kaç istek: görsel YZ'de birkaç, yerel OCR'de tek işçi. */
 export const ES_ZAMAN = Object.freeze({ [Motor.GORSEL]: 3, [Motor.YEREL]: 1 });
 
@@ -89,8 +103,14 @@ export class Cevirici {
     const a = await this.ayarDeposu.oku();
     const anahtar = kayitAnahtari(await ozetCikar(resim.veri), motorKimligi(a), a.hedefDil);
     const kayitli = await this.onbellek.al(anahtar);
+    const isaretSayisi = resim.bolgeler?.length ?? 0;
+    const eksikMi = (liste) =>
+      a.motor === Motor.GORSEL && isaretSayisi >= KAPSAMA_ICIN_EN_AZ_ISARET &&
+      kapsananIsaret(liste) < EN_AZ_KAPSAMA * isaretSayisi;
     // Eski sürümlerin yazdığı boş kayıt da yok sayılır (bkz. aşağıdaki kural).
-    if (kayitli?.length) {
+    // Balonların çoğunu atlamış eski bir kayıt da (yeniden sorma kuralından
+    // önce yazılmış) bir kez daha sorulur.
+    if (kayitli?.length && !(eksikMi(kayitli) && !kayitli.some((b) => b.kapsamaDenendi))) {
       // OCR düzeltmesinden önceki sürümlerin kaydı: bir kez düzeltilip
       // önbellek güncellenir (yoksa o sayfa eski kutularla kalıyordu).
       const { balonlar, degisti } = await this.ocrIleDuzelt(a, kayitli, resim);
@@ -100,13 +120,26 @@ export class Cevirici {
 
     const motor = this.motor(a);
     this.kuyruk.esZaman = ES_ZAMAN[a.motor];
-    const ham = await this.kuyruk.ekle(id, oncelik, (sinyal) =>
-      motor.cevir({ resim, hedefDil: a.hedefDil, sinyal }),
-    );
-    const { balonlar } = await this.ocrIleDuzelt(a, ham.balonlar, resim);
+    const ham = await this.kuyruk.ekle(id, oncelik, async (sinyal) => {
+      const ilk = await motor.cevir({ resim, hedefDil: a.hedefDil, sinyal });
+      if (!eksikMi(ilk.balonlar)) return ilk;
+      // Model işaretli balonların çoğunu atladı: bir kez daha sorulur, daha
+      // çok balonu kapsayan yanıt kalır. İkinci deneme hata verirse ilki.
+      const ikinci = await motor.cevir({ resim, hedefDil: a.hedefDil, sinyal }).catch((e) => {
+        if (sinyal?.aborted) throw e;
+        return null;
+      });
+      const secilen = ikinci && kapsananIsaret(ikinci.balonlar) > kapsananIsaret(ilk.balonlar) ? ikinci : ilk;
+      return { ...secilen, yenidenSoruldu: true };
+    });
+    const { balonlar: duzelmis } = await this.ocrIleDuzelt(a, ham.balonlar, resim);
+    // Yeniden sorulduysa (yine eksik olsa da) bir daha sorulmasın.
+    const balonlar = ham.yenidenSoruldu ? duzelmis.map((b) => ({ ...b, kapsamaDenendi: true })) : duzelmis;
     // Önbelleğe yazılamasa da çeviri gösterilsin. Boş sonuç yazılmaz: model
     // bir kez yanılıp "yazı yok" derse sayfa sonsuza kadar boş kalmasın.
     if (balonlar.length) await this.onbellek.koy(anahtar, balonlar).catch(() => {});
-    return { balonlar, onbellekten: false };
+    // Konsol izi için: modelin döndürdüğü/atılan kayıt sayısı, yeniden soruldu mu.
+    const tani = { ...(ham.istatistik ?? {}), ...(ham.yenidenSoruldu ? { yenidenSoruldu: true } : {}) };
+    return { balonlar, onbellekten: false, ...(Object.keys(tani).length ? { tani } : {}) };
   }
 }

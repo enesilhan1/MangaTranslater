@@ -219,7 +219,7 @@ class Cevirmen {
       // Dilimler aynı anda kuyruğa girer; her biri geldikçe gösterilir.
       await Promise.all(
         dilimler.map(async (d, i) => {
-          const { balonlar, onbellekten: ob } = await arkaPlanaGonder({
+          const { balonlar, onbellekten: ob, tani } = await arkaPlanaGonder({
             tip: 'cevir',
             resimKimligi: kayit.kimlik,
             dilim: i,
@@ -230,7 +230,8 @@ class Cevirmen {
           // Boş kalan balonun sebebi konsoldan anlaşılsın: model metni hiç mi
           // döndürmedi, yoksa hangi numarayı verdi.
           iz(kayit.kimlik, `dilim ${i}:`, `${d.bulunanlar?.length ?? 0} işaret,`,
-            `modelden ${balonlar.length} metin`, `(numaralar: ${balonlar.map((b) => b.bolge || '-').join(',')})`);
+            `modelden ${balonlar.length} metin`, `(numaralar: ${balonlar.map((b) => b.bolge || '-').join(',')})`,
+            tani?.atlanan ? `${tani.atlanan} kayıt kullanılamadı` : '', tani?.yenidenSoruldu ? 'model yeniden soruldu' : '');
           // Numaralı metinler bulunan balonlara, numarasızlar en yakın balona
           // oturtulur (önbellekteki sonuç da: numaralar aynı resimde aynı).
           const oturmus = kutulariOturt(d.gri, balonlar, d.bulunanlar);
