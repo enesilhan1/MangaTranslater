@@ -108,8 +108,9 @@ Bir sayfa çevrilmediyse ya da çeviri yanlış yere düştüyse:
 - Görsel yapay zekâda yazıların yerini model tahmin eder; balonsuz yazılarda
   bu tahmin kayabilir (OCR çoğunu düzeltir). Claude'da yer tahmini Gemini'ye
   göre daha zayıf olabilir; çeviri kalitesi için Haiku yerine Sonnet önerilir.
-- Ses efekti etiketleri modelin verdiği yerde durur; bazen yanlış panele
-  düşebilir.
+- Japonca/Korece karakterli ses efektlerinin (ザ, ドン) etiketi modelin
+  verdiği yerde durur; bazen yanlış panele düşebilir. Latin harfli efektler
+  ("AAAHH!") OCR ile yazısının yanına taşınır.
 - Birbirine değen iki balon tek bir çeviriyle gösterilebilir.
 - Model iki metne aynı balon numarasını verip yerlerini de karıştırırsa
   yanlış metin balonda kalabilir.

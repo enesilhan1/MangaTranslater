@@ -272,3 +272,10 @@ kelime şartı korunuyor. Kullanıcının sayfasındaki "...HO UNA COSA DI CUI
 VI DEVO PARLARE." böylece yerine oturuyor. Aynı sayfada el yazısı gibi
 "Scusa..." OCR'de "Gcuso." okunduğu için düzeltilemiyor; ses efekti
 etiketleri ("AAAHH!") hâlâ modelin verdiği yerde duruyor.
+
+## Sürüm 1.7.13 (2026-10-20)
+Ses efekti etiketleri modelin verdiği yerde duruyordu. Kullanıcının
+sayfasında "AAAHH!" etiketi yazının 270 px altında, başka bir panelde
+çıkıyordu. Latin harfli efektler artık OCR'de gevşek benzerlikle aranıyor
+("AAAHH!" → "PARHH") ve etiket yazının yanına taşınıyor. Japonca
+efektlerde OCR çalışmıyor; onlar modelin kutusunda kalıyor.

@@ -111,7 +111,9 @@ listesi).
   konmaz.
 - **Ses efektleri** çizimi kapatmamak için beyaz kutuyla değil, efektin
   köşesinde küçük, yarı saydam bir etiketle gösterilir (2026-10-20,
-  kullanıcının Claude denemesinden sonra).
+  kullanıcının Claude denemesinden sonra). Latin harfli efektin yeri OCR ile
+  bulunur (gevşek benzerlik; yakında ya da sayfada tek aday); Japonca
+  efektler modelin kutusunda kalır.
 - Bir **klavye kısayolu** ile orijinal ↔ çeviri arasında geçiş yapılır.
 - Çevrilmekte olan resimde küçük bir "çevriliyor" göstergesi, hata olursa
   küçük bir hata işareti (üstüne gelince sebebi) çıkar.
