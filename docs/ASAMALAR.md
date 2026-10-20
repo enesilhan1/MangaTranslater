@@ -252,3 +252,15 @@ kutusu göze yakın düştüğü için 1.7.9'daki "hiç değmiyor" şartı
 sağlanmıyordu. Artık metin sığmayacağı küçük bir alana hiçbir yoldan
 konmuyor: numarayla, en yakın bölgeyle ya da sahipsiz balon eşleştirmesiyle
 olmaz.
+
+## Sürüm 1.7.11 (2026-10-20)
+İki çizim üstü yazı (siyah çerçeveli beyaz harfler) çevrilmeden kaldı;
+çevirileri modelin kayık kutusunda duruyordu. Gerçek sayfalar MangaDex'ten
+indirildi ve OCR ilk kez gerçek Chrome'un offscreen belgesinde denendi.
+
+- OCR öncesi piksel sınırı 4'ten 6 MP'ye çıktı. 975x1400 sayfa 1,71 yerine
+  2 kat büyütülüyor ve bu yazılar artık okunuyor ("NON POSS0O SPRECARE
+  QUEST", "FORSE … FOSS … MORTO"). Süre sayfa başına ~1 sn arttı.
+- Sığmayacağı küçük bir alanın numarasını alan metin (kedinin gözü) de
+  OCR'de aranıyor; bulunursa asıl yazısına taşınıyor.
+- Önbellekteki sayfalar bir kez daha OCR'den geçiyor.
