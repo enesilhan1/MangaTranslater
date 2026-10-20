@@ -191,3 +191,11 @@ Kullanıcının İtalyanca sayfasında büyük bir balon ("CIÒ SIGNIFICA...")
   yerleşiyor.
 - Saçtaki 1-3 piksellik lekeler balonun yazı kutusunu yüze kadar
   uzatıyordu. Metnin yanındaki leke blokları artık yazı sayılmıyor.
+
+## Sürüm 1.7.4 (2026-10-20)
+Kullanıcının sayfasında iki çeviri katmanı vardı. Eklenti yeniden
+yüklenince eski içerik betiği duruyor ama katmanını bırakıyordu; yeni
+betik de ikinci bir katman açıyordu. Eski sürümün yerleştirmeleri ekranda
+kaldığı için bazı düzeltmeler hiç görünmemiş olabilir. Artık sahipsiz
+kalan betik çevirilerini kaldırıyor, yeni betik de eski katmanları
+siliyor. Gerçek Chrome'da denendi.
