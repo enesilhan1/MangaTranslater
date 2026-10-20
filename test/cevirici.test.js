@@ -88,6 +88,22 @@ describe('Cevirici', () => {
   });
 });
 
+describe('Cevirici: boş sonuç', () => {
+  it('yazısız sonuç önbelleğe yazılmaz; eski boş kayıt yok sayılır, model yeniden sorulur', async () => {
+    const cagri = [];
+    const onbellek = bellekOnbellek();
+    const c = new Cevirici({
+      ayarDeposu: new AyarDeposu(sahteAlan({ ayarlar: { anahtarlar: { gemini: 'k' } } })),
+      onbellek,
+      kuyruk: new Kuyruk(),
+      gorselOlustur: () => ({ cevir: async () => (cagri.push(1), { balonlar: [] }) }),
+    });
+    await c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    await c.dilimCevir({ id: 'b', oncelik: 1, resim: RESIM });
+    assert.equal(cagri.length, 2, 'boş sonuç önbellekten gelmemeli');
+  });
+});
+
 describe('base64', () => {
   it('büyük bayt dizisini gidiş-dönüş bozmadan çevirir', () => {
     const b = new Uint8Array(100_000).map((_, i) => (i * 7) % 256);

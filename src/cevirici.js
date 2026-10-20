@@ -55,15 +55,17 @@ export class Cevirici {
     const a = await this.ayarDeposu.oku();
     const anahtar = kayitAnahtari(await ozetCikar(resim.veri), motorKimligi(a), a.hedefDil);
     const kayitli = await this.onbellek.al(anahtar);
-    if (kayitli) return { balonlar: kayitli, onbellekten: true };
+    // Eski sürümlerin yazdığı boş kayıt da yok sayılır (bkz. aşağıdaki kural).
+    if (kayitli?.length) return { balonlar: kayitli, onbellekten: true };
 
     const motor = this.motor(a);
     this.kuyruk.esZaman = ES_ZAMAN[a.motor];
     const { balonlar } = await this.kuyruk.ekle(id, oncelik, (sinyal) =>
       motor.cevir({ resim, hedefDil: a.hedefDil, sinyal }),
     );
-    // Önbelleğe yazılamasa da çeviri gösterilsin.
-    await this.onbellek.koy(anahtar, balonlar).catch(() => {});
+    // Önbelleğe yazılamasa da çeviri gösterilsin. Boş sonuç yazılmaz: model
+    // bir kez yanılıp "yazı yok" derse sayfa sonsuza kadar boş kalmasın.
+    if (balonlar.length) await this.onbellek.koy(anahtar, balonlar).catch(() => {});
     return { balonlar, onbellekten: false };
   }
 }
