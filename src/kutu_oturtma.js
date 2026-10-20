@@ -58,6 +58,15 @@ const SAHIPSIZ_BIRLESME_UZAKLIK = 0.15;
  * ölçtüğüm gerçek balonlarda oran 0,5-0,9 (düşük çözünürlükte harfler birleşiyor).
  */
 const NUMARA_PARCA_ORANI = 0.35;
+/** Bundan az parça: metin o balona kesinlikle sığmaz (modelin kutusu nerede olursa olsun). */
+const NUMARA_KESIN_ORAN = 0.2;
+/**
+ * Numarasız metin (OCR ile, en yakın bölgeye ya da sahipsiz balona) harf
+ * parçası metnin harflerinin bu oranından az olan bölgeye oturtulmaz. Gerçek
+ * balonlarda oran 0,5-0,9; kullanıcının sayfasında kedinin gözü 4 parça,
+ * yanındaki 12 harflik yazı (0,33) %30 sınırını geçip göze gidebiliyordu.
+ */
+const SIGMA_ORANI = 0.4;
 
 /** Bir sayfada işaretlenecek en çok balon (fazlası çoğunlukla yanlış bulgu). */
 export const AZAMI_BALON = 40;
@@ -278,7 +287,7 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
       bulunanlar.forEach((bb, n) => {
         if (atanan.has(n + 1) || ocrAlinan.has(n + 1)) return;
         const parca = bb.parca ?? harf;
-        if (harf && (parca < 0.3 * harf || parca > 2.5 * harf)) return;
+        if (harf && (parca < SIGMA_ORANI * harf || parca > 2.5 * harf)) return;
         const ortak = kesisimAlani(t, bb.kutu) / Math.min(alan(t), alan(bb.kutu));
         if (ortak >= 0.2 && ortak > enIyi) [enIyi, secilenNo] = [ortak, n + 1];
       });
@@ -296,7 +305,8 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
     }
     const tahmin = tahminKutusu(b);
     const doluKutular = sonuc.filter((x) => x?.oturdu).map((x) => tahminKutusu(x));
-    const secilen = enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, () => ++sonEtiket, doluKutular);
+    const harf = String(b.orijinal).replace(/[^\p{L}\p{N}]/gu, '').length;
+    const secilen = enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, () => ++sonEtiket, doluKutular, harf);
     if (secilen) {
       if (secilen.tekBlok) kullanilan.add(secilen.no);
       sonuc[i] = { ...b, ...oran(secilen.yazi), balon: { ...oran(secilen.kutu), elips: secilen.elips }, oturdu: true, bolge: 0 };
@@ -332,7 +342,7 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
       const harf = String(y.x.orijinal).replace(/[^\p{L}\p{N}]/gu, '').length;
       for (const sb of sahipsiz) {
         const parca = sb.bb.parca ?? harf;
-        if (harf && (parca < 0.3 * harf || parca > 2.5 * harf)) continue;
+        if (harf && (parca < SIGMA_ORANI * harf || parca > 2.5 * harf)) continue;
         const m = uzaklik(y.x, sb.bb);
         // Bir balonun devamı olabilecek metin için yalnızca yakındaki balon.
         if (m <= (birlesecek.has(y.i) ? SAHIPSIZ_BIRLESME_UZAKLIK * Math.hypot(G, Y) : esik)) ciftler.push({ y, sb, m });
@@ -370,29 +380,36 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
 }
 
 /**
- * Modelin verdiği numara açıkça yanlış mı: metin o balona sığmayacak kadar
- * uzun (balondaki harf parçası metnin harflerinin NUMARA_PARCA_ORANI'ndan
- * az) VE modelin kutusu balondan uzakta (balonun her yandan yarım boyu
- * kadar genişletilmiş kutusuna hiç değmiyor). Kullanıcının sayfasında
- * kedinin gözü balon sanılıp numaralandı; model yanındaki çizim üstü
- * "FORSE PENSAVANO FOSSI MORTO..." yazısına o numarayı verdi, çeviri göze
- * sıkıştı. Yalnızca biri tek başına yetmez: modelin kutusu sık sık
- * kayıyor, düşük çözünürlükte harfler de birleşip az parça sayılıyor.
+ * Modelin verdiği numara açıkça yanlış mı? Metin o balona sığmayacak kadar
+ * uzunsa (balondaki harf parçası metnin harflerinin NUMARA_PARCA_ORANI'ndan
+ * az) ve modelin kutusunun merkezi balonun dışındaysa; ya da metin çok
+ * uzunsa (NUMARA_KESIN_ORAN'dan az parça) kutuya bakılmadan. Kullanıcının
+ * sayfasında kedinin gözü (4 parça) balon sanılıp numaralandı; model yanındaki
+ * çizim üstü "FORSE PENSAVANO FOSSI MORTO..." yazısına (24 harf) o numarayı
+ * verdi, çeviri göze sıkıştı. 1.7.9'da kutunun balona hiç değmemesi
+ * şartı aranıyordu; Claude'un kutusu göze yakın düştüğü için kural
+ * çalışmadı. Ölçülen gerçek balonlarda oran 0,5-0,9 (düşük çözünürlükte
+ * harfler birleşip az parça sayılıyor), modelin kutusu da sık kayıyor.
  */
 function numarayaGuvenilmez(b, bulunan, tahmin) {
   const harf = String(b.orijinal).replace(/[^\p{L}\p{N}]/gu, '').length;
-  if (!harf || (bulunan.parca ?? harf) >= NUMARA_PARCA_ORANI * harf) return false;
+  const parca = bulunan.parca ?? harf;
+  if (!harf || parca >= NUMARA_PARCA_ORANI * harf) return false;
+  if (parca < NUMARA_KESIN_ORAN * harf) return true;
   const k = bulunan.kutu;
-  const yg = (k.x1 - k.x0) / 2;
-  const yh = (k.y1 - k.y0) / 2;
-  return kesisimAlani(tahmin, { x0: k.x0 - yg, y0: k.y0 - yh, x1: k.x1 + yg, y1: k.y1 + yh }) === 0;
+  const cx = (tahmin.x0 + tahmin.x1) / 2;
+  const cy = (tahmin.y0 + tahmin.y1) / 2;
+  return cx < k.x0 || cx > k.x1 || cy < k.y0 || cy > k.y1;
 }
 
 /**
  * Tahmini kutunun çevresindeki geçerli balonlardan tahminle en çok
- * örtüşen ve henüz kullanılmamış olanı.
+ * örtüşen ve henüz kullanılmamış olanı. [harf] verilirse içindeki harf
+ * parçası metne göre çok az olan bölge atlanır (uzun yazı küçük bir beyaz
+ * alana, ör. bir gözün içine sıkışmasın).
  */
-function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket, doluKutular = []) {
+function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket, doluKutular = [], harf = 0) {
+  const sigar = (parca) => !harf || parca == null || parca >= SIGMA_ORANI * harf;
   const { genislik: G, yukseklik: Y } = resim;
   const tg = tahmin.x1 - tahmin.x0 + 1;
   const th = tahmin.y1 - tahmin.y0 + 1;
@@ -427,8 +444,10 @@ function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket, dol
       // Çok bloklu bölgede dolu olmayan bloklar ayrı ayrı aday; tek bloklu
       // bölge başka kayda verildiyse atlanır.
       const adaylar = bulgu.bloklar
-        ? bulgu.bloklar.filter((b) => !doluKutular.some((k) => kesisimAlani(k, b.kutu) > 0)).map((b) => ({ yazi: b.kutu, kutu: b.kutu, elips: false }))
-        : kullanilan.has(no) ? [] : [{ yazi: bulgu.yazi, kutu: bulgu.kutu, elips: bulgu.elips }];
+        ? bulgu.bloklar
+          .filter((b) => !doluKutular.some((k) => kesisimAlani(k, b.kutu) > 0) && sigar(b.parca))
+          .map((b) => ({ yazi: b.kutu, kutu: b.kutu, elips: false }))
+        : kullanilan.has(no) || !sigar(bulgu.ozellik.parca) ? [] : [{ yazi: bulgu.yazi, kutu: bulgu.kutu, elips: bulgu.elips }];
       for (const a of adaylar) {
         const puan = kesisimAlani(a.yazi, tahmin) / alan(a.yazi) + ortusme;
         if (!enIyi || puan > enIyi.puan) enIyi = { puan, no, ...a, tekBlok: !bulgu.bloklar };

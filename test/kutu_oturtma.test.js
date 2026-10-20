@@ -252,7 +252,7 @@ describe('ortak beyaz alanda birden çok metin', () => {
 });
 
 describe('güvenilmez numara', () => {
-  it('uzun metin uzaktaki birkaç parçalık küçük balonun numarasını alırsa oraya konmaz; yakınsa ya da metin kısaysa konur', () => {
+  it('metin birkaç parçalık küçük balona sığmıyorsa numarasıyla oraya konmaz (çok uzunsa hiç, biraz uzunsa kutusu dışındaysa); kısa metin konur', () => {
     const r = resim();
     // Kedinin gözü gibi küçük beyaz alan: içinde iki leke.
     balonCiz(r, 100, 300, 28, 22);
@@ -263,10 +263,19 @@ describe('güvenilmez numara', () => {
     const [uzakta] = kutulariOturt(r, [balon(220, 280, 330, 330, { bolge: 1, orijinal: uzun })], bulunanlar);
     assert.notEqual(uzakta.oturdu, true);
     assert.ok(piksel(uzakta).x0 > 200, JSON.stringify(piksel(uzakta)));
+    // Kesin uyumsuzluk (2 parça, 24 harf): kutu gözün içinde olsa da oraya konmaz.
     const [yakinda] = kutulariOturt(r, [balon(80, 290, 120, 310, { bolge: 1, orijinal: uzun })], bulunanlar);
-    assert.equal(yakinda.oturdu, true);
+    assert.notEqual(yakinda.oturdu, true);
+    // Orta uyumsuzlukta (2 parça, 10 harf) kutusu balonun içindeyse numaraya güvenilir.
+    const [orta] = kutulariOturt(r, [balon(80, 290, 120, 310, { bolge: 1, orijinal: 'FORSE MORTO' })], bulunanlar);
+    assert.equal(orta.oturdu, true);
+    const [ortaUzak] = kutulariOturt(r, [balon(220, 280, 330, 330, { bolge: 1, orijinal: 'FORSE MORTO' })], bulunanlar);
+    assert.notEqual(ortaUzak.oturdu, true);
     const [kisa] = kutulariOturt(r, [balon(220, 280, 330, 330, { bolge: 1, orijinal: 'EH?' })], bulunanlar);
     assert.equal(kisa.oturdu, true);
+    // Numarasız metin de kutusu gözün üstünde olsa bile oraya oturtulmaz.
+    const [numarasiz] = kutulariOturt(r, [balon(80, 290, 120, 310, { bolge: 0, orijinal: 'MA NON ERA COSI' })], bulunanlar);
+    assert.notEqual(numarasiz.oturdu, true);
   });
 });
 
