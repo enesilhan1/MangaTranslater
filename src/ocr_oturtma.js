@@ -24,9 +24,17 @@ const EN_AZ_ESLESME = 0.4;
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
  */
-export const OCR_SURUMU = 6;
+export const OCR_SURUMU = 7;
 /** Model kutusundan uzakta bu uzunlukta (ve üstü) kelimeler "uzun" sayılır. */
 const UZAK_KELIME = 4;
+/**
+ * Atlanmış yazı sayılacak OCR kümesi: en az bu kadar kelime, her biri en
+ * az ATLANAN_EN_KISA harf ve ATLANAN_GUVEN güvenle (çizimden çıkan rastgele
+ * "kelimeler" sayılmasın; boşuna ikinci istek gitmesin).
+ */
+const ATLANAN_EN_AZ_KELIME = 3;
+const ATLANAN_EN_KISA = 2;
+const ATLANAN_GUVEN = 70;
 /** Ses efektinde OCR ile aranacak en kısa Latin harf dizisi. */
 const SES_EN_AZ_HARF = 3;
 /** Uzaktaki kümede en az bu kadar uzun kelime (metinde o kadar varsa). */
@@ -236,6 +244,54 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
     const y1 = Math.min(Y, Math.max(...kutular.map((k) => k.y1)) + p);
     return { ...b, x: x0 / G, y: y0 / Y, g: (x1 - x0) / G, h: (y1 - y0) / Y, ocrOturdu: true };
   });
+}
+
+/**
+ * Modelin atladığı yazılar: OCR'nin güvenle okuduğu, hiçbir çevirinin
+ * kutusuyla örtüşmeyen, numaralı balonların dışında kalan ve modelin
+ * okuduğu hiçbir metne benzemeyen kelime kümeleri. Kullanıcının sayfasında
+ * model birbirine değen iki balondan "SPRIZZANO VOGLIA DI UCCIDERCI DA TUTTI
+ * I PORI." yazısını hiç döndürmemişti (balonlar sayfanın beyaz alanına
+ * açıldığı için numara da almamıştı).
+ * @param {import('./yz/cozumle.js').Balon[]} balonlar  0-1 oranlı.
+ * @param {{kelimeler: import('./yerel/gruplama.js').OcrKelimesi[], genislik: number, yukseklik: number}} ocr
+ * @param {{isaretli?: {x0: number, y0: number, x1: number, y1: number}[]}} [ek]
+ * @returns {{kutu: number[], kelimeler: string[]}[]}  kutu [ymin, xmin, ymax, xmax] 0-1000 (istem biçimi).
+ */
+export function atlananYazilar(balonlar, { kelimeler, genislik: G, yukseklik: Y }, { isaretli = [] } = {}) {
+  const icinde = (cx, cy, k) => cx >= k.x0 && cx <= k.x1 && cy >= k.y0 && cy <= k.y1;
+  const pay = 0.01 * Math.max(G, Y);
+  const kutular = balonlar.map((b) => ({ x0: b.x * G - pay, y0: b.y * Y - pay, x1: (b.x + b.g) * G + pay, y1: (b.y + b.h) * Y + pay }));
+  const isaretliP = isaretli.map((k) => ({ x0: k.x0 * G, y0: k.y0 * Y, x1: k.x1 * G, y1: k.y1 * Y }));
+  const okunanlar = balonlar.flatMap((b) => String(b.orijinal).split(/\s+/).map(sadelestir)).filter((t) => t.length >= 2);
+  const adaylar = kelimeler
+    .map((k) => ({ ...k, sade: sadelestir(k.metin) }))
+    .filter((k) => {
+      if (k.sade.length < ATLANAN_EN_KISA || k.guven < ATLANAN_GUVEN || !/^\p{L}+$/u.test(k.sade)) return false;
+      const cx = (k.kutu.x0 + k.kutu.x1) / 2;
+      const cy = (k.kutu.y0 + k.kutu.y1) / 2;
+      return !kutular.some((t) => icinde(cx, cy, t)) && !isaretliP.some((t) => icinde(cx, cy, t));
+    });
+  return tumKumeler(adaylar, adaylar.map((_, i) => i))
+    .map((km) => km.map((i) => adaylar[i]))
+    .filter((km) => km.length >= ATLANAN_EN_AZ_KELIME && km.filter((k) => k.sade.length >= UZAK_KELIME).length >= 2)
+    // Modelin okuduğu bir metnin kelimeleriyse atlanmış değil, yalnızca yeri kaymış.
+    .filter((km) => km.filter((k) => okunanlar.some((o) => kelimeEslesir(o, k.sade))).length < EN_AZ_ESLESME * km.length)
+    .map((km) => {
+      const x0 = Math.min(...km.map((k) => k.kutu.x0));
+      const y0 = Math.min(...km.map((k) => k.kutu.y0));
+      const x1 = Math.max(...km.map((k) => k.kutu.x1));
+      const y1 = Math.max(...km.map((k) => k.kutu.y1));
+      const b = (v, n) => Math.max(0, Math.min(1000, Math.round((v / n) * 1000)));
+      return { kutu: [b(y0, Y), b(x0, G), b(y1, Y), b(x1, G)], kelimeler: km.map((k) => k.sade) };
+    });
+}
+
+/** İkinci yanıttaki bir metin bu atlanan yazının mı (kelimelerinin yeterince eşleşmesi)? */
+export function atlananaUyar(atlanan, orijinal) {
+  const kelimelerB = String(orijinal).split(/\s+/).map(sadelestir).filter((t) => t.length >= 2);
+  const tutan = atlanan.kelimeler.filter((k) => kelimelerB.some((o) => kelimeEslesir(o, k))).length;
+  return tutan >= Math.max(1, Math.ceil(EN_AZ_ESLESME * atlanan.kelimeler.length));
 }
 
 /**

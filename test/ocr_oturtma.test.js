@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { kelimeBenzer, kelimeEslesir, ocrIleOturt, sadelestir } from '../src/ocr_oturtma.js';
+import { atlananaUyar, atlananYazilar, kelimeBenzer, kelimeEslesir, ocrIleOturt, sadelestir } from '../src/ocr_oturtma.js';
 
 const G = 600;
 const Y = 900;
@@ -140,5 +140,40 @@ describe('ocrIleOturt', () => {
     const [b] = ocrIleOturt([balon(250, 650, 330, 700, { orijinal: 'NON RIESCO A RICORDARLO MOLTO BENE, MA...' })], { kelimeler, genislik: G, yukseklik: Y });
     assert.equal(b.ocrOturdu, true);
     assert.ok(b.x * G > 400 && b.y * Y < 435 && (b.y + b.h) * Y > 565, JSON.stringify(b));
+  });
+});
+
+describe('atlananYazilar', () => {
+  // Kullanıcının sayfası: model "SPRIZZANO VOGLIA DI UCCIDERCI DA TUTTI I PORI." yazısını döndürmedi.
+  const kelimeler = [
+    k('SPRIZZANO', 100, 500), k('VOGLIA', 110, 530), k('DI', 210, 530), k('UCCIDERCI', 100, 560), k('DA', 110, 590), k('TUTTI', 150, 590),
+    // Çeviri verilmiş yazı (kutusu içinde): sayılmaz.
+    k('NO,', 400, 500), k('KUU-', 400, 530), k('CHAN...', 400, 560),
+    // Modelin okuduğu ama kutusu kaymış yazı: sayılmaz.
+    k('ECCO', 300, 100), k('PERCHE', 300, 130), k('ANCORA', 300, 160),
+    // Güveni düşük çizim gürültüsü: sayılmaz.
+    k('Zrkq', 500, 800, 20), k('Mvxp', 500, 830, 20), k('Ttbn', 500, 860, 20),
+    // Numaralı balonun içindeki yazı: sayılmaz.
+    k('QUESTA', 50, 50), k('VOLTA', 50, 80), k('FORSE', 50, 110),
+  ];
+  const ocr = { kelimeler, genislik: G, yukseklik: Y };
+  const balonlar = [
+    balon(390, 490, 520, 590, { orijinal: 'NO, KUU-CHAN...' }),
+    balon(450, 300, 550, 350, { orijinal: 'ECCO PERCHÉ ANCORA' }),
+  ];
+  const isaretli = [{ x0: 40 / G, y0: 40 / Y, x1: 160 / G, y1: 140 / Y }];
+
+  it('hiçbir çevirinin örtmediği güvenilir kelime kümesini bulur, öbürlerini saymaz', () => {
+    const a = atlananYazilar(balonlar, ocr, { isaretli });
+    assert.equal(a.length, 1, JSON.stringify(a));
+    assert.ok(a[0].kelimeler.includes('SPRIZZANO'));
+    const [ymin, xmin, ymax, xmax] = a[0].kutu;
+    assert.ok(xmin <= (100 / G) * 1000 + 1 && ymin <= (500 / Y) * 1000 + 1 && xmax > (200 / G) * 1000 && ymax > (590 / Y) * 1000, JSON.stringify(a[0].kutu));
+  });
+
+  it('ikinci yanıttaki metnin atlanan yazıya ait olduğunu tanır', () => {
+    const [a] = atlananYazilar(balonlar, ocr, { isaretli });
+    assert.equal(atlananaUyar(a, 'SPRIZZANO VOGLIA DI UCCIDERCI DA TUTTI I PORI.'), true);
+    assert.equal(atlananaUyar(a, 'NO, KUU-CHAN...'), false);
   });
 });
