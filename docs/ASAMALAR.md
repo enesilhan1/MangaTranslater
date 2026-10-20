@@ -101,3 +101,12 @@ balonlardan taşmamasıydı.
   yazının üstüne ayrıca sınırında beyaz örtü (düz kesilmiş balonlarda
   kalıntı kalmasın).
 - Kullanıcının sayfasıyla yerel önizlemede doğrulandı.
+
+## Sürüm 1.4.0 (2026-10-20)
+1.3.0 denemesinde (Claude Haiku 5.5) uzun kuyruklu ve sivri uçlu balonlar
+bulunamadı; çevirileri yanlış yere düştü. Bir sayfa hiç çevrilmedi (sebebi
+araştırılıyor; o sayfada balon bulma çalışıyor).
+- Aşınmış maskeyle gövde kutusu: kuyruk/uçlar şekil ölçümüne girmiyor;
+  flood fill asıl beyazda (dar balon bölünmüyor).
+- Yeni ayırt ediciler: harf boyu tutarlılığı, tram dokusu.
+- Kullanıcının 7 sayfasında yalnızca gerçek balonlar bulunuyor.
