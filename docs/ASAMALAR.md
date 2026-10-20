@@ -110,3 +110,10 @@ araştırılıyor; o sayfada balon bulma çalışıyor).
   flood fill asıl beyazda (dar balon bölünmüyor).
 - Yeni ayırt ediciler: harf boyu tutarlılığı, tram dokusu.
 - Kullanıcının 7 sayfasında yalnızca gerçek balonlar bulunuyor.
+
+## Sürüm 1.4.1 (2026-10-20)
+Çevrilmeyen sayfanın köşesinde hiçbir işaret yoktu. Olası sebepler
+düzeltildi: "geri" önbelleğinden dönen sayfada yarıda iptal edilen resimler
+yeniden deneniyor; boş sonuç önbelleğe yazılmıyor (eski boş kayıtlar yok
+sayılıyor); her resmin sonucu konsola yazılıyor (F12 → Console →
+"Manga"). Sebep kesinleşmedi; kullanıcıdan konsol çıktısı istenecek.
