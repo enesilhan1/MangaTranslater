@@ -159,6 +159,49 @@ describe('Cevirici: balonsuz metinlerde OCR', () => {
   });
 });
 
+describe('Cevirici: atlanan yazı', () => {
+  const kelimeler = [
+    { metin: 'SPRIZZANO', guven: 90, kutu: { x0: 10, y0: 60, x1: 40, y1: 64 } },
+    { metin: 'VOGLIA', guven: 90, kutu: { x0: 10, y0: 66, x1: 30, y1: 70 } },
+    { metin: 'UCCIDERCI', guven: 90, kutu: { x0: 10, y0: 72, x1: 40, y1: 76 } },
+  ];
+  const kayit = (orijinal, x, y) => ({ x, y, g: 0.1, h: 0.05, tur: 'balon', bolge: 0, orijinal, ceviri: orijinal.toLowerCase() });
+  function kur(yanitlar) {
+    const cagri = [];
+    const c = new Cevirici({
+      ayarDeposu: new AyarDeposu(sahteAlan({ ayarlar: { anahtarlar: { gemini: 'k' } } })),
+      onbellek: bellekOnbellek(),
+      kuyruk: new Kuyruk(),
+      gorselOlustur: () => ({ cevir: async ({ resim }) => (cagri.push(resim), { balonlar: yanitlar[Math.min(cagri.length, yanitlar.length) - 1] }) }),
+      yerelOlustur: () => ({ kelimeleriOku: async () => ({ genislik: 100, yukseklik: 100, kelimeler }) }),
+    });
+    return { c, cagri };
+  }
+
+  it('model, OCR ile okunan bir yazıyı atladıysa o alan söylenerek bir kez daha sorulur, yalnızca o metin eklenir', async () => {
+    const t = kur([
+      [kayit('NO, KUU-CHAN', 0.6, 0.6)],
+      [kayit('NO, KUU-CHAN', 0.6, 0.6), kayit('SPRIZZANO VOGLIA DI UCCIDERCI', 0.5, 0.2)],
+    ]);
+    const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(t.cagri.length, 2);
+    assert.ok(t.cagri[1].eksikler?.length === 1);
+    assert.equal(s.balonlar.length, 2);
+    const yeni = s.balonlar.find((b) => b.orijinal.startsWith('SPRIZZANO'));
+    assert.equal(yeni.ocrOturdu, true);
+    assert.ok(yeni.x < 0.2 && yeni.y > 0.55, JSON.stringify(yeni));
+    assert.equal(s.tani.eksikEklenen, 1);
+    await t.c.dilimCevir({ id: 'b', oncelik: 1, resim: RESIM });
+    assert.equal(t.cagri.length, 2, 'önbellekten gelişte tekrar sorulmamalı');
+  });
+
+  it('atlanan yazı yoksa ikinci istek gitmez', async () => {
+    const t = kur([[kayit('NO, KUU-CHAN', 0.6, 0.6), kayit('SPRIZZANO VOGLIA DI UCCIDERCI', 0.05, 0.58)]]);
+    await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(t.cagri.length, 1);
+  });
+});
+
 describe('Cevirici: şüpheli numara', () => {
   function kur(model) {
     const ocrCagri = [];

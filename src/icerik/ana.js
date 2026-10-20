@@ -231,7 +231,8 @@ class Cevirmen {
           // döndürmedi, yoksa hangi numarayı verdi.
           iz(kayit.kimlik, `dilim ${i}:`, `${d.bulunanlar?.length ?? 0} işaret,`,
             `modelden ${balonlar.length} metin`, `(numaralar: ${balonlar.map((b) => b.bolge || '-').join(',')})`,
-            tani?.atlanan ? `${tani.atlanan} kayıt kullanılamadı` : '', tani?.yenidenSoruldu ? 'model yeniden soruldu' : '');
+            tani?.atlanan ? `${tani.atlanan} kayıt kullanılamadı` : '', tani?.yenidenSoruldu ? 'model yeniden soruldu' : '',
+            tani?.eksikEklenen != null ? `atlanan yazı için yeniden soruldu, ${tani.eksikEklenen} metin eklendi` : '');
           // Numaralı metinler bulunan balonlara, numarasızlar en yakın balona
           // oturtulur (önbellekteki sonuç da: numaralar aynı resimde aynı).
           const oturmus = kutulariOturt(d.gri, balonlar, d.bulunanlar);

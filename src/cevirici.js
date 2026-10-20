@@ -4,7 +4,7 @@
 
 import { Motor, motorKimligi, seciliModel } from './ayarlar.js';
 import { metinSigmaz } from './kutu_oturtma.js';
-import { OCR_SURUMU, latinSesMi, ocrGerekirMi, ocrIleOturt } from './ocr_oturtma.js';
+import { OCR_SURUMU, atlananaUyar, atlananYazilar, latinSesMi, ocrGerekirMi, ocrIleOturt } from './ocr_oturtma.js';
 import { kayitAnahtari, ozetCikar } from './onbellek.js';
 import { yerelCevirmenKopru } from './yerel/kopru.js';
 import { istemciOlustur } from './yz/istemciler.js';
@@ -56,7 +56,8 @@ export class Cevirici {
    * sürüm artar ve eski kayıtlar bir kez daha denenir. OCR hata verirse
    * işaret konmaz (sonra yeniden denenir) ve modelin kutusu kalır; çeviri
    * kaybolmaz.
-   * @returns {Promise<{balonlar: object[], degisti: boolean}>}
+   * @returns {Promise<{balonlar: object[], degisti: boolean, ocr?: object, isaretli?: object[]}>}
+   *   [ocr] OCR çalıştıysa sonucu (atlanan yazıları bulmak için).
    */
   async ocrIleDuzelt(a, balonlar, resim) {
     // Numarası şüpheli metin: işaretli alan ona sığmayacak kadar küçük
@@ -83,7 +84,37 @@ export class Cevirici {
       const s = supheli(b) && !sonuc[i].ocrOturdu ? b : sonuc[i];
       return [b, { ...s, ocrDenendi: OCR_SURUMU }];
     }));
-    return { balonlar: balonlar.map((b) => yeni.get(b) ?? b), degisti: true };
+    return { balonlar: balonlar.map((b) => yeni.get(b) ?? b), degisti: true, ocr, isaretli };
+  }
+
+  /**
+   * Modelin atladığı yazılar (OCR'nin okuyup hiçbir çevirinin örtmediği
+   * kümeler) varsa model bir kez daha, o alanlar söylenerek sorulur;
+   * yanıttan yalnızca o yazılara karşılık gelen metinler alınıp OCR ile
+   * yerine konur. Dilim başına bir kez (eksikDenendi). OCR'nin zaten
+   * çalıştığı sayfalarda yapılır; ek OCR maliyeti yok.
+   * @returns {Promise<{balonlar: object[], eklenen: number} | null>}  null: gerekmedi.
+   */
+  async eksikleriTamamla(a, balonlar, resim, { ocr, isaretli }, id, oncelik) {
+    if (a.motor !== Motor.GORSEL || !ocr || balonlar.some((b) => b.eksikDenendi)) return null;
+    const atlananlar = atlananYazilar(balonlar, ocr, { isaretli });
+    if (!atlananlar.length) return null;
+    const motor = this.motor(a);
+    let ek;
+    try {
+      ek = await this.kuyruk.ekle(id, oncelik, (sinyal) =>
+        motor.cevir({ resim: { ...resim, eksikler: atlananlar.map((x) => x.kutu) }, hedefDil: a.hedefDil, sinyal }),
+      );
+    } catch (e) {
+      if (e?.anahtar === 'hata.durduruldu') throw e;
+      return null; // ilk sonuç kalır; işaret konmadığı için sonra yeniden denenir
+    }
+    const varOlan = new Set(balonlar.map((b) => String(b.orijinal).toUpperCase()));
+    const yeniler = ek.balonlar.filter((b) => !varOlan.has(String(b.orijinal).toUpperCase()) &&
+      atlananlar.some((x) => atlananaUyar(x, b.orijinal)));
+    const oturmus = ocrIleOturt(yeniler.map((b) => ({ ...b, bolge: 0 })), ocr, { isaretli })
+      .map((b) => ({ ...b, ocrDenendi: OCR_SURUMU }));
+    return { balonlar: [...balonlar, ...oturmus].map((b) => ({ ...b, eksikDenendi: true })), eklenen: oturmus.length };
   }
 
   /** Yalnızca OCR için köprü (görsel YZ'de balonsuz metinler); ilk gerektiğinde kurulur. */
@@ -125,9 +156,11 @@ export class Cevirici {
     if (kayitli?.length && !(eksikMi(kayitli) && !kayitli.some((b) => b.kapsamaDenendi))) {
       // OCR düzeltmesinden önceki sürümlerin kaydı: bir kez düzeltilip
       // önbellek güncellenir (yoksa o sayfa eski kutularla kalıyordu).
-      const { balonlar, degisti } = await this.ocrIleDuzelt(a, kayitli, resim);
-      if (degisti) await this.onbellek.koy(anahtar, balonlar).catch(() => {});
-      return { balonlar, onbellekten: true };
+      const duzeltme = await this.ocrIleDuzelt(a, kayitli, resim);
+      const tamam = duzeltme.ocr ? await this.eksikleriTamamla(a, duzeltme.balonlar, resim, duzeltme, id, oncelik) : null;
+      const balonlar = tamam?.balonlar ?? duzeltme.balonlar;
+      if (duzeltme.degisti || tamam) await this.onbellek.koy(anahtar, balonlar).catch(() => {});
+      return { balonlar, onbellekten: true, ...(tamam ? { tani: { eksikEklenen: tamam.eklenen } } : {}) };
     }
 
     const motor = this.motor(a);
@@ -144,14 +177,16 @@ export class Cevirici {
       const secilen = ikinci && kapsananIsaret(ikinci.balonlar) > kapsananIsaret(ilk.balonlar) ? ikinci : ilk;
       return { ...secilen, yenidenSoruldu: true };
     });
-    const { balonlar: duzelmis } = await this.ocrIleDuzelt(a, ham.balonlar, resim);
+    const duzeltme = await this.ocrIleDuzelt(a, ham.balonlar, resim);
+    const tamam = duzeltme.ocr ? await this.eksikleriTamamla(a, duzeltme.balonlar, resim, duzeltme, id, oncelik) : null;
+    const duzelmis = tamam?.balonlar ?? duzeltme.balonlar;
     // Yeniden sorulduysa (yine eksik olsa da) bir daha sorulmasın.
     const balonlar = ham.yenidenSoruldu ? duzelmis.map((b) => ({ ...b, kapsamaDenendi: true })) : duzelmis;
     // Önbelleğe yazılamasa da çeviri gösterilsin. Boş sonuç yazılmaz: model
     // bir kez yanılıp "yazı yok" derse sayfa sonsuza kadar boş kalmasın.
     if (balonlar.length) await this.onbellek.koy(anahtar, balonlar).catch(() => {});
     // Konsol izi için: modelin döndürdüğü/atılan kayıt sayısı, yeniden soruldu mu.
-    const tani = { ...(ham.istatistik ?? {}), ...(ham.yenidenSoruldu ? { yenidenSoruldu: true } : {}) };
+    const tani = { ...(ham.istatistik ?? {}), ...(ham.yenidenSoruldu ? { yenidenSoruldu: true } : {}), ...(tamam ? { eksikEklenen: tamam.eklenen } : {}) };
     return { balonlar, onbellekten: false, ...(Object.keys(tani).length ? { tani } : {}) };
   }
 }
