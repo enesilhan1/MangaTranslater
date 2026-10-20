@@ -83,6 +83,9 @@ listesi).
   değiştirilmez (üstünde ayrı bir katman).
 - Yazı orijinal yazıdan belirgin şekilde büyük olmaz; kelimeler ortadan
   bölünmez (sığmıyorsa punto küçülür).
+- Bulunan balonda beyaz zemin balonun kendi şeklindedir (oval / dikdörtgen)
+  ve balonun çizgisinin içinde kalır; çeviri balonun içine sığdırılır, kutu
+  balonun dışına büyütülmez.
 - Balonlar resmin piksellerinden bulunur ve görsel YZ'ye giden kopyada
   numaralı işaretlerle gösterilir; model her metnin hangi numaralı balonda
   olduğunu söyler ve çeviri o balondaki yazının üstüne yazılır (modelin

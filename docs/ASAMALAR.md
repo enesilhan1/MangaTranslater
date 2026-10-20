@@ -91,3 +91,13 @@ numarayı verdi; iki çeviri tek balonda birleşti, bir balon çevrilmedi.
   diye reddediliyordu); çizim alanlarını şekil denetimi eliyor.
 - Kullanıcının sayfasında: sayfadaki hata durumu iki ayrı doğru balona
   yerleşiyor; kayık 6 numarasız tahminin 6'sı doğru balona.
+
+## Sürüm 1.3.0 (2026-10-20)
+1.2.1'de çeviriler doğru ve yerindeydi; kullanıcının tek isteği yazıların
+balonlardan taşmamasıydı.
+- Bulunan balonun iç kutusu ve şekli (oval/dikdörtgen) sonuca ekleniyor.
+- Beyaz zemin balonun şeklinde ve içinde; yazı ovalin içine sığan alana
+  (her yandan %14,5 dolgu) sığdırılıyor, kutu büyütülmüyor; orijinal
+  yazının üstüne ayrıca sınırında beyaz örtü (düz kesilmiş balonlarda
+  kalıntı kalmasın).
+- Kullanıcının sayfasıyla yerel önizlemede doğrulandı.
