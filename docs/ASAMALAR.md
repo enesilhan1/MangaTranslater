@@ -117,3 +117,11 @@ düzeltildi: "geri" önbelleğinden dönen sayfada yarıda iptal edilen resimler
 yeniden deneniyor; boş sonuç önbelleğe yazılmıyor (eski boş kayıtlar yok
 sayılıyor); her resmin sonucu konsola yazılıyor (F12 → Console →
 "Manga"). Sebep kesinleşmedi; kullanıcıdan konsol çıktısı istenecek.
+
+## Sürüm 1.5.0 (2026-10-20)
+Yeni sayfada panel kenarına yapışık birleşik beyaz alandaki iki uzun metin
+çevrilmedi (bölge "kenarda yazı" diye eleniyordu, iki metin tek bölgedeydi).
+- Kenar boşluğu %1; bölgedeki belirgin ayrı yazı blokları ayrı balon
+  (ayrı işaret numarası, kendi kutusunda zemin).
+- Kullanıcının 8 sayfasında: yeni sayfa 7/7, bir balonu kaçıran sayfa 6/6,
+  eski sayfalar değişmedi; yanlış bulgu yok.
