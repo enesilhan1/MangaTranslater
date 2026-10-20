@@ -9,7 +9,7 @@
 // - resmin adresi değişince ya da resim sayfadan kalkınca işini iptal eder,
 // - uzun şeritlerin dilim sonuçlarını geldikçe birleştirip görünüme verir.
 
-import { ayarlariTamamla } from '../ayarlar.js';
+import { Motor, ayarlariTamamla } from '../ayarlar.js';
 import { dilimBalonlariniYerlestir } from '../dilimleme.js';
 import { kutulariOturt } from '../kutu_oturtma.js';
 import { Kuyruk, Oncelik } from '../kuyruk.js';
@@ -178,7 +178,8 @@ class Cevirmen {
     guncelle({ durum: 'cevriliyor' });
     try {
       const { dilimler, yukseklik } = await this.hazirlik.ekle(kayit.kimlik, kayit.oncelik, async () =>
-        dilimlereAyir(await resimBaytlari(img)),
+        // Görsel YZ'de balonlar numaralanır; model metni numarayla balona bağlar.
+        dilimlereAyir(await resimBaytlari(img), { isaretle: this.ayarlar.motor === Motor.GORSEL }),
       );
       // Dilimler aynı anda kuyruğa girer; her biri geldikçe gösterilir.
       await Promise.all(
@@ -188,10 +189,11 @@ class Cevirmen {
             resimKimligi: kayit.kimlik,
             dilim: i,
             oncelik: kayit.oncelik,
-            resim: { veri: d.veri, tur: d.tur, genislik: d.genislik, yukseklik: d.yukseklik },
+            resim: { veri: d.veri, tur: d.tur, genislik: d.genislik, yukseklik: d.yukseklik, bolgeler: d.bolgeler },
           });
-          // Modelin kutuları resimdeki balonlara oturtulur (önbellekteki sonuç da).
-          const oturmus = kutulariOturt(d.gri, balonlar);
+          // Numaralı metinler bulunan balonlara, numarasızlar en yakın balona
+          // oturtulur (önbellekteki sonuç da: numaralar aynı resimde aynı).
+          const oturmus = kutulariOturt(d.gri, balonlar, d.bulunanlar);
           guncelle({ balonlar: [...durum.balonlar, ...dilimBalonlariniYerlestir(d, yukseklik, oturmus)] });
         }),
       );

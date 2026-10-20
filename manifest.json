@@ -52,6 +52,7 @@
         "src/icerik/mesaj.js",
         "src/icerik/resim_al.js",
         "src/icerik/sigdir.js",
+        "src/isaretler.js",
         "src/kutu_oturtma.js",
         "src/kuyruk.js",
         "src/tarayici.js",
