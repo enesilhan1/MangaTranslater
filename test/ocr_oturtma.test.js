@@ -106,6 +106,18 @@ describe('ocrIleOturt', () => {
     assert.ok(c.ocrOturdu && c.y * Y > 590, JSON.stringify(c));
   });
 
+  it('sayfa genelinde kısa kelimeler de sayılır ama en az iki uzun kelime gerekir', () => {
+    // Kullanıcının sayfası: "...HO UNA COSA DI CUI VI DEVO PARLARE."; uzaktaki model kutusu.
+    const metin = '...HO UNA COSA DI CUI VI DEVO PARLARE.';
+    const kelimeler = [k('UNA', 100, 400), k('cosa', 90, 430, 22), k('cUl', 80, 460), k('DEVO', 130, 460), k('PARPLARE.', 90, 490, 43)];
+    const [b] = ocrIleOturt([balon(400, 700, 480, 760, { orijinal: metin })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.equal(b.ocrOturdu, true);
+    assert.ok(b.x * G < 100 && b.y * Y < 405, JSON.stringify(b));
+    // Yalnızca kısa kelimeler eşleşiyorsa (uzunlar okunamadı) taşınmaz.
+    const kisa = [k('UNA', 100, 400), k('DI', 150, 400), k('CUI', 80, 430), k('VI', 130, 430)];
+    assert.notEqual(ocrIleOturt([balon(400, 700, 480, 760, { orijinal: metin })], { kelimeler: kisa, genislik: G, yukseklik: Y })[0].ocrOturdu, true);
+  });
+
   it('sayfa genelinde: arada bozuk okunmuş satır olsa da metnin satırları bir arada bulunur', () => {
     // Kullanıcının sayfası: "NON RIESCO A RICOR-DARLO MOLTO BENE, MA..."; "DARLO" satırı "LARLO" okundu.
     const kelimeler = [

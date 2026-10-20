@@ -24,9 +24,11 @@ const EN_AZ_ESLESME = 0.4;
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
  */
-export const OCR_SURUMU = 4;
-/** Model kutusundan uzakta yalnızca bu uzunlukta (ve üstü) kelimeler sayılır. */
+export const OCR_SURUMU = 5;
+/** Model kutusundan uzakta bu uzunlukta (ve üstü) kelimeler "uzun" sayılır. */
 const UZAK_KELIME = 4;
+/** Uzaktaki kümede en az bu kadar uzun kelime (metinde o kadar varsa). */
+const UZAK_EN_AZ_UZUN = 2;
 /** Sayfa genelindeki aramada eşleşen kelimeler arası en çok boşluk (kelime boyu cinsinden). */
 const UZAK_ARALIK = 4;
 
@@ -102,10 +104,10 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
     const pay = Math.max(t.x1 - t.x0, t.y1 - t.y0, 0.15 * G);
     const alan = { x0: t.x0 - pay, y0: t.y0 - pay, x1: t.x1 + pay, y1: t.y1 + pay };
     const gerekli = Math.max(1, Math.ceil(EN_AZ_ESLESME * kelimelerB.length));
-    const eslesmeAra = (icinde, uzunMu = false) => {
+    const eslesmeAra = (icinde) => {
       const liste = [];
       sozluk.forEach((k, i) => {
-        if (kullanildi.has(i) || (uzunMu && k.sade.length < UZAK_KELIME)) return;
+        if (kullanildi.has(i)) return;
         const cx = (k.kutu.x0 + k.kutu.x1) / 2;
         const cy = (k.kutu.y0 + k.kutu.y1) / 2;
         if (!icinde(cx, cy)) return;
@@ -116,14 +118,21 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
     const kumeler = (liste, aralik) => tumKumeler(liste.map((i) => sozluk[i]), liste, aralik).filter((km) => km.length >= gerekli);
     // Eşleşen kelimelerin en kalabalık yakın kümesi (aynı metnin satırları).
     let kume = kumeler(eslesmeAra((cx, cy) => cx >= alan.x0 && cx <= alan.x1 && cy >= alan.y0 && cy <= alan.y1))[0];
-    // Yakında yoksa bütün sayfada, yalnızca tek ve uzun kelimelerle kesin
-    // eşleşen bir küme varsa: model kutuyu başka bir yere koymuş olabilir
-    // (kullanıcının sayfasında "È ALICE!" kutusu üstteki balonun "...ALICE?!"
-    // satırındaydı; asıl yazı panelin altındaydı).
+    // Yakında yoksa bütün sayfada, kesin eşleşen tek bir küme varsa: model
+    // kutuyu başka bir yere koymuş olabilir (kullanıcının sayfasında "È
+    // ALICE!" kutusu üstteki balonun "...ALICE?!" satırındaydı; asıl yazı
+    // panelin altındaydı). Kısa kelimeler ("UNA", "DI") de sayılır ama
+    // kümede en az UZAK_EN_AZ_UZUN uzun kelime olmalı: "...HO UNA COSA DI CUI
+    // VI DEVO PARLARE." için yalnızca uzunlar (COSA, DEVO, PARLARE) 8
+    // kelimenin %40'ına yetmiyordu.
     if (!kume) {
+      const uzunSayisi = (km) => km.filter((i) => sozluk[i].sade.length >= UZAK_KELIME).length;
+      const metindekiUzun = kelimelerB.filter((tk) => tk.length >= UZAK_KELIME).length;
+      const gerekenUzun = Math.max(1, Math.min(UZAK_EN_AZ_UZUN, metindekiUzun));
       // Aralık geniş: aradaki satırlar bozuk okunup eşleşmese de ("RICOR-
       // DARLO" → "LARLO") aynı metnin satırları bir arada kalsın.
-      const sayfada = kumeler(eslesmeAra((cx, cy) => !isaretliMi(cx, cy), true), UZAK_ARALIK);
+      const sayfada = kumeler(eslesmeAra((cx, cy) => !isaretliMi(cx, cy)), UZAK_ARALIK)
+        .filter((km) => uzunSayisi(km) >= gerekenUzun);
       if (sayfada.length === 1) kume = sayfada[0];
     }
     if (!kume) return b;
