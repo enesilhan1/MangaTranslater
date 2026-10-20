@@ -95,11 +95,17 @@ export function balonlariBul(resim) {
 /**
  * Modelin balonlarını resme yerleştirir.
  * - [bolge] (1'den başlayan işaret numarası) geçerliyse kutu, o bulunan
- *   balondaki yazının sınırlarıdır. Aynı balona düşen kayıtlar birleşir
- *   (aynı çeviri bir kez; farklıysa okuma sırasıyla art arda).
+ *   balondaki yazının sınırlarıdır.
+ * - İki farklı metne aynı numara verildiyse (kullanıcının sayfasında Claude
+ *   böyle yaptı) modelin kutusu o balona daha yakın olan orada kalır;
+ *   diğeri numarasız sayılır. Aynı çeviri iki kez geldiyse biri atılır.
  * - Numarasız kayıtlar (ses efektleri hariç) tahmini kutuya en uygun,
- *   başka kayda verilmemiş geçerli balona oturtulur; yoksa olduğu gibi kalır.
- *   Farklı metinler hiçbir zaman birleştirilmez.
+ *   başka kayda verilmemiş geçerli balona oturtulur; yoksa tahminde kalır.
+ *   Tek istisna: aynı numarayı alıp yerinden edilen bir metnin tahmini
+ *   kutusu da o balonun içindeyse model tek balonu ikiye bölmüştür; metin
+ *   o balona eklenir. Baştan numarasız gelen metin hiçbir zaman başka
+ *   metinle birleştirilmez ("... vardır. AH" hatası).
+ * Sonuç girdinin sırasını korur.
  * @param {GriResim} resim
  * @param {import('./yz/cozumle.js').Balon[]} balonlar  0-1 oranlı.
  * @param {BulunanBalon[]} [bulunanlar]  İşaretlenen balonlar (numara sırasıyla).
@@ -107,40 +113,61 @@ export function balonlariBul(resim) {
 export function kutulariOturt(resim, balonlar, bulunanlar = []) {
   const { genislik: G, yukseklik: Y } = resim;
   const oran = (k) => ({ x: k.x0 / G, y: k.y0 / Y, g: (k.x1 - k.x0 + 1) / G, h: (k.y1 - k.y0 + 1) / Y });
+  const tahminKutusu = (b) => ({
+    x0: Math.floor(b.x * G),
+    y0: Math.floor(b.y * Y),
+    x1: Math.min(G - 1, Math.ceil((b.x + b.g) * G)),
+    y1: Math.min(Y - 1, Math.ceil((b.y + b.h) * Y)),
+  });
+  /** Tahmini kutunun merkezinin balondaki yazının merkezine uzaklığı (piksel). */
+  const uzaklik = (b, bulunan) => {
+    const t = tahminKutusu(b);
+    const y = bulunan.yazi;
+    return Math.hypot((t.x0 + t.x1 - y.x0 - y.x1) / 2, (t.y0 + t.y1 - y.y0 - y.y1) / 2);
+  };
 
-  /** bulunan balon numarası → sonuç kaydı */
-  const dolu = new Map();
-  const sonuc = [];
+  /** Her kaydın sonucu (girdi sırasıyla); null: atıldı (yinelenen). */
+  const sonuc = balonlar.map(() => null);
+  /** bulunan balon numarası → {i: kayıt sırası, mesafe} */
+  const atanan = new Map();
   const numarasiz = [];
-  for (const b of balonlar) {
+  /** kayıt sırası → yerinden edildiği balon numarası */
+  const yerinden = new Map();
+  balonlar.forEach((b, i) => {
     const n = Number.isInteger(b.bolge) && b.bolge >= 1 && b.bolge <= bulunanlar.length ? b.bolge : 0;
     if (!n || b.tur === 'ses') {
-      numarasiz.push(b);
-      continue;
+      numarasiz.push(i);
+      return;
     }
-    const es = dolu.get(n);
-    if (es) {
-      if (es.ceviri !== b.ceviri) {
-        es.ceviri = `${es.ceviri} ${b.ceviri}`;
-        es.orijinal = `${es.orijinal} ${b.orijinal}`;
-      }
-      continue;
+    const mesafe = uzaklik(b, bulunanlar[n - 1]);
+    const es = atanan.get(n);
+    if (!es) {
+      atanan.set(n, { i, mesafe });
+      return;
     }
-    const kayit = { ...b, ...oran(bulunanlar[n - 1].yazi), oturdu: true };
-    dolu.set(n, kayit);
-    sonuc.push(kayit);
+    if (balonlar[es.i].ceviri === b.ceviri) return; // aynı metin iki kez
+    if (mesafe < es.mesafe) {
+      numarasiz.push(es.i);
+      yerinden.set(es.i, n);
+      atanan.set(n, { i, mesafe });
+    } else {
+      numarasiz.push(i);
+      yerinden.set(i, n);
+    }
+  });
+  for (const [n, { i }] of atanan) {
+    sonuc[i] = { ...balonlar[i], ...oran(bulunanlar[n - 1].yazi), oturdu: true };
   }
 
-  // Numarasızlar: işaretlenen balonların içleri başka kayda verilemesin diye
+  // Numarasızlar: dolu balonların içleri başka kayda verilemesin diye
   // önce etiketlenir.
   const etiket = new Int32Array(G * Y);
   const bolgeler = new Map();
   let sonEtiket = 0;
   const kullanilan = new Set();
-  for (const [n] of dolu) {
+  for (const [n] of atanan) {
     const k = bulunanlar[n - 1].kutu;
     const cx = Math.round((k.x0 + k.x1) / 2);
-    // Balonun içinden bir beyaz piksel bul ve bölgeyi "kullanıldı" işaretle.
     for (let y = k.y0; y <= k.y1; y++) {
       const p = y * G + cx;
       if (resim.gri[p] >= BEYAZ_ESIGI && etiket[p] === 0) {
@@ -151,26 +178,36 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
       }
     }
   }
-  for (const b of numarasiz) {
+  numarasiz.sort((a, b) => a - b);
+  for (const i of numarasiz) {
+    const b = balonlar[i];
     if (b.tur === 'ses') {
-      sonuc.push(b);
+      sonuc[i] = b;
       continue;
     }
-    const tahmin = {
-      x0: Math.floor(b.x * G),
-      y0: Math.floor(b.y * Y),
-      x1: Math.min(G - 1, Math.ceil((b.x + b.g) * G)),
-      y1: Math.min(Y - 1, Math.ceil((b.y + b.h) * Y)),
-    };
+    const tahmin = tahminKutusu(b);
     const secilen = enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, () => ++sonEtiket);
-    if (!secilen) {
-      sonuc.push(b);
+    if (secilen) {
+      kullanilan.add(secilen.no);
+      sonuc[i] = { ...b, ...oran(secilen.yazi), oturdu: true, bolge: 0 };
       continue;
     }
-    kullanilan.add(secilen.no);
-    sonuc.push({ ...b, ...oran(secilen.yazi), oturdu: true });
+    // Aynı numarayı alıp tahmini de o balonun içindeyse aynı balonun devamıdır.
+    const n = yerinden.get(i);
+    if (n && kesisimAlani(bulunanlar[n - 1].kutu, tahmin) / alan(tahmin) >= 0.5) {
+      const hi = atanan.get(n).i;
+      const hedef = sonuc[hi];
+      if (hedef.ceviri !== b.ceviri) {
+        // Okuma sırası: girdide önce gelen önce yazılır.
+        const [ilk, son] = i < hi ? [b, hedef] : [hedef, b];
+        hedef.ceviri = `${ilk.ceviri} ${son.ceviri}`;
+        hedef.orijinal = `${ilk.orijinal} ${son.orijinal}`;
+      }
+      continue;
+    }
+    sonuc[i] = b;
   }
-  return sonuc;
+  return sonuc.filter(Boolean);
 }
 
 /**
@@ -182,8 +219,10 @@ function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket) {
   const tg = tahmin.x1 - tahmin.x0 + 1;
   const th = tahmin.y1 - tahmin.y0 + 1;
   const tahminAlani = tg * th;
-  // Bölge tahminin birkaç katından büyük olamaz (çizimdeki büyük beyaz alanlar).
-  const azamiAlan = Math.min(SEKIL.enCokAlan * G * Y, Math.max(4 * tahminAlani, 0.01 * G * Y));
+  // Bölge tahminin birkaç katından büyük olamaz. Tahmin çoğunlukla yalnızca
+  // yazının çevresi kadar sıkı, balon ise belirgin büyük; çizimdeki beyaz
+  // alanları asıl eleyen şekil denetimi (balonMu).
+  const azamiAlan = Math.min(SEKIL.enCokAlan * G * Y, Math.max(10 * tahminAlani, 0.03 * G * Y));
   const pay = 0.25;
   let enIyi = null;
   const denenen = new Set();

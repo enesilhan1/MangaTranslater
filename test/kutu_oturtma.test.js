@@ -79,12 +79,32 @@ describe('kutulariOturt', () => {
     assert.ok(k.x0 > 200 && k.y0 > 350, JSON.stringify(k));
   });
 
-  it('aynı balona iki kayıt: farklı çeviriler art arda, aynısı bir kez', () => {
+  it('aynı numara iki farklı metne: balona yakın olan kalır, diğeri boş balona geçer', () => {
     const r = ikiBalon();
     const bulunanlar = balonlariBul(r);
-    const farkli = kutulariOturt(r, [balon(0, 0, 1, 1, { bolge: 1, ceviri: 'Bir' }), balon(0, 0, 1, 1, { bolge: 1, ceviri: 'iki' })], bulunanlar);
-    assert.equal(farkli.length, 1);
-    assert.equal(farkli[0].ceviri, 'Bir iki');
+    // Sayfadaki hata: model sol üst balonun metnine de 2 numarayı verdi, ama
+    // kutusu sol üst balonun üstünde.
+    const s = kutulariOturt(r, [
+      balon(70, 125, 150, 155, { bolge: 2, ceviri: 'üstteki' }),
+      balon(250, 405, 330, 435, { bolge: 2, ceviri: 'alttaki' }),
+    ], bulunanlar);
+    assert.equal(s.length, 2);
+    const ust = piksel(s.find((b) => b.ceviri === 'üstteki'));
+    const alt = piksel(s.find((b) => b.ceviri === 'alttaki'));
+    assert.ok(ust.y1 < 200 && ust.x0 < 100, JSON.stringify(ust));
+    assert.ok(alt.y0 > 350 && alt.x0 > 200, JSON.stringify(alt));
+    assert.ok(s.every((b) => b.oturdu));
+  });
+
+  it('aynı numara ve tahmin de aynı balonda: model balonu bölmüş, art arda yazılır; aynısı bir kez', () => {
+    const r = ikiBalon();
+    const bulunanlar = balonlariBul(r);
+    const bolunmus = kutulariOturt(r, [
+      balon(70, 120, 150, 135, { bolge: 1, ceviri: 'Bir' }),
+      balon(75, 140, 145, 158, { bolge: 1, ceviri: 'iki' }),
+    ], bulunanlar);
+    assert.equal(bolunmus.length, 1);
+    assert.equal(bolunmus[0].ceviri, 'Bir iki');
     const ayni = kutulariOturt(r, [balon(0, 0, 1, 1, { bolge: 1, ceviri: 'Uah' }), balon(0, 0, 1, 1, { bolge: 1, ceviri: 'Uah' })], bulunanlar);
     assert.equal(ayni.length, 1);
   });
