@@ -264,3 +264,11 @@ indirildi ve OCR ilk kez gerçek Chrome'un offscreen belgesinde denendi.
 - Sığmayacağı küçük bir alanın numarasını alan metin (kedinin gözü) de
   OCR'de aranıyor; bulunursa asıl yazısına taşınıyor.
 - Önbellekteki sayfalar bir kez daha OCR'den geçiyor.
+
+## Sürüm 1.7.12 (2026-10-20)
+Model balonsuz bir yazının kutusunu uzağa koyduğunda yapılan sayfa geneli
+OCR aramasında artık kısa kelimeler de sayılıyor; kümede en az iki uzun
+kelime şartı korunuyor. Kullanıcının sayfasındaki "...HO UNA COSA DI CUI
+VI DEVO PARLARE." böylece yerine oturuyor. Aynı sayfada el yazısı gibi
+"Scusa..." OCR'de "Gcuso." okunduğu için düzeltilemiyor; ses efekti
+etiketleri ("AAAHH!") hâlâ modelin verdiği yerde duruyor.
