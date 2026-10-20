@@ -226,6 +226,29 @@ describe('ortak beyaz alanda birden çok metin', () => {
     assert.ok(b[0].yazi.y1 < 200 && b[1].yazi.y0 > 240, JSON.stringify(b.map((x) => x.yazi)));
     assert.ok(b.every((x) => x.elips === false));
   });
+
+  it('birbirine değen iki balonda her işaret kendi metnine yakın ve öbürüyle çakışmıyor', () => {
+    const r = resim();
+    // Kullanıcının sayfası: iki balon birbirine değiyor, beyaz alan tek parça.
+    for (let y = 0; y < Y; y++) {
+      for (let x = 0; x < G; x++) {
+        const d = Math.min(((x - 110) / 60) ** 2 + ((y - 300) / 75) ** 2, ((x - 210) / 60) ** 2 + ((y - 300) / 75) ** 2);
+        if (d <= 1) r.gri[y * G + x] = 255;
+        else if (d <= 1.08) r.gri[y * G + x] = 0;
+      }
+    }
+    // Soldaki metnin üstünde geniş boşluk; sağdakinin üstünde neredeyse hiç.
+    for (let y = 300; y <= 330; y += 15) yaziCiz(r, 80, y, 140);
+    for (let y = 238; y <= 343; y += 15) yaziCiz(r, 180, y, 240);
+    const b = balonlariBul(r);
+    assert.equal(b.length, 2, JSON.stringify(b.map((x) => x.kutu)));
+    const uz = (i, k) => Math.hypot(Math.max(k.x0 - i.x, 0, i.x - k.x1), Math.max(k.y0 - i.y, 0, i.y - k.y1));
+    for (const [a, c] of [[b[0], b[1]], [b[1], b[0]]]) {
+      assert.ok(a.isaret, 'işaret yok');
+      assert.ok(uz(a.isaret, a.kutu) <= 0.5 * uz(a.isaret, c.kutu), JSON.stringify({ i: a.isaret, k: a.kutu, o: c.kutu }));
+    }
+    assert.ok(Math.hypot(b[0].isaret.x - b[1].isaret.x, b[0].isaret.y - b[1].isaret.y) > b[0].isaret.r + b[1].isaret.r);
+  });
 });
 
 describe('sahipsiz balon ve yersiz metin', () => {

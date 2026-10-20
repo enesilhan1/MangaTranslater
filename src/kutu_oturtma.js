@@ -38,6 +38,11 @@ export const ASINDIRMA = 3;
  * genişlikte 8 px, gönderilen resimde genişliğin ~%1,6'sı). Yer yoksa küçülür.
  */
 const ISARET_YARICAPLARI = [8, 6, 4];
+/**
+ * Ortak alandaki metinlerde işaretin kendi metnine uzaklığı, öbür metinlere
+ * uzaklığın en çok bu katı (model işareti en yakın metne bağlıyor).
+ */
+const YAKINLIK_ORANI = 0.5;
 
 /** Sahipsiz balon eşleştirmesinde en çok uzaklık (resmin köşegenine oranla). */
 const SAHIPSIZ_UZAKLIK = 0.3;
@@ -650,7 +655,13 @@ function balonMu(resim, etiket, bolge) {
   const yaziKutusu = payli(bloklar.length === 1 ? bloklar[0] : yazi);
   const bolgeIntegrali = integral(durum, w, h);
   const kacinilacak = (bloklar.length > 1 ? bloklar.map(payli) : [yaziKutusu]);
-  const yer = (hedef) => isaretYeri(bolgeIntegrali, w, h, x0, y0, hedef, kacinilacak);
+  const yer = (hedef, ek) => isaretYeri(bolgeIntegrali, w, h, x0, y0, hedef, kacinilacak, ek);
+  /** Bloklar sırayla: her biri öbürlerinden uzak ve önceki işaretlere değmeden. */
+  const blokIsaretleri = [];
+  if (bloklar.length > 1) {
+    const kutular = bloklar.map(payli);
+    kutular.forEach((k, i) => blokIsaretleri.push(yer(k, { digerleri: kutular.filter((_, j) => j !== i), yerlesik: blokIsaretleri.filter(Boolean) })));
+  }
   return {
     ozellik,
     doluluk,
@@ -658,7 +669,7 @@ function balonMu(resim, etiket, bolge) {
     isaret: bloklar.length > 1 ? null : yer(yaziKutusu),
     // Bölgede birbirinden ayrık birden çok yazı bloğu varsa (iç içe geçmiş
     // balonlar tek beyaz alan görünür) her biri ayrı balon sayılır.
-    bloklar: bloklar.length > 1 ? bloklar.map((b) => ({ kutu: payli(b), parca: b.n, isaret: yer(payli(b)) })) : null,
+    bloklar: bloklar.length > 1 ? bloklar.map((b, i) => ({ kutu: payli(b), parca: b.n, isaret: blokIsaretleri[i] })) : null,
     // Çizilecek balon kutusu: gövde, yazıyı da kesinlikle kapsayacak şekilde.
     kutu: {
       x0: Math.min(gv.x0, yaziKutusu.x0),
@@ -692,29 +703,48 @@ function integral(durum, w, h) {
  * işaret yazı kutusuna göre konuyordu; çizgiye değen harfler kutunun
  * dışında kaldığında işaret dar bir balonun ilk satırının üstüne biniyor,
  * model o balonu okuyamıyordu.)
+ * Ortak beyaz alanda birden çok metin varsa işaret kendi metnine öbürlerinden
+ * yakın olmalı ve önceki işaretlere değmemeli (kullanıcının sayfasında iki
+ * metnin işaretleri aynı yere, birinin yanına üst üste çiziliyordu); böyle
+ * bir yer yoksa yalnızca yakınlık şartı bırakılır.
+ * @param {{digerleri?: PikselKutu[], yerlesik?: {x: number, y: number, r: number}[]}} [ek]
+ *   Aynı alandaki öbür metinlerin kutuları ve önceden konmuş işaretler.
  * @returns {{x: number, y: number, r: number} | null}
  */
-function isaretYeri(I, w, h, x0, y0, hedef, kacinilacak) {
+function isaretYeri(I, w, h, x0, y0, hedef, kacinilacak, { digerleri = [], yerlesik = [] } = {}) {
   const dolu = (ax, ay, bx, by) =>
     I[(by + 1) * (w + 1) + bx + 1] - I[ay * (w + 1) + bx + 1] - I[(by + 1) * (w + 1) + ax] + I[ay * (w + 1) + ax];
   const yerel = (k) => ({ x0: k.x0 - x0, y0: k.y0 - y0, x1: k.x1 - x0, y1: k.y1 - y0 });
   const hd = yerel(hedef);
   const kac = kacinilacak.map(yerel);
+  const diger = digerleri.map(yerel);
+  const konmus = yerlesik.map((i) => ({ x: i.x - x0, y: i.y - y0, r: i.r }));
   const hcx = (hd.x0 + hd.x1) / 2;
-  for (const r of ISARET_YARICAPLARI) {
-    let enIyi = null;
-    for (let y = r; y < h - r; y++) {
-      for (let x = r; x < w - r; x++) {
-        if (dolu(x - r, y - r, x + r, y + r) !== (2 * r + 1) * (2 * r + 1)) continue;
-        if (kac.some((k) => x + r >= k.x0 && x - r <= k.x1 && y + r >= k.y0 && y - r <= k.y1)) continue;
-        const ustte = y + r < hd.y0;
-        const maliyet = (ustte ? hd.y0 - (y + r) : 1000 + Math.abs(y - (hd.y0 + hd.y1) / 2)) + 0.5 * Math.abs(x - hcx);
-        if (!enIyi || maliyet < enIyi.m) enIyi = { m: maliyet, x, y };
+  for (const yakinlikSarti of diger.length ? [true, false] : [false]) {
+    for (const r of ISARET_YARICAPLARI) {
+      let enIyi = null;
+      for (let y = r; y < h - r; y++) {
+        for (let x = r; x < w - r; x++) {
+          if (dolu(x - r, y - r, x + r, y + r) !== (2 * r + 1) * (2 * r + 1)) continue;
+          if (kac.some((k) => x + r >= k.x0 && x - r <= k.x1 && y + r >= k.y0 && y - r <= k.y1)) continue;
+          if (konmus.some((i) => Math.hypot(x - i.x, y - i.y) <= r + i.r + 2)) continue;
+          if (yakinlikSarti) {
+            const kendi = noktaKutuUzakligi(x, y, hd);
+            if (diger.some((k) => noktaKutuUzakligi(x, y, k) * YAKINLIK_ORANI <= kendi)) continue;
+          }
+          const ustte = y + r < hd.y0;
+          const maliyet = (ustte ? hd.y0 - (y + r) : 1000 + Math.abs(y - (hd.y0 + hd.y1) / 2)) + 0.5 * Math.abs(x - hcx);
+          if (!enIyi || maliyet < enIyi.m) enIyi = { m: maliyet, x, y };
+        }
       }
+      if (enIyi) return { x: x0 + enIyi.x, y: y0 + enIyi.y, r };
     }
-    if (enIyi) return { x: x0 + enIyi.x, y: y0 + enIyi.y, r };
   }
   return null;
+}
+
+function noktaKutuUzakligi(x, y, k) {
+  return Math.hypot(Math.max(k.x0 - x, 0, x - k.x1), Math.max(k.y0 - y, 0, y - k.y1));
 }
 
 /** Bu kadar parçalı metnin yanında, onun bu oranından az parçalı bloklar leke sayılır. */
