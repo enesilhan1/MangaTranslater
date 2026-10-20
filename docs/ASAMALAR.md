@@ -180,3 +180,14 @@ v1.7.1'den sonra kullanıcının iki sayfasında iki sorun görüldü.
 
 Konsolda artık her dilim için "N işaret, modelden M metin (numaralar …)"
 yazıyor. Bir balon boş kalırsa modelin mi atladığı buradan görülür.
+
+## Sürüm 1.7.3 (2026-10-20)
+Kullanıcının İtalyanca sayfasında büyük bir balon ("CIÒ SIGNIFICA...")
+İtalyanca kaldı; çevirisi balonun altındaki kızın üstüne küçük bir kutuda
+çıktı. Balonun alt ucu açık ve kızın beyaz saçıyla tek alan.
+
+- Model metni numarasız döndürmüş, OCR kelime kümesi de çizime taşmış.
+  OCR kutusu çevirisiz bir balona değiyorsa metin artık o balona
+  yerleşiyor.
+- Saçtaki 1-3 piksellik lekeler balonun yazı kutusunu yüze kadar
+  uzatıyordu. Metnin yanındaki leke blokları artık yazı sayılmıyor.
