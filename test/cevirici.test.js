@@ -195,6 +195,17 @@ describe('Cevirici: atlanan yazı', () => {
     assert.equal(t.cagri.length, 2, 'önbellekten gelişte tekrar sorulmamalı');
   });
 
+  it('önbellekteki kayıt da (balonsuz metinleri zaten OCR ile oturmuş) bir kez denetlenir', async () => {
+    const t1 = kur([[kayit('NO, KUU-CHAN', 0.6, 0.6), kayit('SPRIZZANO VOGLIA DI UCCIDERCI', 0.5, 0.2)]]);
+    const ozet = await ozetCikar(RESIM.veri);
+    await t1.c.onbellek.koy(kayitAnahtari(ozet, 'gorsel:gemini:gemini-3.8-flash', 'tr'), [{ ...kayit('NO, KUU-CHAN', 0.6, 0.6), ocrOturdu: true, ocrDenendi: 99 }]);
+    const s = await t1.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(t1.cagri.length, 1, 'atlanan yazı için model bir kez sorulmalı');
+    assert.equal(s.balonlar.length, 2);
+    await t1.c.dilimCevir({ id: 'b', oncelik: 1, resim: RESIM });
+    assert.equal(t1.cagri.length, 1);
+  });
+
   it('atlanan yazı yoksa ikinci istek gitmez', async () => {
     const t = kur([[kayit('NO, KUU-CHAN', 0.6, 0.6), kayit('SPRIZZANO VOGLIA DI UCCIDERCI', 0.05, 0.58)]]);
     await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });

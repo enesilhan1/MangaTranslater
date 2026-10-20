@@ -67,7 +67,13 @@ export class Cevirici {
     const bolgeler = resim.bolgeler ?? [];
     const supheli = (b) => b.bolge > 0 && b.tur !== 'ses' && metinSigmaz(b.orijinal, bolgeler[b.bolge - 1]?.parca);
     const gerekli = (b) => (ocrGerekirMi(b) || supheli(b) || latinSesMi(b)) && !b.ocrOturdu && Number(b.ocrDenendi ?? 0) < OCR_SURUMU;
-    if (a.motor !== Motor.GORSEL || !balonlar.some(gerekli)) return { balonlar, degisti: false };
+    // Atlanan yazı denetimi de OCR ister: balonsuz metni olan (OCR'nin bu
+    // sayfada işe yaradığı) ve henüz denetlenmemiş dilimde OCR yeniden
+    // çalışır. Önceden yalnızca yerleştirilecek metin varken çalışıyordu;
+    // balonsuz metinleri önceki sürümlerde zaten OCR ile oturmuş önbellek
+    // kayıtlarında denetim hiç yapılmıyordu (kullanıcının sayfası).
+    const eksikDenetimi = a.motor === Motor.GORSEL && !balonlar.some((b) => b.eksikDenendi) && balonlar.some((b) => !b.bolge && b.tur !== 'ses');
+    if (a.motor !== Motor.GORSEL || (!balonlar.some(gerekli) && !eksikDenetimi)) return { balonlar, degisti: false };
     let ocr;
     try {
       ocr = await this.ocrKopru().kelimeleriOku(resim);
@@ -77,6 +83,7 @@ export class Cevirici {
     const adaylar = balonlar.filter(gerekli);
     // İşaretli alanlar (numaralı balonlar) sayfa genelindeki aramaya girmez.
     const isaretli = (resim.bolgeler ?? []).map(({ kutu: [y0, x0, y1, x1] }) => ({ x0: x0 / 1000, y0: y0 / 1000, x1: x1 / 1000, y1: y1 / 1000 }));
+    if (!adaylar.length) return { balonlar, degisti: false, ocr, isaretli };
     // Şüpheli numaralı metin numarasız gibi aranır; OCR bulursa numarası
     // düşer, bulamazsa numarasıyla kalır (içerik betiği yine denetler).
     const sonuc = ocrIleOturt(adaylar.map((b) => (supheli(b) ? { ...b, bolge: 0 } : b)), ocr, { isaretli });
@@ -93,12 +100,16 @@ export class Cevirici {
    * yanıttan yalnızca o yazılara karşılık gelen metinler alınıp OCR ile
    * yerine konur. Dilim başına bir kez (eksikDenendi). OCR'nin zaten
    * çalıştığı sayfalarda yapılır; ek OCR maliyeti yok.
-   * @returns {Promise<{balonlar: object[], eklenen: number} | null>}  null: gerekmedi.
+   * Atlanan yazı bulunmasa da kayıtlar eksikDenendi işaretlenir (önbelleğe
+   * yazılınca OCR bu denetim için bir daha çalışmasın).
+   * @returns {Promise<{balonlar: object[], eklenen: number, soruldu: boolean} | null>}
+   *   null: denetim yapılmadı ya da ikinci istek hata verdi.
    */
   async eksikleriTamamla(a, balonlar, resim, { ocr, isaretli }, id, oncelik) {
     if (a.motor !== Motor.GORSEL || !ocr || balonlar.some((b) => b.eksikDenendi)) return null;
     const atlananlar = atlananYazilar(balonlar, ocr, { isaretli });
-    if (!atlananlar.length) return null;
+    const isaretle = (liste) => liste.map((b) => ({ ...b, eksikDenendi: true }));
+    if (!atlananlar.length) return { balonlar: isaretle(balonlar), eklenen: 0, soruldu: false };
     const motor = this.motor(a);
     let ek;
     try {
@@ -114,7 +125,7 @@ export class Cevirici {
       atlananlar.some((x) => atlananaUyar(x, b.orijinal)));
     const oturmus = ocrIleOturt(yeniler.map((b) => ({ ...b, bolge: 0 })), ocr, { isaretli })
       .map((b) => ({ ...b, ocrDenendi: OCR_SURUMU }));
-    return { balonlar: [...balonlar, ...oturmus].map((b) => ({ ...b, eksikDenendi: true })), eklenen: oturmus.length };
+    return { balonlar: isaretle([...balonlar, ...oturmus]), eklenen: oturmus.length, soruldu: true };
   }
 
   /** Yalnızca OCR için köprü (görsel YZ'de balonsuz metinler); ilk gerektiğinde kurulur. */
@@ -160,7 +171,7 @@ export class Cevirici {
       const tamam = duzeltme.ocr ? await this.eksikleriTamamla(a, duzeltme.balonlar, resim, duzeltme, id, oncelik) : null;
       const balonlar = tamam?.balonlar ?? duzeltme.balonlar;
       if (duzeltme.degisti || tamam) await this.onbellek.koy(anahtar, balonlar).catch(() => {});
-      return { balonlar, onbellekten: true, ...(tamam ? { tani: { eksikEklenen: tamam.eklenen } } : {}) };
+      return { balonlar, onbellekten: true, ...(tamam?.soruldu ? { tani: { eksikEklenen: tamam.eklenen } } : {}) };
     }
 
     const motor = this.motor(a);
@@ -186,7 +197,7 @@ export class Cevirici {
     // bir kez yanılıp "yazı yok" derse sayfa sonsuza kadar boş kalmasın.
     if (balonlar.length) await this.onbellek.koy(anahtar, balonlar).catch(() => {});
     // Konsol izi için: modelin döndürdüğü/atılan kayıt sayısı, yeniden soruldu mu.
-    const tani = { ...(ham.istatistik ?? {}), ...(ham.yenidenSoruldu ? { yenidenSoruldu: true } : {}), ...(tamam ? { eksikEklenen: tamam.eklenen } : {}) };
+    const tani = { ...(ham.istatistik ?? {}), ...(ham.yenidenSoruldu ? { yenidenSoruldu: true } : {}), ...(tamam?.soruldu ? { eksikEklenen: tamam.eklenen } : {}) };
     return { balonlar, onbellekten: false, ...(Object.keys(tani).length ? { tani } : {}) };
   }
 }
