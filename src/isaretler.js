@@ -7,8 +7,10 @@
 
 /**
  * İşaretlerin yeri ve boyutu. İşaret balonun **içine** konur ki hangi balona
- * ait olduğu belirsiz kalmasın: önce yazının üstündeki boşluğa (ortalı),
- * sığmazsa yazının soluna, o da sığmazsa altına; hiçbirine sığmıyorsa
+ * ait olduğu belirsiz kalmasın; yazıya bitişik durur ki etiketlediği metnin
+ * dibinde olsun (boşluğun ortasına konunca alttaki boşlukta balonun
+ * kuyruğuna inip komşu balona yaklaşıyordu): önce yazının hemen üstüne
+ * (ortalı), sığmazsa hemen soluna, o da sığmazsa hemen altına; hiçbirine sığmıyorsa
  * balonun sınırlayıcı kutusunun sol üst köşesine. (İlk sürümde işaret hep
  * köşedeydi, yani balonun dışında; kullanıcının sayfasında Claude iki
  * farklı balonun metnine aynı numarayı verdi.)
@@ -29,13 +31,13 @@ export function isaretKonumlari(bulunanlar, olcek, genislik, yukseklik = Infinit
     let yy;
     if (y.y0 - k.y0 >= gerekli) {
       x = (y.x0 + y.x1) / 2;
-      yy = (k.y0 + y.y0) / 2;
+      yy = y.y0 - r - 1;
     } else if (y.x0 - k.x0 >= gerekli) {
-      x = (k.x0 + y.x0) / 2;
+      x = y.x0 - r - 1;
       yy = (y.y0 + y.y1) / 2;
     } else if (k.y1 - y.y1 >= gerekli) {
       x = (y.x0 + y.x1) / 2;
-      yy = (y.y1 + k.y1) / 2;
+      yy = y.y1 + r + 1;
     } else {
       x = k.x0 + r * 0.4;
       yy = k.y0 + r * 0.4;
