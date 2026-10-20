@@ -296,3 +296,16 @@ bir kez yapılıyor. Ek ücret yalnızca böyle sayfalarda doğuyor.
 Gerçek Chrome'da yalnızca atlanan yazı bulundu. Metinlerin hepsinin
 döndüğü üç sayfada hiçbir şey bulunmadı. Gerçek bir model yanıtıyla
 uçtan uca denenmedi (API anahtarı yok).
+
+## Sürüm 1.8.1 (2026-10-21)
+1.8.0'dan sonra kullanıcının iki sayfasında:
+- Atlanan "SPRIZZANO…" balonu yine çevrilmedi. Denetim, önbellekteki
+  sayfada hiç yapılmamıştı: balonsuz metinler önceki sürümlerde zaten OCR
+  ile oturduğu için OCR çalışmıyordu. Artık denetim için de çalışıyor
+  (dilim başına bir kez).
+- İki sayfalık geniş resimde "VI DARÒ TEMPO PER DECIDERE." atlandı;
+  sayfada balonsuz metin olmadığı için denetim yapılmadı. Model bir
+  işaretli balonu kullanmadıysa da denetim artık yapılıyor.
+- Aynı resim ekranda ~%30 boyutta gösterildiği için dar balonlardaki
+  çeviriler kesiliyordu. Son çare olarak dolgu azalıyor, punto 6 px'e
+  iniyor, gerekirse kutu dikey büyüyor; yazı kesilmiyor.

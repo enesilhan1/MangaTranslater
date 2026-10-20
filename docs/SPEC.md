@@ -30,7 +30,8 @@ piksellerden kendisi bulup modele giden kopyada numaralar; yerleştirme
 kapsayan yanıt kalır. OCR çalıştığında, onun güvenle okuduğu ama hiçbir çeviri
 verilmemiş bir yazı kümesi kalırsa model bu alanlar söylenerek bir kez daha
 sorulur; yanıttan yalnızca o yazılara ait metinler eklenir (sayfa başına
-bir kez).
+bir kez). Bu denetim için OCR, dilimde balonsuz metin varsa ya da model bir
+işaretli balonu kullanmadıysa çalışır (önbellekteki sayfalarda da bir kez).
 - Sağlayıcılar: **Gemini (Google)** (varsayılan), **Claude (Anthropic)**,
   **ChatGPT (OpenAI)**. (DeepSeek resim okuyamadığı için yok.)
 - Web Asistanı'ndaki yapı: her sağlayıcı için hazır model listesi (ilki
@@ -95,7 +96,9 @@ listesi).
   sığmayan uzun kelime hece sınırından tireyle bölünür.
 - Bulunan balonda beyaz zemin balonun kendi şeklindedir (oval / dikdörtgen)
   ve balonun çizgisinin içinde kalır; çeviri balonun içine sığdırılır, kutu
-  balonun dışına büyütülmez.
+  balonun dışına büyütülmez. Tek istisna: en küçük puntoda (8 px) bile
+  sığmıyorsa dolgu azalır, punto 6 px'e iner, o da yetmezse kutu yazıyı
+  kesmeyecek kadar dikey büyür (yazı kesilmez).
 - Balonlar resmin piksellerinden bulunur ve görsel YZ'ye giden kopyada
   numaralı işaretlerle gösterilir; model her metnin hangi numaralı balonda
   olduğunu söyler ve çeviri o balondaki yazının üstüne yazılır (modelin
