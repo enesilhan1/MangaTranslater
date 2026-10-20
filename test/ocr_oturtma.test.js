@@ -27,7 +27,10 @@ describe('ocrIleOturt', () => {
   const kelimeler = [
     k('THE', 410, 700), k('TRUTH', 470, 700),
     k('ABOUT', 410, 740), k('THE', 500, 740),
-    k('"WORLD"!?', 410, 780),
+    // Stilize yazı: doğru okunmuş ama güveni 0.
+    k('"WORLD"!?', 410, 780, 0),
+    // Güveni düşük kısa gürültü eşleşmemeli.
+    k('THE', 410, 820, 10),
     // Uzakta, başka bir metinde de "THE" var; karışmamalı.
     k('THE', 60, 100), k('LAST', 110, 100),
   ];
@@ -36,7 +39,7 @@ describe('ocrIleOturt', () => {
   it('modelin yalnızca ilk satırı kapsayan kutusu üç satırın tamamına genişler', () => {
     const [b] = ocrIleOturt([balon(400, 690, 560, 725, { orijinal: 'THE TRUTH ABOUT THE "WORLD"!?' })], ocr);
     assert.equal(b.ocrOturdu, true);
-    assert.ok(b.y * Y < 700 && (b.y + b.h) * Y > 800, JSON.stringify(b));
+    assert.ok(b.y * Y < 700 && (b.y + b.h) * Y > 800 && (b.y + b.h) * Y < 830, JSON.stringify(b));
     assert.ok(b.x * G < 410 && (b.x + b.g) * G > 540);
   });
 

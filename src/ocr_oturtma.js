@@ -9,7 +9,12 @@
 // orijinal metnin kelimeleri OCR kelimeleriyle eşlenir ve kutu tam o
 // kelimelerin üstüne taşınır. Saf hesaplama (OCR'yi çağıran arka plan).
 
-/** Bu güvenin altındaki OCR kelimeleri eşlemeye alınmaz. */
+/**
+ * Bu güvenin altındaki kısa (≤3 harf) OCR kelimeleri eşlemeye alınmaz.
+ * Uzun kelimelerde güvene bakılmaz: kelime zaten modelin okuduğu metinle
+ * karşılaştırılıyor, ve stilize başlık yazılarında Tesseract kelimeyi doğru
+ * okusa da güveni 0 verebiliyor (kullanıcının sayfasında "WORLD" böyleydi).
+ */
 const EN_AZ_GUVEN = 30;
 /** Bu oranda kelime eşleşmezse kutu değiştirilmez. */
 const EN_AZ_ESLESME = 0.4;
@@ -55,7 +60,7 @@ export const ocrGerekirMi = (b) => !b.bolge && b.tur !== 'ses';
 export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }) {
   const sozluk = kelimeler
     .map((k) => ({ ...k, sade: sadelestir(k.metin) }))
-    .filter((k) => k.guven >= EN_AZ_GUVEN && k.sade.length >= 2);
+    .filter((k) => k.sade.length >= 4 || (k.sade.length >= 2 && k.guven >= EN_AZ_GUVEN));
   const kullanildi = new Set();
 
   return balonlar.map((b) => {
