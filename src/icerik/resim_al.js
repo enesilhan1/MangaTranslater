@@ -14,10 +14,12 @@ const JPEG_KALITESI = 0.85;
 const ANALIZ_GENISLIGI = 64;
 /**
  * Kutu oturtma (src/kutu_oturtma.js) için dilimin gri tonlu kopyasının
- * genişliği: balon çizgileri ve harfler seçilecek kadar ayrıntılı, flood
- * fill hızlı kalacak kadar küçük.
+ * piksel sayısı (500x710'luk dikey sayfa kadar): balon çizgileri ve harfler
+ * seçilecek kadar ayrıntılı, flood fill hızlı kalacak kadar küçük. Önceden
+ * genişlik hep 500'dü; iki sayfalık geniş resimlerde harfler yarı boya
+ * iniyor, dar bir balonda işarete yer kalmıyordu.
  */
-const OTURTMA_GENISLIGI = 500;
+const OTURTMA_ALANI = 500 * 710;
 
 /**
  * Resmin baytları. blob:/data: ve aynı kökenli adresler doğrudan okunur
@@ -130,9 +132,13 @@ function isaretleriCiz(ctx, isaretler) {
   ctx.restore();
 }
 
-/** Tuvalin OTURTMA_GENISLIGI'ne küçültülmüş gri tonlu kopyası. */
+/** Tuvalin OTURTMA_ALANI'na küçültülmüş (büyütülmemiş) gri tonlu kopyası. */
+export function griBoyutu(genislik, yukseklik) {
+  return Math.max(1, Math.min(genislik, Math.round(Math.sqrt((OTURTMA_ALANI * genislik) / yukseklik))));
+}
+
 function griKopya(kaynak) {
-  const g = Math.min(OTURTMA_GENISLIGI, kaynak.width);
+  const g = griBoyutu(kaynak.width, kaynak.height);
   const h = Math.max(1, Math.round((kaynak.height * g) / kaynak.width));
   const tuval = new OffscreenCanvas(g, h);
   const ctx = tuval.getContext('2d', { willReadFrequently: true });
