@@ -46,7 +46,16 @@ const STIL = `
   overflow-wrap: normal; word-break: normal; hyphens: manual; white-space: normal;
 }
 .balon.kirilabilir { overflow-wrap: anywhere; }
-.orijinal .balon { display: none; }
+/* Ses efekti: çizimi kapatmamak için beyaz kutu yerine efektin köşesinde
+   küçük, yarı saydam etiket (kullanıcının seçimi). */
+.ses-etiketi {
+  position: absolute; box-sizing: border-box; max-width: 45%;
+  padding: 1px 6px; border-radius: 4px;
+  background: rgba(20, 20, 24, .72); color: #fff;
+  font: 700 12px/1.25 "Segoe UI", system-ui, sans-serif;
+  letter-spacing: .02em; white-space: normal; overflow-wrap: anywhere;
+}
+.orijinal .balon, .orijinal .ses-etiketi { display: none; }
 .rozet {
   position: absolute; top: 8px; right: 8px; width: 24px; height: 24px;
   border-radius: 50%; box-sizing: border-box;
@@ -136,6 +145,7 @@ export class Gorunum {
   }
 
   _balon(b) {
+    if (b.tur === 'ses') return this._sesEtiketi(b);
     const el = document.createElement('div');
     el.className = 'balon';
     el.lang = this.hedefDil();
@@ -144,6 +154,17 @@ export class Gorunum {
     el.dataset.kutu = JSON.stringify([b.x, b.y, b.g, b.h]);
     el.dataset.harf = String((b.orijinal || b.ceviri).length);
     this._kutuyaKoy(el, b.x, b.y, b.g, b.h);
+    return el;
+  }
+
+  /** Ses efekti: sığdırılmaz, efektin sol üst köşesine küçük etiket. */
+  _sesEtiketi(b) {
+    const el = document.createElement('div');
+    el.className = 'ses-etiketi';
+    el.lang = this.hedefDil();
+    el.textContent = b.ceviri;
+    el.title = b.orijinal;
+    Object.assign(el.style, { left: `${b.x * 100}%`, top: `${b.y * 100}%` });
     return el;
   }
 
