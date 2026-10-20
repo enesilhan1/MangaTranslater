@@ -1,5 +1,7 @@
 # Manga Çevirmen
 
+[![Testler](https://github.com/enesilhan1/MangaTranslator/actions/workflows/test.yml/badge.svg)](https://github.com/enesilhan1/MangaTranslator/actions/workflows/test.yml)
+
 Manga, manhwa ve çizgi roman sayfalarındaki **resimlerin üzerindeki yazıları**
 (konuşma balonları, anlatım kutuları, ses efektleri) Türkçeye ya da seçtiğin
 dile çeviren tarayıcı eklentisi. Tarayıcının kendi çevirisi resimlerin içindeki
@@ -127,6 +129,8 @@ npm test
 ```
 
 - `npm run paketle`: mağazaya/imzalamaya yüklenecek ZIP (`dist/`).
+- Her push ve pull request'te GitHub Actions testleri Node 22 ve 24 ile
+  çalıştırır ve paketin üretilebildiğini denetler (`.github/workflows/test.yml`).
 - `npm run tesseract`: gömülü Tesseract dosyalarını `node_modules`'tan
   yeniden kopyalar (önce `npm install`).
 - `test/onizleme.html`, `test/popup_onizleme.html`, `test/sayfa_deneme.html`:
