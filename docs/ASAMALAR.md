@@ -66,3 +66,16 @@ ses efekti çevirisi paneli kapatıyordu.
   balona oturdu, 15 ms.
 - Ses efektleri küçük etiket.
 - Henüz: gerçek Claude anahtarıyla uçtan uca deneme kullanıcıda.
+
+## Sürüm 1.2.0 (2026-10-20): balonlar piksellerden, model numarayla eşler
+1.1.0 denemesinde (Claude) oturtma yetmedi: bir çeviri çizimdeki beyaz bir
+alana oturup paneli kapattı, "UAH" yanlış balona oturup birleşti, bazı
+balonlar çevrilmedi.
+- balonlariBul (src/kutu_oturtma.js): kapalı beyaz bölgeler + şekil
+  denetimi (doluluk, yazı benzeri delik parçaları, kenar boşluğu, boyut).
+  Kullanıcının iki sayfasında gerçek 6 balonun 6'sı, çizim alanı ve enkaz
+  parçası elendi.
+- Numaralı işaretler (src/isaretler.js) modele giden kopyada; istem/şema
+  'bolge'; numaralı metin doğrudan bulunan balona yerleşir.
+- Farklı metinler artık birleşmez; numarasız oturtma daha sıkı.
+- Henüz: gerçek Claude anahtarıyla uçtan uca deneme kullanıcıda.

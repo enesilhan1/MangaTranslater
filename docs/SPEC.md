@@ -83,9 +83,12 @@ listesi).
   değiştirilmez (üstünde ayrı bir katman).
 - Yazı orijinal yazıdan belirgin şekilde büyük olmaz; kelimeler ortadan
   bölünmez (sığmıyorsa punto küçülür).
-- Modelin verdiği kutu yalnızca ipucudur; kutu, resimdeki gerçek balonun
-  içindeki yazıya oturtulur (balonun dışına, komşu panele taşmaz). Aynı
-  balona düşen yinelenen kayıtlar birleştirilir.
+- Balonlar resmin piksellerinden bulunur ve görsel YZ'ye giden kopyada
+  numaralı işaretlerle gösterilir; model her metnin hangi numaralı balonda
+  olduğunu söyler ve çeviri o balondaki yazının üstüne yazılır (modelin
+  koordinatı kullanılmaz). İşaretsiz metinlerde modelin kutusu ipucudur ve
+  en yakın balona oturtulur. Farklı metinler birleştirilmez. Sayfada
+  gösterilen resim değişmez.
 - **Ses efektleri** çizimi kapatmamak için beyaz kutuyla değil, efektin
   köşesinde küçük, yarı saydam bir etiketle gösterilir (2026-10-20,
   kullanıcının Claude denemesinden sonra).
