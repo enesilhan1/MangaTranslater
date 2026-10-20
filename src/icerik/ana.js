@@ -16,7 +16,7 @@ import { Kuyruk, Oncelik } from '../kuyruk.js';
 import { tarayici } from '../tarayici.js';
 import { hatayiPaketle } from '../yz/ortak.js';
 import { adayMi } from './aday.js';
-import { Gorunum } from './gorunum.js';
+import { Gorunum, KATMAN_ETIKETI } from './gorunum.js';
 import { arkaPlanaBildir, arkaPlanaGonder, eklentiKoptuMu } from './mesaj.js';
 import { dilimlereAyir, resimBaytlari } from './resim_al.js';
 
@@ -27,6 +27,9 @@ import { dilimlereAyir, resimBaytlari } from './resim_al.js';
 function iz(...parcalar) {
   console.info('[Manga Çevirmen]', ...parcalar.filter((p) => p !== '' && p != null));
 }
+
+/** Eklentinin yeniden yüklenip yüklenmediği bu aralıkla denetlenir. */
+const SAHIPSIZ_DENETIM_MS = 2000;
 
 /** Bu kadar ekran yukarı/aşağıdaki resimler "yakın" sayılır. */
 const YAKIN_PAYI = '300%';
@@ -65,6 +68,12 @@ class Cevirmen {
   }
 
   async baslat() {
+    // Eski bir sürümün sahipsiz betiğinden kalan katmanlar (o sürüm kendini
+    // temizlemiyordu). Bu modülde ikinci başlatma olmadığı için (baslat())
+    // sayfadaki her katman başkasınındır.
+    document.querySelectorAll(KATMAN_ETIKETI).forEach((e) => e.remove());
+    // Sayfa hiç değişmese de (sabit okuyucu) sahipsiz kalış fark edilsin.
+    this._sahipsizDenetimi = setInterval(() => eklentiKoptuMu() && this.sahipsizKal(), SAHIPSIZ_DENETIM_MS);
     await this._ayarlariOku();
     this.degisimGozcu.observe(document.documentElement, {
       childList: true,
@@ -100,7 +109,7 @@ class Cevirmen {
   }
 
   _degisimler(degisimler) {
-    if (eklentiKoptuMu()) return this.durdur();
+    if (eklentiKoptuMu()) return this.sahipsizKal();
     for (const d of degisimler) {
       if (d.type === 'attributes') {
         if (d.target instanceof HTMLImageElement) this._incele(d.target);
@@ -270,8 +279,21 @@ class Cevirmen {
     }
   }
 
-  /** Eklenti yeniden yüklendiyse bu (artık sahipsiz) betik sessizce durur. */
+  /**
+   * Eklenti yeniden yüklendi/güncellendi: bu betik artık sahipsiz. Durur ve
+   * çevirilerini de kaldırır. Önceden yalnızca duruyordu; eski sürümün
+   * çevirileri ekranda kalıyor, yeni betik (açılır pencereden ya da
+   * yenilemeden) ikinci bir katman açınca iki sürümün sonuçları üst üste
+   * biniyordu (kullanıcının sayfasında iki manga-cevirmen-katmani vardı).
+   */
+  sahipsizKal() {
+    this.durdur();
+    clearInterval(this._sahipsizDenetimi);
+    this.gorunum.yokEt();
+  }
+
   durdur() {
+    clearInterval(this._sahipsizDenetimi);
     this.degisimGozcu.disconnect();
     this.gorunurGozcu.disconnect();
     this.yakinGozcu.disconnect();

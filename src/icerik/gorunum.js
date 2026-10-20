@@ -26,6 +26,8 @@ import { puntoBul, puntoTavani } from './sigdir.js';
 const BUYUTME = 1.3;
 /** Yerleşim kayması (üstteki resim yüklenince) kaydırma olmadan da olur. */
 const KONUM_DENETIM_MS = 500;
+/** Katmanın özel öğe adı (eski sürümlerden kalan katmanlar da bu adla bulunur). */
+export const KATMAN_ETIKETI = 'manga-cevirmen-katmani';
 
 const STIL = `
 :host { all: initial; }
@@ -105,7 +107,7 @@ export class Gorunum {
   /** Katman ilk çizimde kurulur; çevrilecek resmi olmayan sayfada DOM'a hiç dokunulmaz. */
   _katman() {
     if (this.kok) return this.kok;
-    this.ev = document.createElement('manga-cevirmen-katmani');
+    this.ev = document.createElement(KATMAN_ETIKETI);
     const golge = this.ev.attachShadow({ mode: 'closed' });
     const stil = document.createElement('style');
     stil.textContent = STIL;
