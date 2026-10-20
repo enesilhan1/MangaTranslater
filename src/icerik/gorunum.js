@@ -46,6 +46,17 @@ const STIL = `
   overflow-wrap: normal; word-break: normal; hyphens: manual; white-space: normal;
 }
 .balon.kirilabilir { overflow-wrap: anywhere; }
+/* Bulunan balonun kendi şekli: beyaz zemin balonun içini kaplar, dışına
+   taşmaz (köşeli kutu oval balonun dışına çıkıyordu). Dolgu px olarak
+   _sigdir'de verilir. */
+.balon.sekilli { box-shadow: none; border-radius: 12%; }
+.balon.sekilli.elips { border-radius: 50%; }
+/* Orijinal yazının kendisini örten beyaz dikdörtgen: balon tam oval
+   değilse (ör. panel kenarında düz kesilmişse) oval zeminin dışında kalan
+   harf uçlarını kapatır. Yazının sınırında olduğu için balonun dışına
+   çıkmaz. */
+.ortu { position: absolute; background: #fff; border-radius: 3px; }
+.orijinal .ortu { display: none; }
 /* Ses efekti: çizimi kapatmamak için beyaz kutu yerine efektin köşesinde
    küçük, yarı saydam etiket (kullanıcının seçimi). */
 .ses-etiketi {
@@ -125,7 +136,10 @@ export class Gorunum {
     }
 
     // Yeni gelen balonlar (dilimler sırayla geldikçe) eklenir.
-    for (const b of durum.balonlar.slice(r.cizilen)) r.kap.insertBefore(this._balon(b), r.rozet);
+    for (const b of durum.balonlar.slice(r.cizilen)) {
+      if (b.balon && b.tur !== 'ses') r.kap.insertBefore(this._ortu(b), r.rozet);
+      r.kap.insertBefore(this._balon(b), r.rozet);
+    }
     const yeniBalon = durum.balonlar.length > r.cizilen;
     r.cizilen = durum.balonlar.length;
 
@@ -151,9 +165,31 @@ export class Gorunum {
     el.lang = this.hedefDil();
     el.textContent = b.ceviri;
     el.title = b.orijinal;
-    el.dataset.kutu = JSON.stringify([b.x, b.y, b.g, b.h]);
     el.dataset.harf = String((b.orijinal || b.ceviri).length);
-    this._kutuyaKoy(el, b.x, b.y, b.g, b.h);
+    let kutu = [b.x, b.y, b.g, b.h];
+    if (b.balon) {
+      // Balonun içi: çizgisinin üstüne binmesin diye her yandan %2 içeride.
+      const { x, y, g, h } = b.balon;
+      kutu = [x + g * 0.02, y + h * 0.02, g * 0.96, h * 0.96];
+      el.classList.add('sekilli');
+      if (b.balon.elips) el.classList.add('elips');
+    }
+    el.dataset.kutu = JSON.stringify(kutu);
+    this._kutuyaKoy(el, ...kutu);
+    return el;
+  }
+
+  /**
+   * Orijinal yazının örtüsü. Yazı kutusu (b.x...) bulunurken her yandan
+   * yaklaşık %6 paylı alınmıştı; örtü o payın çoğunu geri alır ki balon
+   * çizgisine binmesin.
+   */
+  _ortu(b) {
+    const el = document.createElement('div');
+    el.className = 'ortu';
+    const px = b.g * 0.05;
+    const py = b.h * 0.05;
+    this._kutuyaKoy(el, b.x + px, b.y + py, b.g - 2 * px, b.h - 2 * py);
     return el;
   }
 
@@ -240,6 +276,10 @@ export class Gorunum {
       const harf = Number(el.dataset.harf);
       el.classList.remove('kirilabilir');
       this._kutuyaKoy(el, x, y, g, h);
+      if (el.classList.contains('sekilli')) {
+        this._sekilliSigdir(el, g * r.genislik, h * r.yukseklik, harf);
+        continue;
+      }
       const sigarMi = (p) => {
         el.style.fontSize = `${p}px`;
         return el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1;
@@ -258,5 +298,24 @@ export class Gorunum {
       if (!sigarMi(p)) el.classList.add('kirilabilir');
       el.style.fontSize = `${p}px`;
     }
+  }
+
+  /**
+   * Bulunan balonda yazı balonun şeklinin içine sığdırılır; kutu hiç
+   * büyütülmez (balonun dışına taşardı), gerekirse punto küçülür. Ovalin
+   * içine sığan dikdörtgen genişlik ve yüksekliğin ~%71'i: her yandan ~%14,5
+   * dolgu. Dikdörtgen kutuda az dolgu yeter.
+   */
+  _sekilliSigdir(el, w, h, harf) {
+    const oran = el.classList.contains('elips') ? 0.145 : 0.06;
+    el.style.padding = `${Math.round(h * oran)}px ${Math.round(w * oran)}px`;
+    const sigarMi = (p) => {
+      el.style.fontSize = `${p}px`;
+      return el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1;
+    };
+    const ic = 1 - 2 * oran;
+    const p = puntoBul(sigarMi, undefined, puntoTavani(w * ic, h * ic, harf));
+    if (!sigarMi(p)) el.classList.add('kirilabilir');
+    el.style.fontSize = `${p}px`;
   }
 }
