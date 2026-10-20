@@ -156,3 +156,11 @@ lekeli küçük bir alan balon sayıldı. Ayrıca bir çeviri anlamca yanlışt�
 - Tek parçalı yazı balon değil.
 - Türkçe heceleme (yumuşak tire), yalnızca kelime sığmazsa.
 - 9 sayfa yeniden denetlendi: yalnızca gerçek balonlar.
+
+## Sürüm 1.7.1 (2026-10-20)
+Sonnet 5.5 ile çeviri kalitesi düzeldi ("en zayıf sınıf"). Dar dikey bir
+balonun çevirisi yine yanlış yere düştü: işaret o balonun ilk satırının
+üstüne çiziliyordu (çizgiye değen harfler yazı kutusunun dışında
+kalıyordu). İşaret yeri artık piksellerden, hiçbir harfe değmeyen beyaz bir
+noktadan seçiliyor. Bilinen küçük kusur: bazı sayfalarda çizimde 1-2 yanlış
+bulgu işaret alabiliyor (Sonnet onlara metin atamıyor).
