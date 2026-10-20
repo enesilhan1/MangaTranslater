@@ -51,3 +51,18 @@ Her aşama birden çok küçük commit'e bölünür; her commit'ten sonra push e
 - MangaDex'te görülen yerel motor zayıflıkları: çeviri grubu künye
   sayfasında süslü yazıdan büyük tek kelimelik kutu çıktı; stilize afiş
   yazısı okunmadı. Hikâye sayfalarında anlatım kutuları ve balonlar doğru.
+
+## Sürüm 1.1.0 (2026-10-20): kullanıcının Claude denemesinden sonra
+Sorunlar (MangaDex, görsel YZ + Claude): yazı çok büyük ve kelimeler
+ortadan bölünüyordu; kutular balonlara oturmuyor, komşu panele düşüyordu;
+ses efekti çevirisi paneli kapatıyordu.
+- Yazı sığdırma: kelime içinden kırma kapalı, punto orijinal yazının
+  tahmini boyutuyla sınırlı (src/icerik/sigdir.js).
+- İstem: metin türü (balon/anlatım/ses), sıkı yazı kutusu, resmin piksel
+  boyutu.
+- Kutu oturtma (src/kutu_oturtma.js): modelin kutusu ipucu; flood fill ile
+  balonun içi, içindeki "delikler" ile yazı bulunup kutu oraya taşınıyor.
+  Kullanıcının gönderdiği sayfada denendi: kaydırılmış 6 kutunun 6'sı doğru
+  balona oturdu, 15 ms.
+- Ses efektleri küçük etiket.
+- Henüz: gerçek Claude anahtarıyla uçtan uca deneme kullanıcıda.

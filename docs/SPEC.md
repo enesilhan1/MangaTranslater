@@ -81,6 +81,14 @@ listesi).
 - Çeviri **balonun üstüne yazılır**: orijinal yazının üstüne beyaz kutu
   konup çeviri sığacak yazı boyutuyla içine yazılır. Resmin kendisi
   değiştirilmez (üstünde ayrı bir katman).
+- Yazı orijinal yazıdan belirgin şekilde büyük olmaz; kelimeler ortadan
+  bölünmez (sığmıyorsa punto küçülür).
+- Modelin verdiği kutu yalnızca ipucudur; kutu, resimdeki gerçek balonun
+  içindeki yazıya oturtulur (balonun dışına, komşu panele taşmaz). Aynı
+  balona düşen yinelenen kayıtlar birleştirilir.
+- **Ses efektleri** çizimi kapatmamak için beyaz kutuyla değil, efektin
+  köşesinde küçük, yarı saydam bir etiketle gösterilir (2026-10-20,
+  kullanıcının Claude denemesinden sonra).
 - Bir **klavye kısayolu** ile orijinal ↔ çeviri arasında geçiş yapılır.
 - Çevrilmekte olan resimde küçük bir "çevriliyor" göstergesi, hata olursa
   küçük bir hata işareti (üstüne gelince sebebi) çıkar.

@@ -9,8 +9,10 @@ yazıya dokunmaz; bu eklenti tam olarak bunu yapar.
   sitede her yeni bölümde ve sayfada kendiliğinden çalışır.
 - **Hızlı:** Ekrandaki sayfa önce çevrilir, ilerideki sayfalar sen okurken
   hazırlanır. Çeviriler önbellekte tutulur; aynı sayfaya dönünce anında gelir.
-- **Balonun üstüne yazar:** Orijinal yazının üstüne beyaz kutu konur ve çeviri
-  içine sığdırılır. <kbd>Alt</kbd>+<kbd>T</kbd> ile orijinali görürsün.
+- **Balonun üstüne yazar:** Kutular resimdeki gerçek balona oturtulur, orijinal
+  yazının üstüne beyaz kutu konur ve çeviri orijinal boyutta içine sığdırılır.
+  Ses efektleri çizimi kapatmadan küçük bir etiketle gösterilir.
+  <kbd>Alt</kbd>+<kbd>T</kbd> ile orijinali görürsün.
 - **Chrome** (ve Edge, Brave gibi Chromium tabanlılar) ve **Firefox 140+**.
 
 ## İki çeviri motoru
