@@ -33,6 +33,29 @@ export class Cevirici {
     this._yerel = null;
   }
 
+  /**
+   * Görsel YZ'nin balonsuz metinleri (çizim üstü başlık/anlatım) OCR ile
+   * harflerin yerine oturtulur. OCR yalnızca henüz denenmemiş böyle bir
+   * metin varsa çalışır; denenenler ocrDenendi işaretlenir ki önbellekten
+   * her gelişte tekrar çalışmasın. OCR hata verirse işaret konmaz (sonra
+   * yeniden denenir) ve modelin kutusu kalır; çeviri kaybolmaz.
+   * @returns {Promise<{balonlar: object[], degisti: boolean}>}
+   */
+  async ocrIleDuzelt(a, balonlar, resim) {
+    const gerekli = (b) => ocrGerekirMi(b) && !b.ocrOturdu && !b.ocrDenendi;
+    if (a.motor !== Motor.GORSEL || !balonlar.some(gerekli)) return { balonlar, degisti: false };
+    let ocr;
+    try {
+      ocr = await this.ocrKopru().kelimeleriOku(resim);
+    } catch {
+      return { balonlar, degisti: false };
+    }
+    const adaylar = balonlar.filter(gerekli);
+    const sonuc = ocrIleOturt(adaylar, ocr);
+    const yeni = new Map(adaylar.map((b, i) => [b, { ...sonuc[i], ocrDenendi: true }]));
+    return { balonlar: balonlar.map((b) => yeni.get(b) ?? b), degisti: true };
+  }
+
   /** Yalnızca OCR için köprü (görsel YZ'de balonsuz metinler); ilk gerektiğinde kurulur. */
   ocrKopru() {
     this._ocr ??= this.yerelOlustur({ eposta: '' });
@@ -63,23 +86,20 @@ export class Cevirici {
     const anahtar = kayitAnahtari(await ozetCikar(resim.veri), motorKimligi(a), a.hedefDil);
     const kayitli = await this.onbellek.al(anahtar);
     // Eski sürümlerin yazdığı boş kayıt da yok sayılır (bkz. aşağıdaki kural).
-    if (kayitli?.length) return { balonlar: kayitli, onbellekten: true };
+    if (kayitli?.length) {
+      // OCR düzeltmesinden önceki sürümlerin kaydı: bir kez düzeltilip
+      // önbellek güncellenir (yoksa o sayfa eski kutularla kalıyordu).
+      const { balonlar, degisti } = await this.ocrIleDuzelt(a, kayitli, resim);
+      if (degisti) await this.onbellek.koy(anahtar, balonlar).catch(() => {});
+      return { balonlar, onbellekten: true };
+    }
 
     const motor = this.motor(a);
     this.kuyruk.esZaman = ES_ZAMAN[a.motor];
-    let { balonlar } = await this.kuyruk.ekle(id, oncelik, (sinyal) =>
+    const ham = await this.kuyruk.ekle(id, oncelik, (sinyal) =>
       motor.cevir({ resim, hedefDil: a.hedefDil, sinyal }),
     );
-    // Görsel YZ'nin balonsuz metinleri (çizim üstü başlık/anlatım) OCR ile
-    // harflerin yerine oturtulur; OCR yalnızca böyle bir metin varsa çalışır.
-    // Olmazsa modelin kutusu kalır, çeviri kaybolmaz.
-    if (a.motor === Motor.GORSEL && balonlar.some(ocrGerekirMi)) {
-      try {
-        balonlar = ocrIleOturt(balonlar, await this.ocrKopru().kelimeleriOku(resim));
-      } catch {
-        // modelin kutusuyla devam
-      }
-    }
+    const { balonlar } = await this.ocrIleDuzelt(a, ham.balonlar, resim);
     // Önbelleğe yazılamasa da çeviri gösterilsin. Boş sonuç yazılmaz: model
     // bir kez yanılıp "yazı yok" derse sayfa sonsuza kadar boş kalmasın.
     if (balonlar.length) await this.onbellek.koy(anahtar, balonlar).catch(() => {});

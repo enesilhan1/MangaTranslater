@@ -5,7 +5,7 @@ import { AyarDeposu } from '../src/ayarlar.js';
 import { base64tenBayt, bayttanBase64 } from '../src/base64.js';
 import { Cevirici } from '../src/cevirici.js';
 import { Kuyruk } from '../src/kuyruk.js';
-import { Onbellek } from '../src/onbellek.js';
+import { Onbellek, kayitAnahtari, ozetCikar } from '../src/onbellek.js';
 import { sahteAlan } from './yardimci.js';
 
 function bellekOnbellek() {
@@ -113,6 +113,19 @@ describe('Cevirici: balonsuz metinlerde OCR', () => {
     const t = kur([numarali]);
     await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
     assert.equal(t.ocrCagri.length, 0);
+  });
+
+  it('önbellekteki eski (OCR öncesi) sonuç bir kez düzeltilip önbelleğe yazılır', async () => {
+    const t1 = kur([balonsuz]);
+    // Önbelleğe eski sürüm kaydı koy: model sonucu olduğu gibi.
+    const ozet = await ozetCikar(RESIM.veri);
+    await t1.c.onbellek.koy(kayitAnahtari(ozet, 'gorsel:gemini:gemini-3.8-flash', 'tr'), [balonsuz]);
+    const s1 = await t1.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(s1.onbellekten, true);
+    assert.equal(s1.balonlar[0].ocrOturdu, true);
+    const s2 = await t1.c.dilimCevir({ id: 'b', oncelik: 1, resim: RESIM });
+    assert.equal(s2.balonlar[0].ocrOturdu, true);
+    assert.equal(t1.ocrCagri.length, 1, 'ikinci gelişte OCR tekrar çalışmamalı');
   });
 
   it('balonsuz metin OCR kelimesine oturur; OCR hatasında modelin kutusu kalır', async () => {
