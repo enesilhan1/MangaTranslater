@@ -28,6 +28,10 @@ describe('Çeviri istemi', () => {
     assert.doesNotMatch(kullaniciMetni('tr'), /pixels/);
     assert.match(kullaniciMetni('tr', { genislik: 1050, yukseklik: 1491 }), /1050x1491 pixels/);
     assert.match(s, /"ses" for a sound effect/);
+    assert.match(s, /never read, translate or mention them/);
+    const metin = kullaniciMetni('tr', { bolgeler: [{ no: 1, kutu: [10, 20, 30, 40] }, { no: 2, kutu: [50, 60, 70, 80] }] });
+    assert.match(metin, /1: \[10, 20, 30, 40\]; 2: \[50, 60, 70, 80\]/);
+    assert.match(kullaniciMetni('tr'), /No areas are tagged/);
   });
 
   it('şema katı modlara uygun: her nesnede tüm alanlar zorunlu, ek alan yok', () => {

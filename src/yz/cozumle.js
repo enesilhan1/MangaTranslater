@@ -14,6 +14,7 @@ import { YzHatasi } from './ortak.js';
  * @property {string} orijinal
  * @property {string} ceviri
  * @property {'balon'|'anlatim'|'ses'} tur  Ses efektleri çizimi kapatmadan etiketle gösterilir.
+ * @property {number} bolge  Modelin söylediği işaret numarası (0: işaretsiz).
  */
 
 const TURLER = ['balon', 'anlatim', 'ses'];
@@ -35,6 +36,7 @@ export function balonlariCoz(metin, saglayiciAdi) {
       // Gemini'nin yerleşik adı box_2d de kabul edilir.
       kutu: Array.isArray(b?.kutu ?? b?.box_2d) ? (b.kutu ?? b.box_2d).map(Number) : [],
       tur: turAl(b?.tur),
+      bolge: Number.isInteger(Number(b?.bolge)) && Number(b?.bolge) > 0 ? Number(b.bolge) : 0,
       orijinal: metinAl(b?.orijinal),
       ceviri: metinAl(b?.ceviri),
     }))
@@ -51,7 +53,7 @@ export function balonlariCoz(metin, saglayiciAdi) {
     const g = Math.abs(x2 - x1);
     const h = Math.abs(y2 - y1);
     if (g < 0.005 || h < 0.003) continue; // görünmeyecek kadar küçük
-    balonlar.push({ x, y, g, h, tur: b.tur, orijinal: b.orijinal, ceviri: b.ceviri || b.orijinal });
+    balonlar.push({ x, y, g, h, tur: b.tur, bolge: b.bolge, orijinal: b.orijinal, ceviri: b.ceviri || b.orijinal });
   }
   return balonlar;
 }

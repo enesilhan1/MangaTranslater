@@ -83,7 +83,7 @@ describe('Gemini', () => {
     assert.equal(oge.type, 'OBJECT');
     assert.equal(oge.additionalProperties, undefined);
     assert.equal(oge.properties.kutu.items.type, 'INTEGER');
-    assert.deepEqual(oge.required, ['kutu', 'tur', 'orijinal', 'ceviri']);
+    assert.deepEqual(oge.required, ['bolge', 'kutu', 'tur', 'orijinal', 'ceviri']);
     assert.deepEqual(oge.properties.tur.enum, ['balon', 'anlatim', 'ses']);
   });
 });

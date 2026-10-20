@@ -76,4 +76,14 @@ describe('balonlariCoz', () => {
     ] };
     assert.deepEqual(balonlariCoz(JSON.stringify(j), 'X').map((b) => b.tur), ['ses', 'anlatim', 'balon']);
   });
+
+  it('işaret numarasını okur; geçersiz/eksikse 0', () => {
+    const j = { balonlar: [
+      { bolge: 3, kutu: [0, 0, 100, 100], orijinal: 'A', ceviri: 'B' },
+      { bolge: '2', kutu: [0, 0, 100, 100], orijinal: 'A', ceviri: 'B' },
+      { bolge: -1, kutu: [0, 0, 100, 100], orijinal: 'A', ceviri: 'B' },
+      { kutu: [0, 0, 100, 100], orijinal: 'A', ceviri: 'B' },
+    ] };
+    assert.deepEqual(balonlariCoz(JSON.stringify(j), 'X').map((b) => b.bolge), [3, 2, 0, 0]);
+  });
 });
