@@ -125,3 +125,13 @@ Yeni sayfada panel kenarına yapışık birleşik beyaz alandaki iki uzun metin
   (ayrı işaret numarası, kendi kutusunda zemin).
 - Kullanıcının 8 sayfasında: yeni sayfa 7/7, bir balonu kaçıran sayfa 6/6,
   eski sayfalar değişmedi; yanlış bulgu yok.
+
+## Sürüm 1.6.0 (2026-10-20)
+Balonlar kusursuzdu; balonsuz üç satırlık bir başlıkta modelin kutusu
+yalnızca ilk satırı kapsıyordu.
+- src/ocr_oturtma.js: model metninin kelimeleri OCR kelimeleriyle eşlenip
+  kutu kelimelerin üstüne taşınıyor (uzun kelimelerde güvene bakılmaz).
+- Köprüye yalnızca OCR isteği; çevirici bunu yalnızca numarasız, ses
+  efekti olmayan metin varsa çağırıyor.
+- Kullanıcının sayfasında gerçek Tesseract ile: başlığın üç satırı da
+  kapsandı.

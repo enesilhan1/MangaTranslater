@@ -92,6 +92,9 @@ listesi).
   koordinatı kullanılmaz). İşaretsiz metinlerde modelin kutusu ipucudur ve
   en yakın balona oturtulur. Farklı metinler birleştirilmez. Sayfada
   gösterilen resim değişmez.
+- Balonsuz metinler (çizim üstü başlık/anlatım) yerel OCR ile harflerin
+  üstüne oturtulur: modelin okuduğu metnin kelimeleri OCR kelimeleriyle
+  eşlenir. OCR yalnızca böyle bir metin varsa çalışır.
 - **Ses efektleri** çizimi kapatmamak için beyaz kutuyla değil, efektin
   köşesinde küçük, yarı saydam bir etiketle gösterilir (2026-10-20,
   kullanıcının Claude denemesinden sonra).
