@@ -164,3 +164,19 @@ balonun çevirisi yine yanlış yere düştü: işaret o balonun ilk satırını
 kalıyordu). İşaret yeri artık piksellerden, hiçbir harfe değmeyen beyaz bir
 noktadan seçiliyor. Bilinen küçük kusur: bazı sayfalarda çizimde 1-2 yanlış
 bulgu işaret alabiliyor (Sonnet onlara metin atamıyor).
+
+## Sürüm 1.7.2 (2026-10-20)
+v1.7.1'den sonra kullanıcının iki sayfasında iki sorun görüldü.
+
+- Rusça sayfa: dar balonun çevirisi hâlâ yandaki anlatım kutusuna
+  ekleniyordu. Sebebi işaret değilmiş. Model o metne anlatım kutusunun
+  numarasını verip kutusunu onun kenarına koymuş, "model balonu bölmüş"
+  kuralı da metni oraya eklemiş. Artık böyle bir metin önce yakındaki
+  çevirisiz balona gidiyor.
+- İtalyanca sayfa: 10 işaretin 6'sı çizimin üstündeydi; alttaki iki
+  gerçek balon çevrilmedi. Seyrek delikli beyaz alanlar (giysi, tram)
+  artık balon sayılmıyor. Ölçüt: yazı kutusundaki delik yoğunluğu. Gerçek
+  balonlarda ≥0,11, yanlış bulgularda ≤0,064 (11 sayfada).
+
+Konsolda artık her dilim için "N işaret, modelden M metin (numaralar …)"
+yazıyor. Bir balon boş kalırsa modelin mi atladığı buradan görülür.
