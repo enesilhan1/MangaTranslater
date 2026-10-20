@@ -199,3 +199,12 @@ betik de ikinci bir katman açıyordu. Eski sürümün yerleştirmeleri ekranda
 kaldığı için bazı düzeltmeler hiç görünmemiş olabilir. Artık sahipsiz
 kalan betik çevirilerini kaldırıyor, yeni betik de eski katmanları
 siliyor. Gerçek Chrome'da denendi.
+
+## Sürüm 1.7.5 (2026-10-20)
+Kullanıcının iki sayfalık geniş bir resminde birbirine değen iki balonun
+numaraları aynı yere, soldaki metnin üstüne üst üste çiziliyordu. Model
+sağdaki metne doğru numarayı veremedi; çevirisi yarım örtüldü. Artık
+ortak alandaki her numara kendi metnine öbür metinlerden belirgin yakın
+ve öbür numaralara değmiyor. Gri analiz kopyası da genişliğe göre değil
+alana göre boyutlanıyor; geniş resimlerde balonlar daha ayrıntılı
+görülüyor.
