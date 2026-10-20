@@ -3,6 +3,8 @@
 
 import { base64tenBayt, bayttanBase64 } from '../base64.js';
 import { dilimleriPlanla, satirSkoru } from '../dilimleme.js';
+import { bolgeListesi, isaretKonumlari } from '../isaretler.js';
+import { balonlariBul } from '../kutu_oturtma.js';
 import { YzHatasi } from '../yz/ortak.js';
 import { arkaPlanaGonder } from './mesaj.js';
 
@@ -48,16 +50,22 @@ export async function resimBaytlari(img) {
 
 /**
  * @typedef {{veri: string, tur: string, genislik: number, yukseklik: number,
- *   y0: number, y1: number, gri: import('../kutu_oturtma.js').GriResim}} Dilim
+ *   y0: number, y1: number, gri: import('../kutu_oturtma.js').GriResim,
+ *   bulunanlar: import('../kutu_oturtma.js').BulunanBalon[],
+ *   bolgeler: {no: number, kutu: number[]}[]}} Dilim
  *   Base64 JPEG + gönderilen resmin piksel boyutu + dilimin özgün resimdeki
- *   dikey aralığı (piksel) + kutu oturtma için gri kopya (gönderilmez).
+ *   dikey aralığı (piksel) + kutu oturtma için gri kopya ve bulunan balonlar
+ *   (sayfada kalır) + modele metinle verilen işaretli alanlar.
  */
 
 /**
  * @param {Blob} blob
+ * @param {{isaretle?: boolean}} [p]  Görsel YZ'ye gidecekse bulunan balonlar
+ *   numaralı işaretlerle çizilir (src/isaretler.js). Yerel OCR'de çizilmez:
+ *   rakamları yazı sanardı.
  * @returns {Promise<{dilimler: Dilim[], genislik: number, yukseklik: number}>}
  */
-export async function dilimlereAyir(blob) {
+export async function dilimlereAyir(blob, { isaretle = false } = {}) {
   let bitmap;
   try {
     bitmap = await createImageBitmap(blob);
@@ -79,6 +87,10 @@ export async function dilimlereAyir(blob) {
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, g, h);
       ctx.drawImage(bitmap, 0, d.y0, genislik, d.y1 - d.y0, 0, 0, g, h);
+      // Gri kopya işaretlerden önce: balon bulma ve oturtma temiz resimle yapılır.
+      const gri = griKopya(tuval);
+      const bulunanlar = isaretle ? balonlariBul(gri) : [];
+      if (bulunanlar.length) isaretleriCiz(ctx, isaretKonumlari(bulunanlar, g / gri.genislik, g));
       const jpeg = await tuval.convertToBlob({ type: 'image/jpeg', quality: JPEG_KALITESI });
       sonuc.push({
         veri: bayttanBase64(await jpeg.arrayBuffer()),
@@ -87,13 +99,35 @@ export async function dilimlereAyir(blob) {
         yukseklik: h,
         y0: d.y0,
         y1: d.y1,
-        gri: griKopya(tuval),
+        gri,
+        bulunanlar,
+        bolgeler: bolgeListesi(bulunanlar, gri),
       });
     }
     return { dilimler: sonuc, genislik, yukseklik };
   } finally {
     bitmap.close();
   }
+}
+
+/** Kırmızı daire içinde beyaz numara (modelin kolay okuyacağı, çizimden ayrışan). */
+function isaretleriCiz(ctx, isaretler) {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const { no, x, y, r } of isaretler) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#e01b24';
+    ctx.fill();
+    ctx.lineWidth = Math.max(1.5, r * 0.15);
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${Math.round(r * (no > 9 ? 1.05 : 1.3))}px Arial, sans-serif`;
+    ctx.fillText(String(no), x, y + r * 0.05);
+  }
+  ctx.restore();
 }
 
 /** Tuvalin OTURTMA_GENISLIGI'ne küçültülmüş gri tonlu kopyası. */
