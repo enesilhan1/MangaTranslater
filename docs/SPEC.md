@@ -27,7 +27,10 @@ Resim bir görsel modele gönderilir; model yazıyı okur ve bağlama uygun
 piksellerden kendisi bulup modele giden kopyada numaralar; yerleştirme
 §7'deki gibi. Model işaretli balonların yarısından azına metin verirse
 (en az 3 işaret varken) istek bir kez daha gönderilir; daha çok balonu
-kapsayan yanıt kalır.
+kapsayan yanıt kalır. OCR çalıştığında, onun güvenle okuduğu ama hiçbir çeviri
+verilmemiş bir yazı kümesi kalırsa model bu alanlar söylenerek bir kez daha
+sorulur; yanıttan yalnızca o yazılara ait metinler eklenir (sayfa başına
+bir kez).
 - Sağlayıcılar: **Gemini (Google)** (varsayılan), **Claude (Anthropic)**,
   **ChatGPT (OpenAI)**. (DeepSeek resim okuyamadığı için yok.)
 - Web Asistanı'ndaki yapı: her sağlayıcı için hazır model listesi (ilki

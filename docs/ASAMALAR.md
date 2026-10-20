@@ -279,3 +279,20 @@ sayfasında "AAAHH!" etiketi yazının 270 px altında, başka bir panelde
 çıkıyordu. Latin harfli efektler artık OCR'de gevşek benzerlikle aranıyor
 ("AAAHH!" → "PARHH") ve etiket yazının yanına taşınıyor. Japonca
 efektlerde OCR çalışmıyor; onlar modelin kutusunda kalıyor.
+
+## Sürüm 1.8.0 (2026-10-21)
+Yeni özellik: atlanan yazılar için yeniden sorma. Kullanıcının sayfasında
+model birbirine değen iki balondan birini ("SPRIZZANO VOGLIA DI UCCIDERCI
+DA TUTTI I PORI.") hiç döndürmedi. Balonlar sayfanın beyaz alanına açıldığı
+için numara da almamıştı; ortada bir hata da görünmüyordu.
+
+OCR'nin zaten çalıştığı sayfalarda artık şuna bakılıyor: OCR'nin güvenle
+okuduğu, hiçbir çevirinin örtmediği, numaralı balonların dışında kalan ve
+modelin okuduğu hiçbir metne benzemeyen bir kelime kümesi var mı? Varsa
+model, bu alanlar söylenerek bir kez daha soruluyor. Yanıttan yalnızca o
+yazılara ait metinler ekleniyor ve OCR ile yerine konuyor. Bu sayfa başına
+bir kez yapılıyor. Ek ücret yalnızca böyle sayfalarda doğuyor.
+
+Gerçek Chrome'da yalnızca atlanan yazı bulundu. Metinlerin hepsinin
+döndüğü üç sayfada hiçbir şey bulunmadı. Gerçek bir model yanıtıyla
+uçtan uca denenmedi (API anahtarı yok).

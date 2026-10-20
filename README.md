@@ -23,7 +23,7 @@ yazıya dokunmaz; bu eklenti tam olarak bunu yapar.
 | Gereken | API anahtarı (Gemini, Claude ya da ChatGPT) | Hiçbir şey |
 | Kalite | En iyisi; ses efektlerini, el yazısını, her kaynak dili okur | İyi basılmış İngilizce balonlarda iyi; süslü yazıda ve ses efektlerinde zayıf |
 | Çeviri | Yapay zekâ | Chrome'da tarayıcının kendi çevirmeni (cihazda, ücretsiz); Firefox'ta MyMemory (ücretsiz, günlük sınırlı) |
-| Ücret | Sağlayıcının fiyatı (Gemini'nin ücretsiz kotası var). Model bir sayfadaki balonların çoğunu atlarsa o sayfa bir kez daha sorulur | Ücretsiz |
+| Ücret | Sağlayıcının fiyatı (Gemini'nin ücretsiz kotası var). Model bir sayfadaki balonların çoğunu ya da OCR'nin okuduğu bir yazıyı atlarsa o sayfa bir kez daha sorulur | Ücretsiz |
 
 **Öneri:** En iyi sonuç için Gemini ile başla: <https://aistudio.google.com/apikey>
 adresinden ücretsiz bir anahtar alıp eklentinin penceresine yapıştırman yeterli.
@@ -87,6 +87,8 @@ Bir sayfa çevrilmediyse ya da çeviri yanlış yere düştüyse:
    - `r3 dilim 0: 5 işaret, modelden 6 metin (numaralar: 1,2,3,5,-,-)`:
      eklentinin bulduğu balon sayısı, modelin döndürdüğü metin sayısı ve her
      metne verdiği balon numarası (`-`: balonsuz).
+   - `model yeniden soruldu` / `atlanan yazı için yeniden soruldu, N metin
+     eklendi`: model bir şeyi atladığı için sayfa bir kez daha soruldu.
    - `tamam`, `hata …` ya da `aday değil` (çok küçük/görünmeyen resim).
 3. Bu satırların ekran görüntüsünü, sayfanın görüntüsünü ve mümkünse bölümün
    bağlantısıyla sayfa numarasını sorunla birlikte bildir.
