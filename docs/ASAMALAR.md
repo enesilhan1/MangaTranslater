@@ -244,3 +244,11 @@ Kullanıcının sayfasında kedinin gözü balon sanılıp numaralandı. Model
 yanındaki çizim üstü yazıya o numarayı verdi; çeviri göze sıkıştı.
 Uzun bir metin, modelin kutusu da uzaktaysa, birkaç parçalık küçük bir
 balonun numarasıyla artık oraya konmuyor; kendi yerinde gösteriliyor.
+
+## Sürüm 1.7.10 (2026-10-20)
+1.7.9'dan sonra da kedinin gözü çeviriyi aldı. Gerçek sayfa MangaDex'ten
+indirilip incelendi. Göz 4 parçalı bir balon olarak numara alıyor; modelin
+kutusu göze yakın düştüğü için 1.7.9'daki "hiç değmiyor" şartı
+sağlanmıyordu. Artık metin sığmayacağı küçük bir alana hiçbir yoldan
+konmuyor: numarayla, en yakın bölgeyle ya da sahipsiz balon eşleştirmesiyle
+olmaz.
