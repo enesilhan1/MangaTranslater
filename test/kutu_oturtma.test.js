@@ -183,3 +183,28 @@ describe('balon şekli ve kutusu', () => {
     assert.ok(k.x0 >= 28 && k.x1 <= 192 && k.y0 >= 78 && k.y1 <= 202, JSON.stringify(k));
   });
 });
+
+describe('zor balon biçimleri (kullanıcının sayfalarından)', () => {
+  it('uzun ince kuyruklu balon bulunur; kuyruk balonun kutusuna girmez', () => {
+    const r = resim();
+    balonCiz(r, 110, 140, 70, 60);
+    yaziCiz(r, 75, 125, 145);
+    yaziCiz(r, 80, 145, 140);
+    // Balonun sağından 200 px uzanan, içi 4 px genişliğinde beyaz kuyruk (iki çizgi arası).
+    for (let x = 178; x < 380; x++) {
+      for (let y = 136; y <= 141; y++) r.gri[y * G + x] = y === 136 || y === 141 ? 0 : 255;
+    }
+    const b = balonlariBul(r);
+    assert.equal(b.length, 1);
+    assert.ok(b[0].kutu.x1 < 200, JSON.stringify(b[0].kutu));
+  });
+
+  it('yazısı neredeyse tam genişlikte olan dar balon ikiye bölünmez', () => {
+    const r = resim();
+    balonCiz(r, 110, 200, 45, 110);
+    for (let y = 120; y <= 270; y += 16) yaziCiz(r, 72, y, 150);
+    const b = balonlariBul(r);
+    assert.equal(b.length, 1);
+    assert.ok(b[0].kutu.y1 - b[0].kutu.y0 > 180, JSON.stringify(b[0].kutu));
+  });
+});

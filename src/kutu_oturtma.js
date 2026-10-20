@@ -24,6 +24,15 @@ export const BEYAZ_ESIGI = 190;
 const TOHUM_SAYISI = 7;
 /** Bölgenin en az bu oranı tahmini kutuyla örtüşmeli. */
 const EN_AZ_ORTUSME = 0.25;
+/**
+ * Aşındırma yarıçapı (gri kopyanın pikselleriyle). Flood fill beyaz alanın
+ * bu kadar aşındırılmış halinde yapılır: balonun ince kuyruğu ve sivri
+ * bağırma balonlarının uçları gövdeden kopar. Kullanıcının sayfasında uzun
+ * kuyruklu "WHERE AM I..." balonu ve sivri uçlu bir balon, kuyruk/uçlar
+ * sınırlayıcı kutuyu büyüttüğü için "çok boş" sayılıp atlanıyordu.
+ */
+export const ASINDIRMA = 3;
+
 /** Bir sayfada işaretlenecek en çok balon (fazlası çoğunlukla yanlış bulgu). */
 export const AZAMI_BALON = 40;
 
@@ -44,6 +53,21 @@ const SEKIL = Object.freeze({
   kenarBoslugu: 0.03,
   /** Bölge resmin bu oranından büyük olamaz. */
   enCokAlan: 0.15,
+  /**
+   * Harf boyu tutarlılığı: delik parçalarının en az bu oranı ortanca
+   * parça boyunun 0,6-1,7 katı olmalı (yazının harfleri benzer boyda; panel
+   * arka planındaki çizim parçaları değil). Kullanıcının 4 sayfasında gerçek
+   * balonlarda ≥0,5, yanlış bulgularda 0,29-0,33.
+   */
+  enAzTutarlilik: 0.45,
+  /**
+   * Çok sayıda minik parça tram dokusu/korkuluktur: parça sayısı bundan
+   * fazla ve ortanca parça boyu en çok enKucukHarf pikselse balon değil.
+   * (Kullanıcının sayfasında yanlış bulguda 122 parça, ortanca boy 1 px;
+   * uzun yazılı gerçek balonda harfler ~10 px.)
+   */
+  enCokParca: 60,
+  enKucukHarf: 3,
   /** Doluluk bundan yüksekse dikdörtgen kutu (anlatım), düşükse oval balon. */
   dikdortgenDoluluk: 0.88,
   /**
@@ -67,9 +91,11 @@ const SEKIL = Object.freeze({
  * Resimdeki kapalı balonları bulur; okuma sırasıyla (yukarıdan aşağı, aynı
  * hizada soldan sağa) numaralanacak şekilde sıralı.
  * @param {GriResim} resim
+ * @param {(b: {kutu: PikselKutu, sebep: string}) => void} [tani]  Her aday
+ *   bölge için çağrılır (balon değilse sebebiyle); hata ayıklama ve testler için.
  * @returns {BulunanBalon[]}
  */
-export function balonlariBul(resim) {
+export function balonlariBul(resim, tani) {
   const { gri, genislik: G, yukseklik: Y } = resim;
   const etiket = new Int32Array(G * Y);
   const azamiAlan = SEKIL.enCokAlan * G * Y;
@@ -81,12 +107,16 @@ export function balonlariBul(resim) {
   for (let y = 0; y < Y; y += adim) {
     for (let x = 0; x < G; x += adim) {
       const p = y * G + x;
-      if (etiket[p] !== 0 || gri[p] < BEYAZ_ESIGI) continue;
+      if (!tohumMu(resim, etiket, p)) continue;
       const bolge = doldur(resim, etiket, x, y, ++no, azamiAlan);
       if (!bolge || bolge.alan < enAzAlan) continue;
-      if (bolge.kutu.x1 - bolge.kutu.x0 + 1 < SEKIL.enAzGenislik * G) continue;
+      if (bolge.kutu.x1 - bolge.kutu.x0 + 1 < SEKIL.enAzGenislik * G) {
+        tani?.({ kutu: bolge.kutu, sebep: 'dar' });
+        continue;
+      }
       const sonuc = balonMu(resim, etiket, bolge);
-      if (sonuc) bulunan.push({ kutu: bolge.kutu, ...sonuc });
+      tani?.({ kutu: sonuc.kutu ?? bolge.govde, sebep: sonuc.sebep ?? 'balon', ozellik: sonuc.ozellik });
+      if (sonuc.yazi) bulunan.push({ kutu: sonuc.kutu, yazi: sonuc.yazi, elips: sonuc.elips });
     }
   }
   const satir = 0.03 * Y;
@@ -174,7 +204,7 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
     const cx = Math.round((k.x0 + k.x1) / 2);
     for (let y = k.y0; y <= k.y1; y++) {
       const p = y * G + cx;
-      if (resim.gri[p] >= BEYAZ_ESIGI && etiket[p] === 0) {
+      if (tohumMu(resim, etiket, p)) {
         const no = ++sonEtiket;
         bolgeler.set(no, doldur(resim, etiket, cx, y, no, SEKIL.enCokAlan * G * Y));
         kullanilan.add(no);
@@ -236,8 +266,8 @@ function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket) {
       const y = Math.round(tahmin.y0 - pay * th + ((1 + 2 * pay) * th * (j + 0.5)) / TOHUM_SAYISI);
       if (x < 0 || y < 0 || x >= G || y >= Y) continue;
       const p = y * G + x;
-      if (resim.gri[p] < BEYAZ_ESIGI) continue;
       let no = etiket[p];
+      if (no === 0 && !tohumMu(resim, etiket, p)) continue;
       if (no === 0) {
         no = yeniEtiket();
         bolgeler.set(no, doldur(resim, etiket, x, y, no, azamiAlan));
@@ -249,35 +279,87 @@ function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket) {
       const ortusme = kesisimAlani(bolge.kutu, tahmin) / Math.min(alan(bolge.kutu), tahminAlani);
       if (ortusme < EN_AZ_ORTUSME) continue;
       const bulgu = balonMu(resim, etiket, bolge);
-      if (!bulgu) continue;
+      if (!bulgu.yazi) continue;
       const { yazi } = bulgu;
       const puan = kesisimAlani(yazi, tahmin) / alan(yazi) + ortusme;
-      if (!enIyi || puan > enIyi.puan) enIyi = { puan, yazi, no, kutu: bolge.kutu, elips: bulgu.elips };
+      if (!enIyi || puan > enIyi.puan) enIyi = { puan, yazi, no, kutu: bulgu.kutu, elips: bulgu.elips };
     }
   }
   return enIyi;
 }
 
+/** Resim başına bir kez: aşınmış beyaz maske (1: çevresindeki her piksel beyaz). */
+const maskeler = new WeakMap();
+function asinmisMaske(resim) {
+  let m = maskeler.get(resim);
+  if (m) return m;
+  const { gri, genislik: G, yukseklik: Y } = resim;
+  const R = ASINDIRMA;
+  // Ayrılabilir minimum süzgeci: önce yatay, sonra dikey "hepsi beyaz mı".
+  const yatay = new Uint8Array(G * Y);
+  for (let y = 0; y < Y; y++) {
+    let ardisik = 0;
+    const satir = y * G;
+    const say = new Int32Array(G); // x'te biten ardışık beyaz uzunluğu
+    for (let x = 0; x < G; x++) {
+      ardisik = gri[satir + x] >= BEYAZ_ESIGI ? ardisik + 1 : 0;
+      say[x] = ardisik;
+    }
+    for (let x = R; x < G - R; x++) if (say[x + R] >= 2 * R + 1) yatay[satir + x] = 1;
+  }
+  m = new Uint8Array(G * Y);
+  for (let x = 0; x < G; x++) {
+    let ardisik = 0;
+    const say = new Int32Array(Y);
+    for (let y = 0; y < Y; y++) {
+      ardisik = yatay[y * G + x] ? ardisik + 1 : 0;
+      say[y] = ardisik;
+    }
+    for (let y = R; y < Y - R; y++) if (say[y + R] >= 2 * R + 1) m[y * G + x] = 1;
+  }
+  maskeler.set(resim, m);
+  return m;
+}
+
+/** Bu piksel bir bölgenin tohumu olabilir mi (aşınmış beyaz ve etiketsiz)? */
+function tohumMu(resim, etiket, p) {
+  return etiket[p] === 0 && asinmisMaske(resim)[p] === 1;
+}
+
 /**
- * (x, y)'den başlayan beyaz bölgeyi doldurur (4 komşuluk). Bölge [azamiAlan]'ı
- * aşarsa null (balon değil). Doldurulan pikseller etiketlenir; aynı bölge
- * başka tohumdan tekrar doldurulmaz.
+ * (x, y)'den başlayan beyaz bölgeyi asıl beyaz piksellerde doldurur (4
+ * komşuluk); balon ince yerlerinden bölünmez. Bölgenin "gövde kutusu",
+ * yalnızca aşınmış maskeye giren (çevresi ASINDIRMA kadar beyaz)
+ * piksellerinden çıkarılır ve ASINDIRMA kadar genişletilir: ince kuyruk ve
+ * sivri uçlar gövde kutusuna girmez; doluluk ve şekil bu kutuda ölçülür,
+ * yazı (delik) analizi ise tam kutuda yapılır ki kenara yakın harfler
+ * kaybolmasın.
+ * Bölge [azamiAlan]'ı aşarsa null (balon değil). Doldurulan pikseller
+ * etiketlenir; aynı bölge başka tohumdan tekrar doldurulmaz.
  */
 function doldur(resim, etiket, x, y, no, azamiAlan) {
   const { gri, genislik: G, yukseklik: Y } = resim;
+  const maske = asinmisMaske(resim);
   const yigin = [y * G + x];
   etiket[y * G + x] = no;
-  const kutu = { x0: x, y0: y, x1: x, y1: y };
+  const tam = { x0: x, y0: y, x1: x, y1: y };
+  const govde = { x0: x, y0: y, x1: x, y1: y };
   let sayi = 0;
   while (yigin.length) {
     const p = yigin.pop();
     sayi++;
     const px = p % G;
     const py = (p - px) / G;
-    if (px < kutu.x0) kutu.x0 = px;
-    if (px > kutu.x1) kutu.x1 = px;
-    if (py < kutu.y0) kutu.y0 = py;
-    if (py > kutu.y1) kutu.y1 = py;
+    if (px < tam.x0) tam.x0 = px;
+    if (px > tam.x1) tam.x1 = px;
+    if (py < tam.y0) tam.y0 = py;
+    if (py > tam.y1) tam.y1 = py;
+    if (maske[p] === 1) {
+      if (px < govde.x0) govde.x0 = px;
+      if (px > govde.x1) govde.x1 = px;
+      if (py < govde.y0) govde.y0 = py;
+      if (py > govde.y1) govde.y1 = py;
+    }
     if (px > 0) it(p - 1);
     if (px < G - 1) it(p + 1);
     if (py > 0) it(p - G);
@@ -289,8 +371,14 @@ function doldur(resim, etiket, x, y, no, azamiAlan) {
       yigin.push(q);
     }
   }
+  const govdeKutusu = {
+    x0: Math.max(tam.x0, govde.x0 - ASINDIRMA),
+    y0: Math.max(tam.y0, govde.y0 - ASINDIRMA),
+    x1: Math.min(tam.x1, govde.x1 + ASINDIRMA),
+    y1: Math.min(tam.y1, govde.y1 + ASINDIRMA),
+  };
   // Taşan bölge de etiketli kalır: başka tohum onu tekrar denemesin.
-  return sayi > azamiAlan ? null : { no, kutu, alan: sayi };
+  return sayi > azamiAlan ? null : { no, kutu: tam, govde: govdeKutusu, alan: sayi };
 }
 
 /**
@@ -303,7 +391,7 @@ function balonMu(resim, etiket, bolge) {
   const { x0, y0, x1, y1 } = bolge.kutu;
   const w = x1 - x0 + 1;
   const h = y1 - y0 + 1;
-  if (w < 12 || h < 12) return null;
+  if (w < 12 || h < 12) return { sebep: 'küçük' };
   const bolgede = (lx, ly) => etiket[(y0 + ly) * G + (x0 + lx)] === bolge.no;
 
   // Kutunun kenarından bölgeye ait olmayan piksellerle ulaşılan her yer
@@ -342,6 +430,8 @@ function balonMu(resim, etiket, bolge) {
   let enBuyukG = 0;
   let enBuyukH = 0;
   let yazi = null;
+  /** Parçaların yükseklikleri (harf boyu tutarlılığı için). */
+  const parcaBoylari = [];
   for (let i = 0; i < w * h; i++) {
     if (durum[i] !== 0) continue;
     parcaSayisi++;
@@ -372,32 +462,71 @@ function balonMu(resim, etiket, bolge) {
     }
     enBuyukG = Math.max(enBuyukG, p.x1 - p.x0 + 1);
     enBuyukH = Math.max(enBuyukH, p.y1 - p.y0 + 1);
+    parcaBoylari.push(p.y1 - p.y0 + 1);
     yazi = yazi
       ? { x0: Math.min(yazi.x0, p.x0), y0: Math.min(yazi.y0, p.y0), x1: Math.max(yazi.x1, p.x1), y1: Math.max(yazi.y1, p.y1) }
       : p;
   }
-  if (!yazi) return null;
+  if (!yazi) return { sebep: 'yazısız' };
 
-  const doluSekil = bolge.alan + delik;
-  if (doluSekil / (w * h) < SEKIL.enAzDoluluk) return null;
-  const delikOrani = delik / doluSekil;
-  if (delikOrani < SEKIL.enAzDelik || delikOrani > SEKIL.enCokDelik) return null;
-  if (parcaSayisi < 2 && (yazi.x1 - yazi.x0 + 1) > 0.35 * w) return null; // tek büyük leke
-  if (enBuyukG > SEKIL.enBuyukParca * w && enBuyukH > SEKIL.enBuyukParca * h) return null;
+  // Doluluk ve delik oranı gövde kutusunda (kuyruk ve sivri uçlar hariç).
+  const gv = bolge.govde ?? bolge.kutu;
+  let govdeBolge = 0;
+  let govdeDelik = 0;
+  for (let ly = gv.y0 - y0; ly <= gv.y1 - y0; ly++) {
+    for (let lx = gv.x0 - x0; lx <= gv.x1 - x0; lx++) {
+      const v = durum[ly * w + lx];
+      if (v === 2) govdeBolge++;
+      else if (v === 3) govdeDelik++;
+    }
+  }
+  const govdeAlani = (gv.x1 - gv.x0 + 1) * (gv.y1 - gv.y0 + 1);
+  const doluSekil = govdeBolge + govdeDelik;
+  const doluluk = doluSekil / govdeAlani;
+  if (doluluk < SEKIL.enAzDoluluk) return { sebep: `doluluk ${doluluk.toFixed(2)}` };
+  const delikOrani = govdeDelik / doluSekil;
+  if (delikOrani < SEKIL.enAzDelik || delikOrani > SEKIL.enCokDelik) return { sebep: `delik ${delikOrani.toFixed(3)}` };
+  if (parcaSayisi < 2 && (yazi.x1 - yazi.x0 + 1) > 0.35 * w) return { sebep: 'tek leke' };
+  if (enBuyukG > SEKIL.enBuyukParca * w && enBuyukH > SEKIL.enBuyukParca * h) return { sebep: 'büyük parça' };
+  const sirali = [...parcaBoylari].sort((a, b) => a - b);
+  const ortanca = sirali[sirali.length >> 1];
+  if (parcaSayisi > SEKIL.enCokParca && ortanca <= SEKIL.enKucukHarf) {
+    return { sebep: `tram: ${parcaSayisi} parça, boy ${ortanca}` };
+  }
+  const tutarli = parcaBoylari.filter((b) => b >= ortanca * 0.6 && b <= ortanca * 1.7).length / parcaSayisi;
+  if (tutarli < SEKIL.enAzTutarlilik) return { sebep: `tutarlılık ${tutarli.toFixed(2)}` };
   const kenar = Math.max(1, Math.round(SEKIL.kenarBoslugu * Math.min(w, h)));
-  if (yazi.x0 < kenar || yazi.y0 < kenar || yazi.x1 > w - 1 - kenar || yazi.y1 > h - 1 - kenar) return null;
+  if (yazi.x0 < kenar || yazi.y0 < kenar || yazi.x1 > w - 1 - kenar || yazi.y1 > h - 1 - kenar) return { sebep: 'kenarda yazı' };
 
   // Yazı satırları arasına ve kenarına pay; balonun içinde kalarak.
   const pay = Math.round(Math.min(w, h) * 0.06) + 1;
+  const ozellik = {
+    parca: parcaSayisi,
+    delik: +delikOrani.toFixed(3),
+    doluluk: +doluluk.toFixed(2),
+    ortancaBoy: +(ortanca / h).toFixed(3),
+    tutarli: +tutarli.toFixed(2),
+    yaziOrani: +(((yazi.x1 - yazi.x0 + 1) * (yazi.y1 - yazi.y0 + 1)) / (w * h)).toFixed(2),
+  };
+  const yaziKutusu = {
+    x0: x0 + Math.max(0, yazi.x0 - pay),
+    y0: y0 + Math.max(0, yazi.y0 - pay),
+    x1: x0 + Math.min(w - 1, yazi.x1 + pay),
+    y1: y0 + Math.min(h - 1, yazi.y1 + pay),
+  };
   return {
-    yazi: {
-      x0: x0 + Math.max(0, yazi.x0 - pay),
-      y0: y0 + Math.max(0, yazi.y0 - pay),
-      x1: x0 + Math.min(w - 1, yazi.x1 + pay),
-      y1: y0 + Math.min(h - 1, yazi.y1 + pay),
+    ozellik,
+    doluluk,
+    yazi: yaziKutusu,
+    // Çizilecek balon kutusu: gövde, yazıyı da kesinlikle kapsayacak şekilde.
+    kutu: {
+      x0: Math.min(gv.x0, yaziKutusu.x0),
+      y0: Math.min(gv.y0, yaziKutusu.y0),
+      x1: Math.max(gv.x1, yaziKutusu.x1),
+      y1: Math.max(gv.y1, yaziKutusu.y1),
     },
-    // Dolu şekil kutusunun ~%79'u: elips; ~%95+: dikdörtgen anlatım kutusu.
-    elips: doluSekil / (w * h) < SEKIL.dikdortgenDoluluk,
+    // Dolu şekil gövde kutusunun ~%79'u: elips; ~%95+: dikdörtgen anlatım kutusu.
+    elips: doluluk < SEKIL.dikdortgenDoluluk,
   };
 }
 
