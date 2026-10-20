@@ -49,6 +49,7 @@
         "src/icerik/aday.js",
         "src/icerik/ana.js",
         "src/icerik/gorunum.js",
+        "src/icerik/heceleme.js",
         "src/icerik/mesaj.js",
         "src/icerik/resim_al.js",
         "src/icerik/sigdir.js",

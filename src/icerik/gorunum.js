@@ -10,6 +10,7 @@
 //   güncellenir, balonlar yeniden hesaplanmaz.
 
 import { cevir } from '../dil.js';
+import { hecele } from './heceleme.js';
 import { puntoBul, puntoTavani } from './sigdir.js';
 
 /**
@@ -166,6 +167,10 @@ export class Gorunum {
     el.textContent = b.ceviri;
     el.title = b.orijinal;
     el.dataset.harf = String((b.orijinal || b.ceviri).length);
+    el.dataset.duz = b.ceviri;
+    // Kelime en küçük puntoda bile sığmazsa hece sınırından bölünsün.
+    const heceli = hecele(b.ceviri, el.lang);
+    if (heceli !== b.ceviri) el.dataset.heceli = heceli;
     let kutu = [b.x, b.y, b.g, b.h];
     if (b.balon) {
       // Balonun içi: çizgisinin üstüne binmesin diye her yandan %2 içeride.
@@ -275,6 +280,7 @@ export class Gorunum {
       const [x, y, g, h] = JSON.parse(el.dataset.kutu);
       const harf = Number(el.dataset.harf);
       el.classList.remove('kirilabilir');
+      el.textContent = el.dataset.duz;
       this._kutuyaKoy(el, x, y, g, h);
       if (el.classList.contains('sekilli')) {
         this._sekilliSigdir(el, g * r.genislik, h * r.yukseklik, harf);
@@ -294,10 +300,23 @@ export class Gorunum {
         this._kutuyaKoy(el, yx, yy, yg, yh);
         p = puntoBul(sigarMi, undefined, puntoTavani(yg * r.genislik, yh * r.yukseklik, harf));
       }
-      // Son çare: tek bir kelime en küçük puntoda bile genişliğe sığmıyor.
-      if (!sigarMi(p)) el.classList.add('kirilabilir');
+      if (!sigarMi(p)) p = this._sigmiyorsa(el, sigarMi, puntoTavani(g * r.genislik, h * r.yukseklik, harf));
       el.style.fontSize = `${p}px`;
     }
+  }
+
+  /**
+   * Sığdırmanın son adımı: en küçük puntoda bile sığmıyorsa önce hecelenmiş
+   * metin (yumuşak tireli) denenir, o da olmazsa kelime son çare kırılır.
+   */
+  _sigmiyorsa(el, sigarMi, tavan) {
+    if (el.dataset.heceli) {
+      el.textContent = el.dataset.heceli;
+      const p = puntoBul(sigarMi, undefined, tavan);
+      if (sigarMi(p)) return p;
+    }
+    el.classList.add('kirilabilir');
+    return puntoBul(sigarMi, undefined, tavan);
   }
 
   /**
@@ -314,8 +333,9 @@ export class Gorunum {
       return el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1;
     };
     const ic = 1 - 2 * oran;
-    const p = puntoBul(sigarMi, undefined, puntoTavani(w * ic, h * ic, harf));
-    if (!sigarMi(p)) el.classList.add('kirilabilir');
+    const tavan = puntoTavani(w * ic, h * ic, harf);
+    let p = puntoBul(sigarMi, undefined, tavan);
+    if (!sigarMi(p)) p = this._sigmiyorsa(el, sigarMi, tavan);
     el.style.fontSize = `${p}px`;
   }
 }
