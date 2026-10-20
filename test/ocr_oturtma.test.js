@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { kelimeEslesir, ocrIleOturt, sadelestir } from '../src/ocr_oturtma.js';
+import { kelimeBenzer, kelimeEslesir, ocrIleOturt, sadelestir } from '../src/ocr_oturtma.js';
 
 const G = 600;
 const Y = 900;
@@ -19,6 +19,13 @@ describe('kelime eşleme', () => {
     assert.equal(kelimeEslesir('ABOUT', 'ABOUTTHE'), true);
     assert.equal(kelimeEslesir('THE', 'TNE'), false); // kısa kelimede hata kabul edilmez
     assert.equal(kelimeEslesir('TRUTH', 'WORLD'), false);
+  });
+
+  it('gevşek benzerlik: bölünmüş kelime parçası ve bozuk okuma, ama rastgele değil', () => {
+    assert.equal(kelimeBenzer('ANCHE', 'AN'), true);
+    assert.equal(kelimeBenzer('CREATO', 'TO'), true);
+    assert.equal(kelimeBenzer('HANNO', 'H4NN0'), true);
+    assert.equal(kelimeBenzer('HANNO', 'ZKWV'), false);
   });
 });
 
@@ -63,5 +70,23 @@ describe('ocrIleOturt', () => {
     ], ocr);
     assert.equal(s[0].ocrOturdu, true);
     assert.notEqual(s[1].ocrOturdu, true);
+  });
+
+  it('eşleşmeyen kelime kaldıysa bitişik satırdaki bozuk okunmuş kelimeler de katılır; uzaktakiler katılmaz', () => {
+    const ocr2 = {
+      genislik: G,
+      yukseklik: Y,
+      kelimeler: [
+        k('PROPRIO', 400, 300), // ilk satır bozuk okunmuş gibi değil, eşleşir
+        k('PER', 400, 330), k('QUESTO', 450, 330),
+        k('H4NN0', 400, 360, 5), k('CREA-', 480, 360, 5), // bozuk okunmuş satır
+        k('XXQQ', 400, 500, 50), // uzakta, katılmamalı
+        k('ZKWV', 400, 390, 40), // bitişik ama eksik kelimelere benzemiyor (çizim): katılmamalı
+      ],
+    };
+    const [b] = ocrIleOturt([balon(380, 280, 520, 350, { orijinal: 'PROPRIO PER QUESTO, LE PERSONE HANNO CREATO' })], ocr2);
+    assert.equal(b.ocrOturdu, true);
+    const alt = (b.y + b.h) * Y;
+    assert.ok(alt > 382 && alt < 400, JSON.stringify(b));
   });
 });

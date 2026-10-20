@@ -16,6 +16,8 @@
  * okusa da güveni 0 verebiliyor (kullanıcının sayfasında "WORLD" böyleydi).
  */
 const EN_AZ_GUVEN = 30;
+/** Eksik satır için kümenin üstüne/altına en çok bu kadar satır eklenir. */
+const SATIR_EKLEME = 2;
 /** Bu oranda kelime eşleşmezse kutu değiştirilmez. */
 const EN_AZ_ESLESME = 0.4;
 
@@ -32,6 +34,18 @@ export function kelimeEslesir(a, b) {
     if (Math.abs(a.length - b.length) <= 1 && duzenlemeUzakligi(a, b) <= 1) return true;
   }
   return false;
+}
+
+/**
+ * Gevşek benzerlik: bölünmüş kelimenin parçası (AN- / CHE → ANCHE) ya da
+ * harflerinin çoğu tutan bozuk okuma. Yalnızca eksik satır ararken.
+ */
+export function kelimeBenzer(eksik, okunan) {
+  if (okunan.length < 2) return false;
+  if (kelimeEslesir(eksik, okunan)) return true;
+  if (okunan.length >= 2 && (eksik.startsWith(okunan) || eksik.endsWith(okunan))) return true;
+  const uzun = Math.max(eksik.length, okunan.length);
+  return uzun >= 4 && duzenlemeUzakligi(eksik, okunan) <= Math.floor(0.4 * uzun);
 }
 
 function duzenlemeUzakligi(a, b) {
@@ -58,6 +72,7 @@ export const ocrGerekirMi = (b) => !b.bolge && b.tur !== 'ses';
  * @returns {import('./yz/cozumle.js').Balon[]}  OCR ile oturanlar ocrOturdu: true.
  */
 export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }) {
+  const hepsi = kelimeler.map((k) => ({ ...k, sade: sadelestir(k.metin) }));
   const sozluk = kelimeler
     .map((k) => ({ ...k, sade: sadelestir(k.metin) }))
     .filter((k) => k.sade.length >= 4 || (k.sade.length >= 2 && k.guven >= EN_AZ_GUVEN));
@@ -90,7 +105,49 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }) 
 
     const kutular = kume.map((i) => sozluk[i].kutu);
     const boylar = kutular.map((k) => k.y1 - k.y0).sort((a, c) => a - c);
-    const p = 0.25 * boylar[boylar.length >> 1];
+    const boy = boylar[boylar.length >> 1];
+    // Modelin metninde eşleşmemiş kelime kaldıysa (italik, satır sonunda
+    // bölünmüş kelime, OCR'nin bozuk okuduğu satır) kümenin hemen
+    // üstündeki/altındaki satırlarda aynı boyda ve aynı sütunda duran OCR
+    // kelimeleri de katılır. Kullanıcının İtalyanca sayfasında üç anlatımın
+    // ilk ya da son satırı böyle açıkta kalıyordu.
+    // Modelin metninde hiçbir OCR kelimesine eşlenmemiş kelimeler.
+    const eslesenler = kume.map((i) => sozluk[i].sade);
+    const eksikler = kelimelerB.filter((tk) => !eslesenler.some((w) => kelimeEslesir(tk, w)));
+    if (eksikler.length) {
+      const sinir = () => ({
+        x0: Math.min(...kutular.map((k) => k.x0)), x1: Math.max(...kutular.map((k) => k.x1)),
+        y0: Math.min(...kutular.map((k) => k.y0)), y1: Math.max(...kutular.map((k) => k.y1)),
+      });
+      for (let tur = 0; tur < SATIR_EKLEME; tur++) {
+        const s0 = sinir();
+        const bitisik = hepsi.filter((w) => {
+          if (kutular.includes(w.kutu) || !w.sade) return false;
+          const h = w.kutu.y1 - w.kutu.y0;
+          if (h < 0.6 * boy || h > 1.6 * boy) return false;
+          const cx = (w.kutu.x0 + w.kutu.x1) / 2;
+          if (cx < s0.x0 - boy || cx > s0.x1 + boy) return false;
+          const ustte = w.kutu.y1 <= s0.y0 + 0.3 * boy && w.kutu.y1 >= s0.y0 - 1.3 * boy;
+          const altta = w.kutu.y0 >= s0.y1 - 0.3 * boy && w.kutu.y0 <= s0.y1 + 1.3 * boy;
+          return ustte || altta;
+        });
+        // Satırlara ayır; yalnızca eksik bir kelimeye benzeyen bir şey içeren
+        // satır eklenir (çizimden çıkan rastgele "kelimeler" eklenmesin).
+        const satirlar = [];
+        for (const w of bitisik) {
+          const cy = (w.kutu.y0 + w.kutu.y1) / 2;
+          const satir = satirlar.find((st) => Math.abs(st.cy - cy) < 0.5 * boy);
+          if (satir) satir.kelimeler.push(w);
+          else satirlar.push({ cy, kelimeler: [w] });
+        }
+        const ek = satirlar
+          .filter((st) => st.kelimeler.some((w) => eksikler.some((tk) => kelimeBenzer(tk, w.sade))))
+          .flatMap((st) => st.kelimeler);
+        if (!ek.length) break;
+        kutular.push(...ek.map((w) => w.kutu));
+      }
+    }
+    const p = 0.3 * boy;
     const x0 = Math.max(0, Math.min(...kutular.map((k) => k.x0)) - p);
     const y0 = Math.max(0, Math.min(...kutular.map((k) => k.y0)) - p);
     const x1 = Math.min(G, Math.max(...kutular.map((k) => k.x1)) + p);
