@@ -135,3 +135,13 @@ yalnızca ilk satırı kapsıyordu.
   efekti olmayan metin varsa çağırıyor.
 - Kullanıcının sayfasında gerçek Tesseract ile: başlığın üç satırı da
   kapsandı.
+
+## Sürüm 1.6.1 (2026-10-20)
+1.6.0 denemesinde başlık sayfası değişmemişti (sonuç eski sürümle
+önbelleğe yazılmıştı) ve İtalyanca sayfadaki balonsuz anlatımların ilk/son
+satırları açıkta kalıyordu.
+- Önbellekten gelen eski sonuçlar da OCR ile bir kez düzeltiliyor.
+- Eksik ilk/son satırlar hedefli olarak ekleniyor (eksik kelimeye benzeyen
+  satır).
+- Gerçek Tesseract ile: İtalyanca sayfada 4/4 anlatım tamamen kapsanıyor,
+  taşma yok; başlık sayfasında 3 satır.
