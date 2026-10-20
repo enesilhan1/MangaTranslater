@@ -15,6 +15,27 @@ export function puntoUstSiniri(kutuYuksekligi) {
 }
 
 /**
+ * Orijinal yazının kutudaki tahmini puntosu. Bir harf yaklaşık 0,6 punto
+ * genişliğinde, satır 1,15 punto yüksekliğinde; yazı kutunun yaklaşık
+ * yarısını kaplar (kenar boşluğu, satır sonları). Katsayı test sayfasıyla
+ * ayarlandı: 228x112 px kutuda 27 harflik 26,7 px'lik yazı → tahmin 26 px.
+ * Çeviri bundan en çok %15 büyük yazılır; aksi halde kısa bir çeviri balonu
+ * dev harflerle doldurup orijinalden çok daha iri görünüyordu.
+ */
+export const DOLULUK = 0.5;
+
+export function orijinalPuntosu(genislik, yukseklik, harfSayisi) {
+  const n = Math.max(4, harfSayisi);
+  return Math.sqrt((DOLULUK * genislik * yukseklik) / (n * 0.6 * 1.15));
+}
+
+/** Denenecek en büyük punto: kutu sınırı ile orijinal yazı boyutunun küçüğü. */
+export function puntoTavani(genislik, yukseklik, harfSayisi) {
+  const tavan = Math.min(puntoUstSiniri(yukseklik), Math.floor(orijinalPuntosu(genislik, yukseklik, harfSayisi) * 1.15));
+  return Math.max(EN_KUCUK_PUNTO, tavan);
+}
+
+/**
  * [enAz, enCok] arasında sigarMi'nin doğru olduğu en büyük tam sayı punto
  * (ikili arama; sığma punto küçüldükçe bozulmaz varsayılır). Hiçbiri
  * sığmıyorsa enAz.

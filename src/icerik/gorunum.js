@@ -10,7 +10,7 @@
 //   güncellenir, balonlar yeniden hesaplanmaz.
 
 import { cevir } from '../dil.js';
-import { puntoBul, puntoUstSiniri } from './sigdir.js';
+import { puntoBul, puntoTavani } from './sigdir.js';
 
 /**
  * @typedef {Object} ResimDurumu
@@ -41,8 +41,11 @@ const STIL = `
   box-shadow: 0 0 3px 4px #fff;
   font-family: "Comic Sans MS", "Comic Neue", "Chalkboard SE", "Segoe UI", system-ui, sans-serif;
   font-weight: 700; line-height: 1.12; text-align: center;
-  overflow-wrap: anywhere; hyphens: auto; white-space: normal;
+  /* Kelime ortadan bölünmez ("zorlanac / ağı" gibi): sığmıyorsa punto küçülür.
+     Yalnızca en küçük puntoda bile tek kelime sığmıyorsa .kirilabilir. */
+  overflow-wrap: normal; word-break: normal; hyphens: manual; white-space: normal;
 }
+.balon.kirilabilir { overflow-wrap: anywhere; }
 .orijinal .balon { display: none; }
 .rozet {
   position: absolute; top: 8px; right: 8px; width: 24px; height: 24px;
@@ -139,6 +142,7 @@ export class Gorunum {
     el.textContent = b.ceviri;
     el.title = b.orijinal;
     el.dataset.kutu = JSON.stringify([b.x, b.y, b.g, b.h]);
+    el.dataset.harf = String((b.orijinal || b.ceviri).length);
     this._kutuyaKoy(el, b.x, b.y, b.g, b.h);
     return el;
   }
@@ -212,12 +216,14 @@ export class Gorunum {
   _sigdir(r) {
     for (const el of r.kap.querySelectorAll('.balon')) {
       const [x, y, g, h] = JSON.parse(el.dataset.kutu);
+      const harf = Number(el.dataset.harf);
+      el.classList.remove('kirilabilir');
       this._kutuyaKoy(el, x, y, g, h);
       const sigarMi = (p) => {
         el.style.fontSize = `${p}px`;
         return el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1;
       };
-      let p = puntoBul(sigarMi, undefined, puntoUstSiniri(h * r.yukseklik));
+      let p = puntoBul(sigarMi, undefined, puntoTavani(g * r.genislik, h * r.yukseklik, harf));
       if (!sigarMi(p)) {
         // Çeviri orijinalden uzun: kutuyu merkezinden büyüt (resmin içinde kalarak).
         const yg = Math.min(1, g * BUYUTME);
@@ -225,8 +231,10 @@ export class Gorunum {
         const yx = Math.min(Math.max(0, x - (yg - g) / 2), 1 - yg);
         const yy = Math.min(Math.max(0, y - (yh - h) / 2), 1 - yh);
         this._kutuyaKoy(el, yx, yy, yg, yh);
-        p = puntoBul(sigarMi, undefined, puntoUstSiniri(yh * r.yukseklik));
+        p = puntoBul(sigarMi, undefined, puntoTavani(yg * r.genislik, yh * r.yukseklik, harf));
       }
+      // Son çare: tek bir kelime en küçük puntoda bile genişliğe sığmıyor.
+      if (!sigarMi(p)) el.classList.add('kirilabilir');
       el.style.fontSize = `${p}px`;
     }
   }
