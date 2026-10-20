@@ -293,6 +293,25 @@ describe('balona karışan çizim lekeleri', () => {
   });
 });
 
+describe('OCR ile oturmuş metin', () => {
+  it('OCR kutusu çevirisiz balona değiyorsa o balona yerleşir; balondan uzaksa olduğu gibi kalır', () => {
+    const r = ikiBalon();
+    const bulunanlar = balonlariBul(r);
+    // Kullanıcının sayfası: numarasız metnin OCR kümesi balonun alt ucundan çizime taşmış.
+    const s = kutulariOturt(r, [
+      balon(0, 0, 1, 1, { bolge: 1, ceviri: 'bir', orijinal: 'ABCDEFGHI' }),
+      balon(270, 420, 330, 520, { bolge: 0, ceviri: 'iki', orijinal: 'ABCDEFGHIJKL', ocrOturdu: true }),
+      balon(20, 520, 120, 560, { bolge: 0, ceviri: 'uc', orijinal: 'ABCDEFGHIJKL', ocrOturdu: true }),
+    ], bulunanlar);
+    const iki = s.find((b) => b.ceviri === 'iki');
+    assert.equal(iki.oturdu, true);
+    assert.ok(piksel(iki).y1 < 450 && piksel(iki).x0 < 260, JSON.stringify(piksel(iki)));
+    const uc = s.find((b) => b.ceviri === 'uc');
+    assert.equal(uc.ocrOturdu, true);
+    assert.ok(Math.abs(piksel(uc).y0 - 520) < 1);
+  });
+});
+
 describe('seyrek delikli beyaz alan', () => {
   it('tram/kumaş deseni gibi seyrek noktalar yazı sayılmaz; kalın kısa yazı ("!!") sayılır', () => {
     const r = resim();

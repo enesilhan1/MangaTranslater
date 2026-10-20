@@ -249,9 +249,34 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
   }
   /** kayıt sırası → eklenebileceği balon numarası (sahipsiz balon bulunamazsa) */
   const birlesecek = new Map();
+  /** OCR kutusuyla eşlenip alınmış bulunan balon numaraları */
+  const ocrAlinan = new Set();
   numarasiz.sort((a, b) => a - b);
   for (const i of numarasiz) {
     const b = balonlar[i];
+    // OCR kutusu çevirisiz bir bulunmuş balona değiyorsa metin o
+    // balonundur: model numara vermemiş, OCR kelime kümesi de balonun
+    // altına taşmış (kullanıcının sayfasında balonun açık alt ucundaki
+    // çizime). Balonun pikselleri OCR kümesinden güvenilir.
+    if (b.ocrOturdu && b.tur !== 'ses') {
+      const t = tahminKutusu(b);
+      const harf = String(b.orijinal).replace(/[^\p{L}\p{N}]/gu, '').length;
+      let enIyi = 0;
+      let secilenNo = 0;
+      bulunanlar.forEach((bb, n) => {
+        if (atanan.has(n + 1) || ocrAlinan.has(n + 1)) return;
+        const parca = bb.parca ?? harf;
+        if (harf && (parca < 0.3 * harf || parca > 2.5 * harf)) return;
+        const ortak = kesisimAlani(t, bb.kutu) / Math.min(alan(t), alan(bb.kutu));
+        if (ortak >= 0.2 && ortak > enIyi) [enIyi, secilenNo] = [ortak, n + 1];
+      });
+      if (secilenNo) {
+        const bb = bulunanlar[secilenNo - 1];
+        ocrAlinan.add(secilenNo);
+        sonuc[i] = { ...b, ...oran(bb.yazi), balon: { ...oran(bb.kutu), elips: bb.elips }, oturdu: true, ocrOturdu: false };
+        continue;
+      }
+    }
     // Ses efektleri ve OCR ile harflerin yerine oturmuş balonsuz metinler olduğu gibi.
     if (b.tur === 'ses' || b.ocrOturdu) {
       sonuc[i] = b;
