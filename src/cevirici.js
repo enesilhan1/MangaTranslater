@@ -3,7 +3,7 @@
 // üzerinden çalıştırır ve sonucu önbelleğe yazar.
 
 import { Motor, motorKimligi, seciliModel } from './ayarlar.js';
-import { ocrGerekirMi, ocrIleOturt } from './ocr_oturtma.js';
+import { OCR_SURUMU, ocrGerekirMi, ocrIleOturt } from './ocr_oturtma.js';
 import { kayitAnahtari, ozetCikar } from './onbellek.js';
 import { yerelCevirmenKopru } from './yerel/kopru.js';
 import { istemciOlustur } from './yz/istemciler.js';
@@ -36,13 +36,15 @@ export class Cevirici {
   /**
    * Görsel YZ'nin balonsuz metinleri (çizim üstü başlık/anlatım) OCR ile
    * harflerin yerine oturtulur. OCR yalnızca henüz denenmemiş böyle bir
-   * metin varsa çalışır; denenenler ocrDenendi işaretlenir ki önbellekten
-   * her gelişte tekrar çalışmasın. OCR hata verirse işaret konmaz (sonra
-   * yeniden denenir) ve modelin kutusu kalır; çeviri kaybolmaz.
+   * metin varsa çalışır; denenenler ocrDenendi (OCR_SURUMU) işaretlenir ki
+   * önbellekten her gelişte tekrar çalışmasın; eşleme kuralları gelişince
+   * sürüm artar ve eski kayıtlar bir kez daha denenir. OCR hata verirse
+   * işaret konmaz (sonra yeniden denenir) ve modelin kutusu kalır; çeviri
+   * kaybolmaz.
    * @returns {Promise<{balonlar: object[], degisti: boolean}>}
    */
   async ocrIleDuzelt(a, balonlar, resim) {
-    const gerekli = (b) => ocrGerekirMi(b) && !b.ocrOturdu && !b.ocrDenendi;
+    const gerekli = (b) => ocrGerekirMi(b) && !b.ocrOturdu && Number(b.ocrDenendi ?? 0) < OCR_SURUMU;
     if (a.motor !== Motor.GORSEL || !balonlar.some(gerekli)) return { balonlar, degisti: false };
     let ocr;
     try {
@@ -51,8 +53,10 @@ export class Cevirici {
       return { balonlar, degisti: false };
     }
     const adaylar = balonlar.filter(gerekli);
-    const sonuc = ocrIleOturt(adaylar, ocr);
-    const yeni = new Map(adaylar.map((b, i) => [b, { ...sonuc[i], ocrDenendi: true }]));
+    // İşaretli alanlar (numaralı balonlar) sayfa genelindeki aramaya girmez.
+    const isaretli = (resim.bolgeler ?? []).map(({ kutu: [y0, x0, y1, x1] }) => ({ x0: x0 / 1000, y0: y0 / 1000, x1: x1 / 1000, y1: y1 / 1000 }));
+    const sonuc = ocrIleOturt(adaylar, ocr, { isaretli });
+    const yeni = new Map(adaylar.map((b, i) => [b, { ...sonuc[i], ocrDenendi: OCR_SURUMU }]));
     return { balonlar: balonlar.map((b) => yeni.get(b) ?? b), degisti: true };
   }
 

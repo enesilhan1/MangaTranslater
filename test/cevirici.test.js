@@ -128,6 +128,16 @@ describe('Cevirici: balonsuz metinlerde OCR', () => {
     assert.equal(t1.ocrCagri.length, 1, 'ikinci gelişte OCR tekrar çalışmamalı');
   });
 
+  it('eski OCR kurallarıyla denenmiş (ocrDenendi: true) kayıt bir kez daha denenir', async () => {
+    const t = kur([balonsuz]);
+    const ozet = await ozetCikar(RESIM.veri);
+    await t.c.onbellek.koy(kayitAnahtari(ozet, 'gorsel:gemini:gemini-3.8-flash', 'tr'), [{ ...balonsuz, ocrDenendi: true }]);
+    const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(s.balonlar[0].ocrOturdu, true);
+    await t.c.dilimCevir({ id: 'b', oncelik: 1, resim: RESIM });
+    assert.equal(t.ocrCagri.length, 1);
+  });
+
   it('balonsuz metin OCR kelimesine oturur; OCR hatasında modelin kutusu kalır', async () => {
     const t = kur([numarali, balonsuz]);
     const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
