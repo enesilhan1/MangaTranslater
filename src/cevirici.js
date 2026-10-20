@@ -72,7 +72,13 @@ export class Cevirici {
     // çalışır. Önceden yalnızca yerleştirilecek metin varken çalışıyordu;
     // balonsuz metinleri önceki sürümlerde zaten OCR ile oturmuş önbellek
     // kayıtlarında denetim hiç yapılmıyordu (kullanıcının sayfası).
-    const eksikDenetimi = a.motor === Motor.GORSEL && !balonlar.some((b) => b.eksikDenendi) && balonlar.some((b) => !b.bolge && b.tur !== 'ses');
+    // Model bir işaretli balonu kullanmadıysa da algılama ile model
+    // uyuşmamış demektir (kullanıcının geniş resminde 8 işaretten 2'si
+    // yanlış bulguydu ve atlandı; balon sayılmayan "VI DARÒ TEMPO PER
+    // DECIDERE." da hiç dönmedi; sayfada balonsuz metin yoktu).
+    const kullanilmayanIsaret = bolgeler.some((_, i) => !balonlar.some((b) => b.bolge === i + 1));
+    const eksikDenetimi = a.motor === Motor.GORSEL && !balonlar.some((b) => b.eksikDenendi) &&
+      (balonlar.some((b) => !b.bolge && b.tur !== 'ses') || kullanilmayanIsaret);
     if (a.motor !== Motor.GORSEL || (!balonlar.some(gerekli) && !eksikDenetimi)) return { balonlar, degisti: false };
     let ocr;
     try {

@@ -248,9 +248,14 @@ describe('Cevirici: şüpheli numara', () => {
     const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim });
     assert.equal(s.balonlar[0].bolge, 2);
     assert.notEqual(s.balonlar[0].ocrOturdu, true);
+    // Tek işaretli alan kullanılmış, metin ona sığıyor: OCR gerekmez.
     const u = kur([metin('FORSE PENSAVANO FOSSI MORTO', 1)]);
-    await u.c.dilimCevir({ id: 'a', oncelik: 1, resim });
+    await u.c.dilimCevir({ id: 'a', oncelik: 1, resim: { ...resim, bolgeler: [resim.bolgeler[0]] } });
     assert.equal(u.ocrCagri.length, 0);
+    // Bir işaretli alan kullanılmadıysa atlanan yazı için OCR çalışır.
+    const v = kur([metin('FORSE PENSAVANO FOSSI MORTO', 1)]);
+    await v.c.dilimCevir({ id: 'a', oncelik: 1, resim });
+    assert.equal(v.ocrCagri.length, 1);
   });
 });
 
