@@ -44,6 +44,8 @@ const SEKIL = Object.freeze({
   kenarBoslugu: 0.03,
   /** Bölge resmin bu oranından büyük olamaz. */
   enCokAlan: 0.15,
+  /** Doluluk bundan yüksekse dikdörtgen kutu (anlatım), düşükse oval balon. */
+  dikdortgenDoluluk: 0.88,
   /**
    * Balon resmin en az bu genişlik oranında olmalı (gerçek sayfada en küçük
    * balon "UAH" ~%10; %5'lik bir enkaz parçası yanlışlıkla balon sayılıyordu).
@@ -56,8 +58,9 @@ const SEKIL = Object.freeze({
  *   Satır satır parlaklık değerleri (0 siyah, 255 beyaz).
  * @typedef {{x0: number, y0: number, x1: number, y1: number}} PikselKutu
  *   Uçlar dahil.
- * @typedef {{kutu: PikselKutu, yazi: PikselKutu}} BulunanBalon
- *   Balonun içi ve içindeki yazının sınırları (gri resmin pikselleriyle).
+ * @typedef {{kutu: PikselKutu, yazi: PikselKutu, elips: boolean}} BulunanBalon
+ *   Balonun içi, içindeki yazının sınırları (gri resmin pikselleriyle) ve
+ *   şekli (oval mi, dikdörtgen anlatım kutusu mu).
  */
 
 /**
@@ -82,8 +85,8 @@ export function balonlariBul(resim) {
       const bolge = doldur(resim, etiket, x, y, ++no, azamiAlan);
       if (!bolge || bolge.alan < enAzAlan) continue;
       if (bolge.kutu.x1 - bolge.kutu.x0 + 1 < SEKIL.enAzGenislik * G) continue;
-      const yazi = balonMu(resim, etiket, bolge);
-      if (yazi) bulunan.push({ kutu: bolge.kutu, yazi });
+      const sonuc = balonMu(resim, etiket, bolge);
+      if (sonuc) bulunan.push({ kutu: bolge.kutu, ...sonuc });
     }
   }
   const satir = 0.03 * Y;
@@ -156,7 +159,8 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
     }
   });
   for (const [n, { i }] of atanan) {
-    sonuc[i] = { ...balonlar[i], ...oran(bulunanlar[n - 1].yazi), oturdu: true };
+    const bb = bulunanlar[n - 1];
+    sonuc[i] = { ...balonlar[i], ...oran(bb.yazi), balon: { ...oran(bb.kutu), elips: bb.elips }, oturdu: true };
   }
 
   // Numarasızlar: dolu balonların içleri başka kayda verilemesin diye
@@ -189,7 +193,7 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
     const secilen = enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, () => ++sonEtiket);
     if (secilen) {
       kullanilan.add(secilen.no);
-      sonuc[i] = { ...b, ...oran(secilen.yazi), oturdu: true, bolge: 0 };
+      sonuc[i] = { ...b, ...oran(secilen.yazi), balon: { ...oran(secilen.kutu), elips: secilen.elips }, oturdu: true, bolge: 0 };
       continue;
     }
     // Aynı numarayı alıp tahmini de o balonun içindeyse aynı balonun devamıdır.
@@ -244,10 +248,11 @@ function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket) {
       if (!bolge || bolge.alan > azamiAlan) continue;
       const ortusme = kesisimAlani(bolge.kutu, tahmin) / Math.min(alan(bolge.kutu), tahminAlani);
       if (ortusme < EN_AZ_ORTUSME) continue;
-      const yazi = balonMu(resim, etiket, bolge);
-      if (!yazi) continue;
+      const bulgu = balonMu(resim, etiket, bolge);
+      if (!bulgu) continue;
+      const { yazi } = bulgu;
       const puan = kesisimAlani(yazi, tahmin) / alan(yazi) + ortusme;
-      if (!enIyi || puan > enIyi.puan) enIyi = { puan, yazi, no };
+      if (!enIyi || puan > enIyi.puan) enIyi = { puan, yazi, no, kutu: bolge.kutu, elips: bulgu.elips };
     }
   }
   return enIyi;
@@ -290,7 +295,7 @@ function doldur(resim, etiket, x, y, no, azamiAlan) {
 
 /**
  * Bölge bir balon mu? Balonsa içindeki yazının (biraz paylı, balonun
- * içinde kalan) sınırlarını, değilse null döndürür. Delikler = bölgeye ait
+ * içinde kalan) sınırlarını ve şeklini ({yazi, elips}), değilse null döndürür. Delikler = bölgeye ait
  * olmayan ama bölge kutusunun kenarından da ulaşılamayan pikseller.
  */
 function balonMu(resim, etiket, bolge) {
@@ -385,10 +390,14 @@ function balonMu(resim, etiket, bolge) {
   // Yazı satırları arasına ve kenarına pay; balonun içinde kalarak.
   const pay = Math.round(Math.min(w, h) * 0.06) + 1;
   return {
-    x0: x0 + Math.max(0, yazi.x0 - pay),
-    y0: y0 + Math.max(0, yazi.y0 - pay),
-    x1: x0 + Math.min(w - 1, yazi.x1 + pay),
-    y1: y0 + Math.min(h - 1, yazi.y1 + pay),
+    yazi: {
+      x0: x0 + Math.max(0, yazi.x0 - pay),
+      y0: y0 + Math.max(0, yazi.y0 - pay),
+      x1: x0 + Math.min(w - 1, yazi.x1 + pay),
+      y1: y0 + Math.min(h - 1, yazi.y1 + pay),
+    },
+    // Dolu şekil kutusunun ~%79'u: elips; ~%95+: dikdörtgen anlatım kutusu.
+    elips: doluSekil / (w * h) < SEKIL.dikdortgenDoluluk,
   };
 }
 

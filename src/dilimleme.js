@@ -91,5 +91,7 @@ export function satirSkoru(rgba) {
 export function dilimBalonlariniYerlestir(dilim, yukseklik, balonlar) {
   const bas = dilim.y0 / yukseklik;
   const oran = (dilim.y1 - dilim.y0) / yukseklik;
-  return balonlar.map((b) => ({ ...b, y: bas + b.y * oran, h: b.h * oran }));
+  const cevir = (k) => ({ ...k, y: bas + k.y * oran, h: k.h * oran });
+  // Balonun kendi kutusu (beyaz zemin) de aynı şekilde çevrilir.
+  return balonlar.map((b) => (b.balon ? { ...cevir(b), balon: cevir(b.balon) } : cevir(b)));
 }

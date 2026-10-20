@@ -153,3 +153,33 @@ describe('kutulariOturt', () => {
     assert.deepEqual(kutulariOturt(r, [ses], balonlariBul(r)), [ses]);
   });
 });
+
+describe('balon şekli ve kutusu', () => {
+  it('oval balon elips, siyah çerçeveli dikdörtgen kutu elips değil', () => {
+    const r = resim();
+    balonCiz(r, 110, 140, 80, 60);
+    yaziCiz(r, 70, 125, 150);
+    yaziCiz(r, 75, 145, 145);
+    // Dikdörtgen anlatım kutusu: siyah çerçeve, beyaz iç.
+    for (let y = 350; y < 470; y++) for (let x = 200; x < 380; x++) {
+      r.gri[y * G + x] = y < 353 || y > 466 || x < 203 || x > 376 ? 0 : 255;
+    }
+    yaziCiz(r, 220, 390, 360);
+    yaziCiz(r, 225, 410, 355);
+    const b = balonlariBul(r);
+    assert.equal(b.length, 2);
+    assert.equal(b[0].elips, true);
+    assert.equal(b[1].elips, false);
+  });
+
+  it('yerleşen kayıt balonun iç kutusunu taşır; kutu yazı kutusunu kapsar', () => {
+    const r = ikiBalon();
+    const [b] = kutulariOturt(r, [balon(0, 0, 1, 1, { bolge: 1 })], balonlariBul(r));
+    assert.equal(b.balon.elips, true);
+    assert.ok(b.balon.x <= b.x && b.balon.y <= b.y);
+    assert.ok(b.balon.x + b.balon.g >= b.x + b.g && b.balon.y + b.balon.h >= b.y + b.h);
+    // Balonun içi (elips 30-190 x 80-200) dışına çıkmaz.
+    const k = piksel(b.balon);
+    assert.ok(k.x0 >= 28 && k.x1 <= 192 && k.y0 >= 78 && k.y1 <= 202, JSON.stringify(k));
+  });
+});

@@ -41,4 +41,14 @@ describe('dilimBalonlariniYerlestir', () => {
     assert.equal(b.h, 0.025);
     assert.equal(b.ceviri, 'b');
   });
+
+  it('balonun kendi kutusu (beyaz zemin) da resme yerleştirilir', () => {
+    const [b] = dilimBalonlariniYerlestir({ y0: 1000, y1: 2000 }, 4000, [
+      { x: 0.2, y: 0.5, g: 0.3, h: 0.1, balon: { x: 0.1, y: 0.4, g: 0.5, h: 0.3, elips: true } },
+    ]);
+    assert.equal(b.balon.y, 0.25 + 0.4 * 0.25);
+    assert.equal(b.balon.h, 0.3 * 0.25);
+    assert.equal(b.balon.elips, true);
+    assert.equal(b.balon.x, 0.1);
+  });
 });
