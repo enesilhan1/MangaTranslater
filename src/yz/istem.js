@@ -78,8 +78,10 @@ Rules:
  * biliniyorsa söylenir: modeller (özellikle Claude) konumu piksel cinsinden
  * daha isabetli tahmin edip 0-1000'e çeviriyor.
  * İşaretli alanlar varsa listesi de verilir (resimdeki numaralarla aynı).
+ * [eksikler]: ilk yanıtta atlandığı görülen yazıların alanları (yeniden
+ * sorarken; src/cevirici.js).
  * @param {{genislik?: number, yukseklik?: number,
- *   bolgeler?: {no: number, kutu: number[]}[]}} [resim]
+ *   bolgeler?: {no: number, kutu: number[]}[], eksikler?: number[][]}} [resim]
  */
 export function kullaniciMetni(hedefDilKodu, resim = {}) {
   const piksel = resim.genislik && resim.yukseklik
@@ -88,5 +90,8 @@ export function kullaniciMetni(hedefDilKodu, resim = {}) {
   const bolgeler = resim.bolgeler?.length
     ? ` Tagged areas as [ymin, xmin, ymax, xmax]: ${resim.bolgeler.map((b) => `${b.no}: [${b.kutu.join(', ')}]`).join('; ')}.`
     : ' No areas are tagged in this image; use bolge 0.';
-  return `Translate all text in this image into ${dilBul(hedefDilKodu).ingilizce}.${piksel}${bolgeler} Answer only with the JSON object.`;
+  const eksikler = resim.eksikler?.length
+    ? ` A previous answer missed the text in these areas [ymin, xmin, ymax, xmax]: ${resim.eksikler.map((k) => `[${k.join(', ')}]`).join('; ')}. Make sure to include it, together with all other text.`
+    : '';
+  return `Translate all text in this image into ${dilBul(hedefDilKodu).ingilizce}.${piksel}${bolgeler}${eksikler} Answer only with the JSON object.`;
 }

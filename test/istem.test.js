@@ -32,6 +32,8 @@ describe('Çeviri istemi', () => {
     const metin = kullaniciMetni('tr', { bolgeler: [{ no: 1, kutu: [10, 20, 30, 40] }, { no: 2, kutu: [50, 60, 70, 80] }] });
     assert.match(metin, /1: \[10, 20, 30, 40\]; 2: \[50, 60, 70, 80\]/);
     assert.match(kullaniciMetni('tr'), /No areas are tagged/);
+    assert.doesNotMatch(kullaniciMetni('tr'), /missed/);
+    assert.match(kullaniciMetni('tr', { eksikler: [[800, 138, 864, 275]] }), /missed the text in these areas .*[800, 138, 864, 275]/);
   });
 
   it('şema katı modlara uygun: her nesnede tüm alanlar zorunlu, ek alan yok', () => {
