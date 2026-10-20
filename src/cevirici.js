@@ -3,6 +3,7 @@
 // üzerinden çalıştırır ve sonucu önbelleğe yazar.
 
 import { Motor, motorKimligi, seciliModel } from './ayarlar.js';
+import { ocrGerekirMi, ocrIleOturt } from './ocr_oturtma.js';
 import { kayitAnahtari, ozetCikar } from './onbellek.js';
 import { yerelCevirmenKopru } from './yerel/kopru.js';
 import { istemciOlustur } from './yz/istemciler.js';
@@ -30,6 +31,12 @@ export class Cevirici {
     this.yerelOlustur = yerelOlustur;
     /** Yerel köprü offscreen belgedeki motoru tutar; e-posta değişmedikçe aynısı. */
     this._yerel = null;
+  }
+
+  /** Yalnızca OCR için köprü (görsel YZ'de balonsuz metinler); ilk gerektiğinde kurulur. */
+  ocrKopru() {
+    this._ocr ??= this.yerelOlustur({ eposta: '' });
+    return this._ocr;
   }
 
   /** Ayarlara göre cevir({resim, hedefDil, sinyal}) sunan motor. */
@@ -60,9 +67,19 @@ export class Cevirici {
 
     const motor = this.motor(a);
     this.kuyruk.esZaman = ES_ZAMAN[a.motor];
-    const { balonlar } = await this.kuyruk.ekle(id, oncelik, (sinyal) =>
+    let { balonlar } = await this.kuyruk.ekle(id, oncelik, (sinyal) =>
       motor.cevir({ resim, hedefDil: a.hedefDil, sinyal }),
     );
+    // Görsel YZ'nin balonsuz metinleri (çizim üstü başlık/anlatım) OCR ile
+    // harflerin yerine oturtulur; OCR yalnızca böyle bir metin varsa çalışır.
+    // Olmazsa modelin kutusu kalır, çeviri kaybolmaz.
+    if (a.motor === Motor.GORSEL && balonlar.some(ocrGerekirMi)) {
+      try {
+        balonlar = ocrIleOturt(balonlar, await this.ocrKopru().kelimeleriOku(resim));
+      } catch {
+        // modelin kutusuyla devam
+      }
+    }
     // Önbelleğe yazılamasa da çeviri gösterilsin. Boş sonuç yazılmaz: model
     // bir kez yanılıp "yazı yok" derse sayfa sonsuza kadar boş kalmasın.
     if (balonlar.length) await this.onbellek.koy(anahtar, balonlar).catch(() => {});

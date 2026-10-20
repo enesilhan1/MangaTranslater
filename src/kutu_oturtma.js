@@ -225,7 +225,8 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
   numarasiz.sort((a, b) => a - b);
   for (const i of numarasiz) {
     const b = balonlar[i];
-    if (b.tur === 'ses') {
+    // Ses efektleri ve OCR ile harflerin yerine oturmuş balonsuz metinler olduğu gibi.
+    if (b.tur === 'ses' || b.ocrOturdu) {
       sonuc[i] = b;
       continue;
     }

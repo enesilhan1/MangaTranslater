@@ -88,6 +88,45 @@ describe('Cevirici', () => {
   });
 });
 
+describe('Cevirici: balonsuz metinlerde OCR', () => {
+  function kur(modelBalonlari, { ocrHata = false } = {}) {
+    const ocrCagri = [];
+    const c = new Cevirici({
+      ayarDeposu: new AyarDeposu(sahteAlan({ ayarlar: { anahtarlar: { gemini: 'k' } } })),
+      onbellek: bellekOnbellek(),
+      kuyruk: new Kuyruk(),
+      gorselOlustur: () => ({ cevir: async () => ({ balonlar: modelBalonlari }) }),
+      yerelOlustur: () => ({
+        kelimeleriOku: async (r) => {
+          ocrCagri.push(r);
+          if (ocrHata) throw new Error('OCR yok');
+          return { genislik: 100, yukseklik: 100, kelimeler: [{ metin: 'HELLO', guven: 90, kutu: { x0: 60, y0: 60, x1: 90, y1: 70 } }] };
+        },
+      }),
+    });
+    return { c, ocrCagri };
+  }
+  const numarali = { x: 0.1, y: 0.1, g: 0.1, h: 0.1, tur: 'balon', bolge: 1, orijinal: 'HI', ceviri: 'Selam' };
+  const balonsuz = { x: 0.5, y: 0.5, g: 0.1, h: 0.05, tur: 'anlatim', bolge: 0, orijinal: 'HELLO', ceviri: 'Merhaba' };
+
+  it('yalnızca numaralı metinler varsa OCR çalışmaz', async () => {
+    const t = kur([numarali]);
+    await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(t.ocrCagri.length, 0);
+  });
+
+  it('balonsuz metin OCR kelimesine oturur; OCR hatasında modelin kutusu kalır', async () => {
+    const t = kur([numarali, balonsuz]);
+    const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(t.ocrCagri.length, 1);
+    assert.equal(s.balonlar[1].ocrOturdu, true);
+    assert.ok(s.balonlar[1].x > 0.55);
+    const h = kur([balonsuz], { ocrHata: true });
+    const s2 = await h.c.dilimCevir({ id: 'b', oncelik: 1, resim: RESIM });
+    assert.deepEqual(s2.balonlar, [balonsuz]);
+  });
+});
+
 describe('Cevirici: boş sonuç', () => {
   it('yazısız sonuç önbelleğe yazılmaz; eski boş kayıt yok sayılır, model yeniden sorulur', async () => {
     const cagri = [];
