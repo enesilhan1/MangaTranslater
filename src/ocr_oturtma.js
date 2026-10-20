@@ -20,6 +20,13 @@ const EN_AZ_GUVEN = 30;
 const SATIR_EKLEME = 2;
 /** Bu oranda kelime eşleşmezse kutu değiştirilmez. */
 const EN_AZ_ESLESME = 0.4;
+/**
+ * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
+ * denenmişse bir kez daha denenir (true = 1).
+ */
+export const OCR_SURUMU = 2;
+/** Model kutusundan uzakta yalnızca bu uzunlukta (ve üstü) kelimeler sayılır. */
+const UZAK_KELIME = 4;
 
 /** Karşılaştırma için: yalnızca harf ve rakam, büyük harf. */
 export function sadelestir(metin) {
@@ -69,9 +76,13 @@ export const ocrGerekirMi = (b) => !b.bolge && b.tur !== 'ses';
  * @param {import('./yz/cozumle.js').Balon[]} balonlar  0-1 oranlı.
  * @param {{kelimeler: import('./yerel/gruplama.js').OcrKelimesi[],
  *   genislik: number, yukseklik: number}} ocr  OCR sonucu (piksel kutular).
+ * @param {{isaretli?: {x0: number, y0: number, x1: number, y1: number}[]}} [ek]
+ *   Numaralı balonların alanları (0-1): sayfa genelindeki aramada bunların
+ *   içindeki kelimeler sayılmaz (o yazılar zaten kendi balonlarında).
  * @returns {import('./yz/cozumle.js').Balon[]}  OCR ile oturanlar ocrOturdu: true.
  */
-export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }) {
+export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, { isaretli = [] } = {}) {
+  const isaretliMi = (cx, cy) => isaretli.some((k) => cx >= k.x0 * G && cx <= k.x1 * G && cy >= k.y0 * Y && cy <= k.y1 * Y);
   const hepsi = kelimeler.map((k) => ({ ...k, sade: sadelestir(k.metin) }));
   const sozluk = kelimeler
     .map((k) => ({ ...k, sade: sadelestir(k.metin) }))
@@ -88,19 +99,30 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }) 
     const t = { x0: b.x * G, y0: b.y * Y, x1: (b.x + b.g) * G, y1: (b.y + b.h) * Y };
     const pay = Math.max(t.x1 - t.x0, t.y1 - t.y0, 0.15 * G);
     const alan = { x0: t.x0 - pay, y0: t.y0 - pay, x1: t.x1 + pay, y1: t.y1 + pay };
-    const eslesen = [];
-    sozluk.forEach((k, i) => {
-      if (kullanildi.has(i)) return;
-      const cx = (k.kutu.x0 + k.kutu.x1) / 2;
-      const cy = (k.kutu.y0 + k.kutu.y1) / 2;
-      if (cx < alan.x0 || cx > alan.x1 || cy < alan.y0 || cy > alan.y1) return;
-      if (kelimelerB.some((tk) => kelimeEslesir(tk, k.sade))) eslesen.push(i);
-    });
-    if (!eslesen.length) return b;
-
+    const gerekli = Math.max(1, Math.ceil(EN_AZ_ESLESME * kelimelerB.length));
+    const eslesmeAra = (icinde, uzunMu = false) => {
+      const liste = [];
+      sozluk.forEach((k, i) => {
+        if (kullanildi.has(i) || (uzunMu && k.sade.length < UZAK_KELIME)) return;
+        const cx = (k.kutu.x0 + k.kutu.x1) / 2;
+        const cy = (k.kutu.y0 + k.kutu.y1) / 2;
+        if (!icinde(cx, cy)) return;
+        if (kelimelerB.some((tk) => kelimeEslesir(tk, k.sade))) liste.push(i);
+      });
+      return liste;
+    };
+    const kumeler = (liste) => tumKumeler(liste.map((i) => sozluk[i]), liste).filter((km) => km.length >= gerekli);
     // Eşleşen kelimelerin en kalabalık yakın kümesi (aynı metnin satırları).
-    const kume = enKalabalikKume(eslesen.map((i) => sozluk[i]), eslesen);
-    if (kume.length < Math.max(1, Math.ceil(EN_AZ_ESLESME * kelimelerB.length))) return b;
+    let kume = kumeler(eslesmeAra((cx, cy) => cx >= alan.x0 && cx <= alan.x1 && cy >= alan.y0 && cy <= alan.y1))[0];
+    // Yakında yoksa bütün sayfada, yalnızca tek ve uzun kelimelerle kesin
+    // eşleşen bir küme varsa: model kutuyu başka bir yere koymuş olabilir
+    // (kullanıcının sayfasında "È ALICE!" kutusu üstteki balonun "...ALICE?!"
+    // satırındaydı; asıl yazı panelin altındaydı).
+    if (!kume) {
+      const sayfada = kumeler(eslesmeAra((cx, cy) => !isaretliMi(cx, cy), true));
+      if (sayfada.length === 1) kume = sayfada[0];
+    }
+    if (!kume) return b;
     for (const i of kume) kullanildi.add(i);
 
     const kutular = kume.map((i) => sozluk[i].kutu);
@@ -158,9 +180,10 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }) 
 
 /**
  * Kelimeleri yakınlığa göre kümeler (aralarındaki boşluk iki kelime boyunu
- * geçmeyenler aynı kümede) ve en kalabalık kümenin sıra numaralarını döndürür.
+ * geçmeyenler aynı kümede); kümelerin sıra numaraları, kalabalıktan aza.
  */
-function enKalabalikKume(kelimeler, numaralar) {
+function tumKumeler(kelimeler, numaralar) {
+  if (!kelimeler.length) return [];
   const ata = kelimeler.map((_, i) => i);
   const bul = (i) => (ata[i] === i ? i : (ata[i] = bul(ata[i])));
   for (let i = 0; i < kelimeler.length; i++) {
@@ -176,5 +199,5 @@ function enKalabalikKume(kelimeler, numaralar) {
     const k = bul(i);
     gruplar.set(k, [...(gruplar.get(k) ?? []), numaralar[i]]);
   });
-  return [...gruplar.values()].sort((a, b) => b.length - a.length)[0];
+  return [...gruplar.values()].sort((a, b) => b.length - a.length);
 }

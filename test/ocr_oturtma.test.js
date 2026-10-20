@@ -89,4 +89,20 @@ describe('ocrIleOturt', () => {
     const alt = (b.y + b.h) * Y;
     assert.ok(alt > 382 && alt < 400, JSON.stringify(b));
   });
+
+  it('model kutuyu başka yere koyduysa sayfadaki tek kesin eşleşmeye gider; numaralı balondaki ve belirsiz eşleşme sayılmaz', () => {
+    // Kullanıcının sayfası: "È ALICE!" kutusu üstteki balonun "ALICE?!" satırında.
+    const kelimeler = [k('ICE?!', 450, 100), k('ALICE!', 420, 600, 36), k('FATTO', 100, 300)];
+    const tahmin = () => balon(440, 95, 520, 125, { orijinal: 'È ALICE!' });
+    const [b] = ocrIleOturt([tahmin()], { kelimeler, genislik: G, yukseklik: Y });
+    assert.equal(b.ocrOturdu, true);
+    assert.ok(b.y * Y > 590, JSON.stringify(b));
+    // İkinci bir "ALICE" daha varsa hangisi olduğu belli değil: değişmez.
+    const iki = [...kelimeler, k('ALICE', 100, 450)];
+    assert.notEqual(ocrIleOturt([tahmin()], { kelimeler: iki, genislik: G, yukseklik: Y })[0].ocrOturdu, true);
+    // Öbür "ALICE" numaralı bir balonun içindeyse sayılmaz.
+    const isaretli = [{ x0: 80 / G, y0: 430 / Y, x1: 200 / G, y1: 480 / Y }];
+    const [c] = ocrIleOturt([tahmin()], { kelimeler: iki, genislik: G, yukseklik: Y }, { isaretli });
+    assert.ok(c.ocrOturdu && c.y * Y > 590, JSON.stringify(c));
+  });
 });
