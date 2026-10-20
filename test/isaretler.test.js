@@ -9,16 +9,30 @@ const bulunanlar = [
 ];
 
 describe('isaretler', () => {
-  it('işaretler 1\'den numaralı, balonun sol üst köşesinde, gönderilen resme ölçekli', () => {
-    const [a, b] = isaretKonumlari(bulunanlar, 2, 1000);
+  it('işaret balonun içinde: yazının üstündeki boşlukta, ortalı; 1\'den numaralı', () => {
+    // Balon 10-109 x 20-79, yazı 30-90 x 35-65 → üstte 15 px (2x ölçekte 30 px) boşluk.
+    const [a, b] = isaretKonumlari(bulunanlar, 2, 400);
     assert.equal(a.no, 1);
-    assert.equal(a.r, 16);
-    assert.equal(a.x, Math.round(10 * 2 + 16 * 0.4));
-    assert.equal(a.y, Math.round(20 * 2 + 16 * 0.4));
-    // Kenardaki balonda işaret resimden taşmaz.
-    assert.equal(b.x, 16);
-    assert.equal(b.y, 16);
-    assert.equal(isaretKonumlari(bulunanlar, 1, 300)[0].r, 9);
+    assert.equal(b.no, 2);
+    assert.equal(a.r, 9);
+    assert.equal(a.x, Math.round(((30 + 91) / 2) * 2));
+    assert.equal(a.y, Math.round(((20 + 35) / 2) * 2));
+    assert.ok(a.y - a.r >= 40 && a.y + a.r <= 70, 'balonun içinde ve yazının üstünde');
+    assert.equal(isaretKonumlari(bulunanlar, 2, 1000)[0].r, 16);
+  });
+
+  it('üstte yer yoksa yazının solu, o da yoksa altı, hiçbiri yoksa köşe', () => {
+    const solda = [{ kutu: { x0: 0, y0: 100, x1: 199, y1: 159 }, yazi: { x0: 40, y0: 102, x1: 190, y1: 157 } }];
+    const [s] = isaretKonumlari(solda, 1, 400);
+    assert.equal(s.x, 20);
+    assert.equal(s.y, Math.round((102 + 158) / 2));
+    const altta = [{ kutu: { x0: 0, y0: 100, x1: 199, y1: 159 }, yazi: { x0: 2, y0: 101, x1: 197, y1: 130 } }];
+    const [a] = isaretKonumlari(altta, 1, 400);
+    assert.equal(a.y, Math.round((131 + 160) / 2));
+    const dar = [{ kutu: { x0: 0, y0: 0, x1: 49, y1: 49 }, yazi: { x0: 2, y0: 2, x1: 47, y1: 47 } }];
+    const [d] = isaretKonumlari(dar, 1, 400, 400);
+    assert.equal(d.x, 9);
+    assert.equal(d.y, 9);
   });
 
   it('alan listesi 0-1000 [ymin, xmin, ymax, xmax]', () => {

@@ -6,21 +6,42 @@
 // kopyada; sayfada gösterilen resim değişmez.
 
 /**
- * İşaretlerin yeri ve boyutu: balonun sınırlayıcı kutusunun sol üst köşesi.
- * Elips balonda bu köşe balonun dışında kalır, yazıyı örtmez.
+ * İşaretlerin yeri ve boyutu. İşaret balonun **içine** konur ki hangi balona
+ * ait olduğu belirsiz kalmasın: önce yazının üstündeki boşluğa (ortalı),
+ * sığmazsa yazının soluna, o da sığmazsa altına; hiçbirine sığmıyorsa
+ * balonun sınırlayıcı kutusunun sol üst köşesine. (İlk sürümde işaret hep
+ * köşedeydi, yani balonun dışında; kullanıcının sayfasında Claude iki
+ * farklı balonun metnine aynı numarayı verdi.)
  * @param {import('./kutu_oturtma.js').BulunanBalon[]} bulunanlar  Gri kopyanın pikselleriyle.
  * @param {number} olcek  Gri kopyadan gönderilen resme ölçek.
  * @param {number} genislik  Gönderilen resmin genişliği.
+ * @param {number} [yukseklik]  Gönderilen resmin yüksekliği (taşmayı önlemek için).
  * @returns {{no: number, x: number, y: number, r: number}[]}  Daire merkezi ve yarıçapı.
  */
-export function isaretKonumlari(bulunanlar, olcek, genislik) {
+export function isaretKonumlari(bulunanlar, olcek, genislik, yukseklik = Infinity) {
   const r = Math.max(9, Math.round(genislik * 0.016));
-  return bulunanlar.map((b, i) => ({
-    no: i + 1,
-    x: Math.max(r, Math.round(b.kutu.x0 * olcek + r * 0.4)),
-    y: Math.max(r, Math.round(b.kutu.y0 * olcek + r * 0.4)),
-    r,
-  }));
+  const gerekli = 2 * r + 2;
+  const sinirla = (v, ust) => Math.min(Math.max(r, Math.round(v)), ust - r);
+  return bulunanlar.map((b, i) => {
+    const k = { x0: b.kutu.x0 * olcek, y0: b.kutu.y0 * olcek, x1: (b.kutu.x1 + 1) * olcek, y1: (b.kutu.y1 + 1) * olcek };
+    const y = { x0: b.yazi.x0 * olcek, y0: b.yazi.y0 * olcek, x1: (b.yazi.x1 + 1) * olcek, y1: (b.yazi.y1 + 1) * olcek };
+    let x;
+    let yy;
+    if (y.y0 - k.y0 >= gerekli) {
+      x = (y.x0 + y.x1) / 2;
+      yy = (k.y0 + y.y0) / 2;
+    } else if (y.x0 - k.x0 >= gerekli) {
+      x = (k.x0 + y.x0) / 2;
+      yy = (y.y0 + y.y1) / 2;
+    } else if (k.y1 - y.y1 >= gerekli) {
+      x = (y.x0 + y.x1) / 2;
+      yy = (y.y1 + k.y1) / 2;
+    } else {
+      x = k.x0 + r * 0.4;
+      yy = k.y0 + r * 0.4;
+    }
+    return { no: i + 1, x: sinirla(x, genislik), y: sinirla(yy, yukseklik), r };
+  });
 }
 
 /**

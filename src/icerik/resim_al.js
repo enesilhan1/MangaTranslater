@@ -90,7 +90,7 @@ export async function dilimlereAyir(blob, { isaretle = false } = {}) {
       // Gri kopya işaretlerden önce: balon bulma ve oturtma temiz resimle yapılır.
       const gri = griKopya(tuval);
       const bulunanlar = isaretle ? balonlariBul(gri) : [];
-      if (bulunanlar.length) isaretleriCiz(ctx, isaretKonumlari(bulunanlar, g / gri.genislik, g));
+      if (bulunanlar.length) isaretleriCiz(ctx, isaretKonumlari(bulunanlar, g / gri.genislik, g, h));
       const jpeg = await tuval.convertToBlob({ type: 'image/jpeg', quality: JPEG_KALITESI });
       sonuc.push({
         veri: bayttanBase64(await jpeg.arrayBuffer()),
