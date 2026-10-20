@@ -79,3 +79,15 @@ balonlar çevrilmedi.
   'bolge'; numaralı metin doğrudan bulunan balona yerleşir.
 - Farklı metinler artık birleşmez; numarasız oturtma daha sıkı.
 - Henüz: gerçek Claude anahtarıyla uçtan uca deneme kullanıcıda.
+
+## Sürüm 1.2.1 (2026-10-20)
+1.2.0 denemesi çok daha iyiydi ama Claude iki farklı balonun metnine aynı
+numarayı verdi; iki çeviri tek balonda birleşti, bir balon çevrilmedi.
+- İşaret balonun içine, yazıya bitişik (köşede balonun dışında kalıyor,
+  komşu balonla karışıyordu).
+- Aynı numara iki farklı metne: kutusu balona yakın olan kalır, diğeri en
+  uygun boş balona; yalnızca model tek balonu ikiye bölmüşse birleşir.
+- Numarasız oturtmada bölge sınırı 10x tahmin (doğru balon "fazla büyük"
+  diye reddediliyordu); çizim alanlarını şekil denetimi eliyor.
+- Kullanıcının sayfasında: sayfadaki hata durumu iki ayrı doğru balona
+  yerleşiyor; kayık 6 numarasız tahminin 6'sı doğru balona.
