@@ -20,6 +20,14 @@ import { Gorunum } from './gorunum.js';
 import { arkaPlanaBildir, arkaPlanaGonder, eklentiKoptuMu } from './mesaj.js';
 import { dilimlereAyir, resimBaytlari } from './resim_al.js';
 
+/**
+ * Konsola tek satırlık iz: bir sayfa neden çevrilmedi sorusuna cevap için
+ * (F12 → Console → "Manga" ile süz).
+ */
+function iz(...parcalar) {
+  console.info('[Manga Çevirmen]', ...parcalar.filter((p) => p !== '' && p != null));
+}
+
 /** Bu kadar ekran yukarı/aşağıdaki resimler "yakın" sayılır. */
 const YAKIN_PAYI = '300%';
 /**
@@ -68,6 +76,12 @@ class Cevirmen {
     // Sayfadan çıkılırken (sekme kapanmadan başka sayfaya geçiş) işler boşa çevrilmesin.
     this._sayfadanCikis = () => arkaPlanaBildir({ tip: 'iptal' });
     addEventListener('pagehide', this._sayfadanCikis);
+    // Sayfa tarayıcının "geri" önbelleğinden dönünce yarıda kalanlar baştan.
+    this._sayfayaDonus = (e) => {
+      if (!e.persisted) return;
+      for (const img of [...this.takipte]) if (this.kayitlar.get(img)?.durdu) this._tekrarDene(img);
+    };
+    addEventListener('pageshow', this._sayfayaDonus);
   }
 
   async _ayarlariOku() {
@@ -127,7 +141,13 @@ class Cevirmen {
       gorunuyorMu: kutu.width > 0 && kutu.height > 0,
     });
     if (eski) this._birak(img, eski);
-    if (!aday) return;
+    if (!aday) {
+      // Yalnızca sayfa olabilecek boyuttakiler (ikonlar konsolu doldurmasın).
+      if (img.naturalWidth >= 300 && img.naturalHeight >= 300) {
+        iz('-', 'aday değil', `${img.naturalWidth}x${img.naturalHeight}, görünen ${Math.round(kutu.width)} px`);
+      }
+      return;
+    }
 
     const kayit = {
       kimlik: `r${++this._sayac}`,
@@ -159,6 +179,11 @@ class Cevirmen {
       else kume.delete(g.target);
       const kayit = this.kayitlar.get(g.target);
       if (!kayit) continue;
+      // İptal edilip yarıda kalan resim ekrana/yakına gelince baştan çevrilir.
+      if (kayit.durdu && g.isIntersecting) {
+        this._tekrarDene(g.target);
+        continue;
+      }
       const yeni = this._oncelikHesapla(g.target);
       if (yeni !== kayit.oncelik) {
         kayit.oncelik = yeni;
@@ -176,6 +201,7 @@ class Cevirmen {
       this.gorunum.guncelle(img, durum);
     };
     guncelle({ durum: 'cevriliyor' });
+    let onbellekten = 0;
     try {
       const { dilimler, yukseklik } = await this.hazirlik.ekle(kayit.kimlik, kayit.oncelik, async () =>
         // Görsel YZ'de balonlar numaralanır; model metni numarayla balona bağlar.
@@ -184,13 +210,14 @@ class Cevirmen {
       // Dilimler aynı anda kuyruğa girer; her biri geldikçe gösterilir.
       await Promise.all(
         dilimler.map(async (d, i) => {
-          const { balonlar } = await arkaPlanaGonder({
+          const { balonlar, onbellekten: ob } = await arkaPlanaGonder({
             tip: 'cevir',
             resimKimligi: kayit.kimlik,
             dilim: i,
             oncelik: kayit.oncelik,
             resim: { veri: d.veri, tur: d.tur, genislik: d.genislik, yukseklik: d.yukseklik, bolgeler: d.bolgeler },
           });
+          if (ob) onbellekten++;
           // Numaralı metinler bulunan balonlara, numarasızlar en yakın balona
           // oturtulur (önbellekteki sonuç da: numaralar aynı resimde aynı).
           const oturmus = kutulariOturt(d.gri, balonlar, d.bulunanlar);
@@ -200,9 +227,24 @@ class Cevirmen {
       guncelle({ durum: 'tamam' });
     } catch (e) {
       const hata = hatayiPaketle(e);
-      // İptal edilen (adres değişen/kalkan) resim için hata gösterilmez.
-      if (hata.anahtar !== 'hata.durduruldu') guncelle({ durum: 'hata', hata });
+      if (hata.anahtar !== 'hata.durduruldu') {
+        guncelle({ durum: 'hata', hata });
+        iz(kayit.kimlik, 'hata', hata.anahtar, hata.parametreler);
+        return;
+      }
+      // İptal: resim sayfadan kalktıysa ya da adresi değiştiyse yapılacak bir
+      // şey yok. Hâlâ duruyorsa (ör. sayfa "geri" önbelleğinden döndü, iptal
+      // pagehide'da gitti) "durdu" işaretlenir; görünür olunca ya da sayfa
+      // geri gelince baştan çevrilir. Önceden bu resimler hiç işaretsiz,
+      // çevrilmemiş kalıyordu.
+      if (this.kayitlar.get(img) === kayit && img.isConnected) {
+        kayit.durdu = true;
+        guncelle({ durum: 'bekliyor' });
+        iz(kayit.kimlik, 'durdu (görünür olunca yeniden denenecek)');
+      }
+      return;
     }
+    iz(kayit.kimlik, 'tamam', `${durum.balonlar.length} metin`, onbellekten ? `(${onbellekten} dilim önbellekten)` : '');
   }
 
   /** Resmin işini iptal eder ve görünümünü kaldırır. */
@@ -230,6 +272,7 @@ class Cevirmen {
     this.gorunurGozcu.disconnect();
     this.yakinGozcu.disconnect();
     removeEventListener('pagehide', this._sayfadanCikis);
+    removeEventListener('pageshow', this._sayfayaDonus);
   }
 
   /** Site listeden çıkarıldı: işleri iptal et, çevirileri sayfadan kaldır. */
