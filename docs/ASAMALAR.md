@@ -309,3 +309,13 @@ uçtan uca denenmedi (API anahtarı yok).
 - Aynı resim ekranda ~%30 boyutta gösterildiği için dar balonlardaki
   çeviriler kesiliyordu. Son çare olarak dolgu azalıyor, punto 6 px'e
   iniyor, gerekirse kutu dikey büyüyor; yazı kesilmiyor.
+
+## Sürüm 1.8.2 (2026-10-21)
+Chrome Web Store yayınına hazırlık:
+- Gizlilik politikası (docs/PRIVACY.md).
+- Mağaza metinleri, izin gerekçeleri ve veri beyanı (docs/MAGAZA.md).
+- Kendi örnek sayfamızla 1280x800 ekran görüntüleri ve 440x280 tanıtım
+  kutusu (docs/magaza/; üreten sayfa test/magaza_gorseli.html).
+- minimum_chrome_version 121: Firefox için duran background.scripts
+  anahtarı Chrome 120'de hata sayılabiliyordu.
+- GitHub Actions ile otomatik testler.
