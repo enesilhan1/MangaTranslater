@@ -145,3 +145,14 @@ satırları açıkta kalıyordu.
   satır).
 - Gerçek Tesseract ile: İtalyanca sayfada 4/4 anlatım tamamen kapsanıyor,
   taşma yok; başlık sayfasında 3 satır.
+
+## Sürüm 1.7.0 (2026-10-20)
+Rusça sayfada: model dar bir balonun metnine numara vermeyip kutusunu
+panelin ortasına koydu; dar kutuda uzun Türkçe kelime ortadan kırıldı; tek
+lekeli küçük bir alan balon sayıldı. Ayrıca bir çeviri anlamca yanlıştı
+("en zayıf" → "en güçlü"): bu modelin (Haiku) hatası, yerleşimle ilgisiz.
+- Sahipsiz balon + yersiz metin eşleştirmesi (uzaklık ve harf/parça uyumu
+  sınırlı).
+- Tek parçalı yazı balon değil.
+- Türkçe heceleme (yumuşak tire), yalnızca kelime sığmazsa.
+- 9 sayfa yeniden denetlendi: yalnızca gerçek balonlar.

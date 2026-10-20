@@ -82,7 +82,8 @@ listesi).
   konup çeviri sığacak yazı boyutuyla içine yazılır. Resmin kendisi
   değiştirilmez (üstünde ayrı bir katman).
 - Yazı orijinal yazıdan belirgin şekilde büyük olmaz; kelimeler ortadan
-  bölünmez (sığmıyorsa punto küçülür).
+  bölünmez (sığmıyorsa punto küçülür). Türkçede en küçük puntoda bile
+  sığmayan uzun kelime hece sınırından tireyle bölünür.
 - Bulunan balonda beyaz zemin balonun kendi şeklindedir (oval / dikdörtgen)
   ve balonun çizgisinin içinde kalır; çeviri balonun içine sığdırılır, kutu
   balonun dışına büyütülmez.
