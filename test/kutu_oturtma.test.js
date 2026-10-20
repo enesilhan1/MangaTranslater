@@ -251,6 +251,17 @@ describe('ortak beyaz alanda birden çok metin', () => {
   });
 });
 
+describe('kutusuz kayıt', () => {
+  it('numarasıyla balona oturur; numarası geçersizse gösterilmez', () => {
+    const r = ikiBalon();
+    const bulunanlar = balonlariBul(r);
+    const kutusuz = (bolge, ceviri) => ({ x: 0, y: 0, g: 0, h: 0, tur: 'balon', bolge, orijinal: 'A', ceviri, kutusuz: true });
+    const s = kutulariOturt(r, [kutusuz(2, 'iki'), kutusuz(9, 'yok')], bulunanlar);
+    assert.deepEqual(s.map((b) => b.ceviri), ['iki']);
+    assert.ok(piksel(s[0]).y0 > 360);
+  });
+});
+
 describe('sahipsiz balon ve yersiz metin', () => {
   it('numarasız, balonu bulunamayan metin yakındaki sahipsiz balona gider', () => {
     const r = ikiBalon();

@@ -86,4 +86,17 @@ describe('balonlariCoz', () => {
     ] };
     assert.deepEqual(balonlariCoz(JSON.stringify(j), 'X').map((b) => b.bolge), [3, 2, 0, 0]);
   });
+
+  it('numaralı kayıt kutusu bozuk olsa da tutulur (kutusuz); numarasızı atılır; sayılar istatistikte', () => {
+    const j = { balonlar: [
+      { bolge: 2, kutu: [0, 0, 100], orijinal: 'A', ceviri: 'B' },
+      { bolge: 3, kutu: [10, 10, 11, 11], orijinal: 'A', ceviri: 'C' },
+      { bolge: 0, kutu: [0, 0, 100], orijinal: 'A', ceviri: 'D' },
+      { bolge: 1, kutu: [0, 0, 100, 100], orijinal: 'A', ceviri: 'E' },
+    ] };
+    const istatistik = {};
+    const b = balonlariCoz(JSON.stringify(j), 'X', istatistik);
+    assert.deepEqual(b.map((x) => [x.ceviri, Boolean(x.kutusuz)]), [['B', true], ['C', true], ['E', false]]);
+    assert.deepEqual(istatistik, { ham: 4, atlanan: 1 });
+  });
 });

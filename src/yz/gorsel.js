@@ -62,7 +62,9 @@ export class GorselIstemci {
     });
     if (son === YanitSonu.RET) throw new YzHatasi('hata.ret', { ad: this.ad });
     if (son === YanitSonu.UZUNLUK) throw new YzHatasi('hata.uzunluk', { ad: this.ad });
-    return { balonlar: balonlariCoz(metin, this.ad), kullanim };
+    const istatistik = {};
+    const balonlar = balonlariCoz(metin, this.ad, istatistik);
+    return { balonlar, kullanim, istatistik };
   }
 }
 

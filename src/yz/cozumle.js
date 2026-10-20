@@ -15,6 +15,8 @@ import { YzHatasi } from './ortak.js';
  * @property {string} ceviri
  * @property {'balon'|'anlatim'|'ses'} tur  Ses efektleri çizimi kapatmadan etiketle gösterilir.
  * @property {number} bolge  Modelin söylediği işaret numarası (0: işaretsiz).
+ * @property {boolean} [kutusuz]  Model geçerli kutu vermedi; yalnızca numarasıyla
+ *   bir balona oturabilir, oturamazsa gösterilmez.
  */
 
 const TURLER = ['balon', 'anlatim', 'ses'];
@@ -24,9 +26,11 @@ const TUR_ESLERI = { bubble: 'balon', speech: 'balon', narration: 'anlatim', cap
 /**
  * @param {string} metin  Modelin yanıt metni.
  * @param {string} saglayiciAdi  Hata mesajı için.
+ * @param {{ham?: number, atlanan?: number}} [istatistik]  Doldurulur: modelin
+ *   döndürdüğü kayıt sayısı ve kullanılamayıp atılanlar (konsol izi için).
  * @returns {Balon[]}
  */
-export function balonlariCoz(metin, saglayiciAdi) {
+export function balonlariCoz(metin, saglayiciAdi, istatistik = {}) {
   const j = jsonBul(metin);
   const liste = Array.isArray(j) ? j : j?.balonlar;
   if (!Array.isArray(liste)) throw new YzHatasi('hata.bozukYanit', { ad: saglayiciAdi });
@@ -40,21 +44,30 @@ export function balonlariCoz(metin, saglayiciAdi) {
       orijinal: metinAl(b?.orijinal),
       ceviri: metinAl(b?.ceviri),
     }))
-    .filter((b) => b.kutu.length === 4 && b.kutu.every(Number.isFinite) && (b.ceviri || b.orijinal));
+    .filter((b) => b.ceviri || b.orijinal);
+  istatistik.ham = liste.length;
+  const kutuluMu = (b) => b.kutu.length === 4 && b.kutu.every(Number.isFinite);
 
   // Bütün değerler 1'i geçmiyorsa model 0-1 ölçeği kullanmış demektir.
-  const olcek = adaylar.every((b) => b.kutu.every((v) => v <= 1)) ? 1 : 1000;
+  const olcek = adaylar.filter(kutuluMu).every((b) => b.kutu.every((v) => v <= 1)) ? 1 : 1000;
 
   const balonlar = [];
   for (const b of adaylar) {
-    const [y1, x1, y2, x2] = b.kutu.map((v) => sinirla(v / olcek));
+    const metinler = { tur: b.tur, bolge: b.bolge, orijinal: b.orijinal, ceviri: b.ceviri || b.orijinal };
+    const [y1, x1, y2, x2] = kutuluMu(b) ? b.kutu.map((v) => sinirla(v / olcek)) : [0, 0, 0, 0];
     const x = Math.min(x1, x2);
     const y = Math.min(y1, y2);
     const g = Math.abs(x2 - x1);
     const h = Math.abs(y2 - y1);
-    if (g < 0.005 || h < 0.003) continue; // görünmeyecek kadar küçük
-    balonlar.push({ x, y, g, h, tur: b.tur, bolge: b.bolge, orijinal: b.orijinal, ceviri: b.ceviri || b.orijinal });
+    if (g < 0.005 || h < 0.003) {
+      // Görünmeyecek kadar küçük ya da bozuk kutu. Numaralıysa kutuya gerek
+      // yok (yeri bulunan balondan gelir); numarasızsa gösterilecek yer yok.
+      if (b.bolge) balonlar.push({ x: 0, y: 0, g: 0, h: 0, ...metinler, kutusuz: true });
+      continue;
+    }
+    balonlar.push({ x, y, g, h, ...metinler });
   }
+  istatistik.atlanan = istatistik.ham - balonlar.length;
   return balonlar;
 }
 

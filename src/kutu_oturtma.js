@@ -357,7 +357,9 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
     }
     sonuc[i] = null;
   }
-  return sonuc.filter(Boolean);
+  // Kutusu bozuk gelip numarasıyla da bir balona oturamayan kayıt için
+  // gösterilecek yer yok.
+  return sonuc.filter((x) => x && !(x.kutusuz && !x.oturdu));
 }
 
 /**
