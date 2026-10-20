@@ -57,7 +57,8 @@ export function isaretKonumlari(bulunanlar, olcek, genislik, yukseklik = Infinit
 
 /**
  * Modele metinle de verilen işaretli alan listesi: [ymin, xmin, ymax, xmax],
- * 0-1000 (istemdeki kutu biçimi).
+ * 0-1000 (istemdeki kutu biçimi). parca (balondaki harf parçası) modele
+ * gitmez; arka plan şüpheli numaraları bununla bulur (cevirici.js).
  * @param {import('./kutu_oturtma.js').BulunanBalon[]} bulunanlar
  * @param {{genislik: number, yukseklik: number}} gri  Gri kopyanın boyutu.
  */
@@ -66,5 +67,6 @@ export function bolgeListesi(bulunanlar, gri) {
   return bulunanlar.map((x, i) => ({
     no: i + 1,
     kutu: [b(x.kutu.y0, gri.yukseklik), b(x.kutu.x0, gri.genislik), b(x.kutu.y1 + 1, gri.yukseklik), b(x.kutu.x1 + 1, gri.genislik)],
+    ...(x.parca != null ? { parca: x.parca } : {}),
   }));
 }

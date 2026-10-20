@@ -24,7 +24,7 @@ const EN_AZ_ESLESME = 0.4;
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
  */
-export const OCR_SURUMU = 3;
+export const OCR_SURUMU = 4;
 /** Model kutusundan uzakta yalnızca bu uzunlukta (ve üstü) kelimeler sayılır. */
 const UZAK_KELIME = 4;
 /** Sayfa genelindeki aramada eşleşen kelimeler arası en çok boşluk (kelime boyu cinsinden). */

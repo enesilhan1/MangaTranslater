@@ -37,5 +37,8 @@ describe('isaretler', () => {
 
   it('alan listesi 0-1000 [ymin, xmin, ymax, xmax]', () => {
     assert.deepEqual(bolgeListesi(bulunanlar, { genislik: 500, yukseklik: 800 })[0], { no: 1, kutu: [25, 20, 100, 220] });
+    // Harf parçası sayısı biliniyorsa listeye girer (arka plan şüpheli numaraları bulur).
+    const [p] = bolgeListesi([{ ...bulunanlar[0], parca: 4 }], { genislik: 500, yukseklik: 800 });
+    assert.equal(p.parca, 4);
   });
 });

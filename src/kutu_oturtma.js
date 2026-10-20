@@ -380,6 +380,16 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
 }
 
 /**
+ * Metin, harf parçası [parca] olan bir balona sığmayacak kadar uzun mu
+ * (parça, harflerin NUMARA_PARCA_ORANI'ndan az)? Arka plan da kullanır:
+ * böyle numaralı metinler balonsuz metinler gibi OCR'den geçer.
+ */
+export function metinSigmaz(orijinal, parca) {
+  const harf = String(orijinal ?? '').replace(/[^\p{L}\p{N}]/gu, '').length;
+  return parca != null && harf > 0 && parca < NUMARA_PARCA_ORANI * harf;
+}
+
+/**
  * Modelin verdiği numara açıkça yanlış mı? Metin o balona sığmayacak kadar
  * uzunsa (balondaki harf parçası metnin harflerinin NUMARA_PARCA_ORANI'ndan
  * az) ve modelin kutusunun merkezi balonun dışındaysa; ya da metin çok
@@ -392,9 +402,9 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
  * harfler birleşip az parça sayılıyor), modelin kutusu da sık kayıyor.
  */
 function numarayaGuvenilmez(b, bulunan, tahmin) {
+  if (!metinSigmaz(b.orijinal, bulunan.parca)) return false;
   const harf = String(b.orijinal).replace(/[^\p{L}\p{N}]/gu, '').length;
-  const parca = bulunan.parca ?? harf;
-  if (!harf || parca >= NUMARA_PARCA_ORANI * harf) return false;
+  const parca = bulunan.parca;
   if (parca < NUMARA_KESIN_ORAN * harf) return true;
   const k = bulunan.kutu;
   const cx = (tahmin.x0 + tahmin.x1) / 2;

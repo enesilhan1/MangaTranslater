@@ -150,6 +150,47 @@ describe('Cevirici: balonsuz metinlerde OCR', () => {
   });
 });
 
+describe('Cevirici: şüpheli numara', () => {
+  function kur(model) {
+    const ocrCagri = [];
+    const c = new Cevirici({
+      ayarDeposu: new AyarDeposu(sahteAlan({ ayarlar: { anahtarlar: { gemini: 'k' } } })),
+      onbellek: bellekOnbellek(),
+      kuyruk: new Kuyruk(),
+      gorselOlustur: () => ({ cevir: async () => ({ balonlar: model }) }),
+      yerelOlustur: () => ({
+        kelimeleriOku: async (r) => (ocrCagri.push(r), {
+          genislik: 100, yukseklik: 100,
+          kelimeler: [{ metin: 'FORSE', guven: 90, kutu: { x0: 60, y0: 60, x1: 75, y1: 64 } }, { metin: 'MORTO', guven: 90, kutu: { x0: 60, y0: 66, x1: 75, y1: 70 } }],
+        }),
+      }),
+    });
+    return { c, ocrCagri };
+  }
+  // Kedinin gözü: 4 parçalı işaretli alan; 24 harflik metin ona sığmaz.
+  const resim = { ...RESIM, bolgeler: [{ no: 1, kutu: [0, 0, 100, 100], parca: 30 }, { no: 2, kutu: [450, 300, 500, 380], parca: 4 }] };
+  const metin = (orijinal, bolge) => ({ x: 0.3, y: 0.45, g: 0.08, h: 0.05, tur: 'balon', bolge, orijinal, ceviri: 'x' });
+
+  it('sığmayacağı alanın numarasını alan metin OCR ile asıl yazısına taşınır, numarası düşer', async () => {
+    const t = kur([metin('FORSE PENSAVANO FOSSI MORTO', 2)]);
+    const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim });
+    assert.equal(t.ocrCagri.length, 1);
+    assert.equal(s.balonlar[0].ocrOturdu, true);
+    assert.equal(s.balonlar[0].bolge, 0);
+    assert.ok(s.balonlar[0].x > 0.55);
+  });
+
+  it('OCR bulamazsa numarasıyla kalır; sığan numaralı metin OCR beklemez', async () => {
+    const t = kur([metin('NIENTE DI SIMILE QUI DENTRO', 2)]);
+    const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim });
+    assert.equal(s.balonlar[0].bolge, 2);
+    assert.notEqual(s.balonlar[0].ocrOturdu, true);
+    const u = kur([metin('FORSE PENSAVANO FOSSI MORTO', 1)]);
+    await u.c.dilimCevir({ id: 'a', oncelik: 1, resim });
+    assert.equal(u.ocrCagri.length, 0);
+  });
+});
+
 describe('Cevirici: model balonların çoğunu atladı', () => {
   const bolgeler = (n) => Array.from({ length: n }, (_, i) => ({ no: i + 1, kutu: [0, 0, 10, 10] }));
   const kayit = (bolge) => ({ x: 0.1, y: 0.1, g: 0.1, h: 0.1, tur: 'balon', bolge, orijinal: 'A', ceviri: 'B' + bolge });

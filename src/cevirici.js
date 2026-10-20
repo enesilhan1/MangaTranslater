@@ -3,6 +3,7 @@
 // üzerinden çalıştırır ve sonucu önbelleğe yazar.
 
 import { Motor, motorKimligi, seciliModel } from './ayarlar.js';
+import { metinSigmaz } from './kutu_oturtma.js';
 import { OCR_SURUMU, ocrGerekirMi, ocrIleOturt } from './ocr_oturtma.js';
 import { kayitAnahtari, ozetCikar } from './onbellek.js';
 import { yerelCevirmenKopru } from './yerel/kopru.js';
@@ -58,7 +59,13 @@ export class Cevirici {
    * @returns {Promise<{balonlar: object[], degisti: boolean}>}
    */
   async ocrIleDuzelt(a, balonlar, resim) {
-    const gerekli = (b) => ocrGerekirMi(b) && !b.ocrOturdu && Number(b.ocrDenendi ?? 0) < OCR_SURUMU;
+    // Numarası şüpheli metin: işaretli alan ona sığmayacak kadar küçük
+    // (kullanıcının sayfasında kedinin gözü 4 parça, metin 24 harf). Model
+    // numarayı da kutuyu da yanlış verdiyse içerik betiği metni yalnızca
+    // modelin kutusuna koyabiliyordu; OCR asıl yazıyı bulur.
+    const bolgeler = resim.bolgeler ?? [];
+    const supheli = (b) => b.bolge > 0 && b.tur !== 'ses' && metinSigmaz(b.orijinal, bolgeler[b.bolge - 1]?.parca);
+    const gerekli = (b) => (ocrGerekirMi(b) || supheli(b)) && !b.ocrOturdu && Number(b.ocrDenendi ?? 0) < OCR_SURUMU;
     if (a.motor !== Motor.GORSEL || !balonlar.some(gerekli)) return { balonlar, degisti: false };
     let ocr;
     try {
@@ -69,8 +76,13 @@ export class Cevirici {
     const adaylar = balonlar.filter(gerekli);
     // İşaretli alanlar (numaralı balonlar) sayfa genelindeki aramaya girmez.
     const isaretli = (resim.bolgeler ?? []).map(({ kutu: [y0, x0, y1, x1] }) => ({ x0: x0 / 1000, y0: y0 / 1000, x1: x1 / 1000, y1: y1 / 1000 }));
-    const sonuc = ocrIleOturt(adaylar, ocr, { isaretli });
-    const yeni = new Map(adaylar.map((b, i) => [b, { ...sonuc[i], ocrDenendi: OCR_SURUMU }]));
+    // Şüpheli numaralı metin numarasız gibi aranır; OCR bulursa numarası
+    // düşer, bulamazsa numarasıyla kalır (içerik betiği yine denetler).
+    const sonuc = ocrIleOturt(adaylar.map((b) => (supheli(b) ? { ...b, bolge: 0 } : b)), ocr, { isaretli });
+    const yeni = new Map(adaylar.map((b, i) => {
+      const s = supheli(b) && !sonuc[i].ocrOturdu ? b : sonuc[i];
+      return [b, { ...s, ocrDenendi: OCR_SURUMU }];
+    }));
     return { balonlar: balonlar.map((b) => yeni.get(b) ?? b), degisti: true };
   }
 
