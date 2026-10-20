@@ -229,3 +229,12 @@ metin geldi (konsol: "7 işaret, modelden 1 metin"). Kalan balonlar
 - Kutusu bozuk ama numarası olan metinler artık atılmıyor.
 - Konsolda kullanılamayan kayıt sayısı ve yeniden sorma bilgisi
   görünüyor.
+
+## Sürüm 1.7.8 (2026-10-20)
+Model balonsuz bir yazının kutusunu sayfanın başka bir yerine koyduğunda
+sayfa genelindeki OCR araması, satırlarından biri bozuk okunan yazıyı
+bulamıyordu. Eşleşen satırlar arasında artık daha geniş boşluk kabul
+ediliyor; önbellekteki sayfalar bir kez daha OCR'den geçiyor. Bilinen
+kusur: model iki metne aynı numarayı verip kutuyu da yanlış balona
+koyarsa (kullanıcının sayfasında "Shh..." ile "LA MAPPA..."), yanlış metin
+balonda kalabiliyor. Çizgisi kesik küçük "Shh..." balonu bulunamıyor.
