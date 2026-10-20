@@ -19,11 +19,11 @@ yazıya dokunmaz; bu eklenti tam olarak bunu yapar.
 
 | | Görsel yapay zekâ (varsayılan) | Yerel (anahtarsız) |
 |---|---|---|
-| Nasıl çalışır | Resim seçtiğin yapay zekâya gider; balonları bulur, okur ve bağlama uygun çevirir | Yazı bilgisayarında Tesseract ile okunur, sonra çevrilir |
+| Nasıl çalışır | Eklenti balonları resimden kendisi bulup numaralar; resim seçtiğin yapay zekâya gider, o da yazıları okuyup bağlama uygun çevirir. Balonsuz yazılar (çizim üstü başlıklar) bilgisayarındaki OCR ile yerine oturtulur | Yazı bilgisayarında Tesseract ile okunur, sonra çevrilir |
 | Gereken | API anahtarı (Gemini, Claude ya da ChatGPT) | Hiçbir şey |
 | Kalite | En iyisi; ses efektlerini, el yazısını, her kaynak dili okur | İyi basılmış İngilizce balonlarda iyi; süslü yazıda ve ses efektlerinde zayıf |
 | Çeviri | Yapay zekâ | Chrome'da tarayıcının kendi çevirmeni (cihazda, ücretsiz); Firefox'ta MyMemory (ücretsiz, günlük sınırlı) |
-| Ücret | Sağlayıcının fiyatı (Gemini'nin ücretsiz kotası var) | Ücretsiz |
+| Ücret | Sağlayıcının fiyatı (Gemini'nin ücretsiz kotası var). Model bir sayfadaki balonların çoğunu atlarsa o sayfa bir kez daha sorulur | Ücretsiz |
 
 **Öneri:** En iyi sonuç için Gemini ile başla: <https://aistudio.google.com/apikey>
 adresinden ücretsiz bir anahtar alıp eklentinin penceresine yapıştırman yeterli.
@@ -64,14 +64,37 @@ gerekir.
    - Kırmızı **!**: çevrilemedi; üstüne gelince sebebi yazar, tıklayınca tekrar dener.
    - <kbd>Alt</kbd>+<kbd>T</kbd>: orijinal ↔ çeviri (kısayolu
      `chrome://extensions/shortcuts` üzerinden değiştirebilirsin).
-   - Çevirinin üstüne gelince orijinal metin görünür.
 
 Siteyi listeden çıkarmak için aynı anahtarı kapat ya da pencerenin altındaki
 listeden **Kaldır**'a bas.
 
+## Güncelleme
+1. Klasörde `git pull` (ya da yeni ZIP'i indirip aynı klasöre çıkar).
+2. `chrome://extensions` sayfasında eklentinin **yeniden yükle** (↻) düğmesine
+   bas; sürüm numarasının değiştiğini gör.
+3. Açık manga sekmelerini **F5** ile yenile. Yenilemeden kalan eski çeviriler
+   kendiliğinden kaldırılır, ama sayfa yeni sürümle ancak yenilenince çevrilir.
+
+Önceden çevrilmiş sayfalar önbellekten gelir. Yerleştirme kuralları
+değiştiyse yeni sürümle hemen doğru yere oturur; model tekrar çağrılmaz.
+Baştan çevirtmek istersen pencerenin altındaki **Önbelleği temizle**'ye bas.
+
+## Sorun giderme
+Bir sayfa çevrilmediyse ya da çeviri yanlış yere düştüyse:
+1. O sekmede <kbd>F12</kbd> → **Console**, süzgece `Manga` yaz.
+2. Sayfayı F5 ile yenileyip ilgili sayfaya kaydır. Her resim için şuna benzer
+   satırlar çıkar:
+   - `r3 dilim 0: 5 işaret, modelden 6 metin (numaralar: 1,2,3,5,-,-)`:
+     eklentinin bulduğu balon sayısı, modelin döndürdüğü metin sayısı ve her
+     metne verdiği balon numarası (`-`: balonsuz).
+   - `tamam`, `hata …` ya da `aday değil` (çok küçük/görünmeyen resim).
+3. Bu satırların ekran görüntüsünü, sayfanın görüntüsünü ve mümkünse bölümün
+   bağlantısıyla sayfa numarasını sorunla birlikte bildir.
+
 ## Gizlilik
 - Ayarlar ve API anahtarları yalnızca bilgisayarında saklanır.
-- Görsel yapay zekâda resimler yalnızca seçtiğin sağlayıcıya gider.
+- Görsel yapay zekâda resimler yalnızca seçtiğin sağlayıcıya gider; balon
+  bulma ve OCR bilgisayarında yapılır.
 - Yerel motorda resim bilgisayarından çıkmaz; Chrome'un çevirmeni de cihazda
   çalışır. Firefox'ta (ya da Chrome çevirmeni o dili desteklemiyorsa) yalnızca
   okunan metin MyMemory'ye gider.
@@ -82,6 +105,16 @@ listeden **Kaldır**'a bas.
   çizen okuyucular henüz desteklenmiyor.
 - Yerel motor yalnızca İngilizce kaynak yazıyı okur; çizimin üstüne yazılmış
   ses efektlerini ve süslü yazıları çoğunlukla okuyamaz.
+- Görsel yapay zekâda yazıların yerini model tahmin eder; balonsuz yazılarda
+  bu tahmin kayabilir (OCR çoğunu düzeltir). Claude'da yer tahmini Gemini'ye
+  göre daha zayıf olabilir; çeviri kalitesi için Haiku yerine Sonnet önerilir.
+- Ses efekti etiketleri modelin verdiği yerde durur; bazen yanlış panele
+  düşebilir.
+- Birbirine değen iki balon tek bir çeviriyle gösterilebilir.
+- Model iki metne aynı balon numarasını verip yerlerini de karıştırırsa
+  yanlış metin balonda kalabilir.
+- Balonsuz yazısı olan sayfalarda OCR yüzünden çeviri birkaç saniye
+  gecikebilir.
 
 ## Geliştirme
 Derleme adımı yok (düz JavaScript, Manifest V3). Node 22+ gerekir.
