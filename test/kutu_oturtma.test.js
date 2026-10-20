@@ -255,6 +255,31 @@ describe('sahipsiz balon ve yersiz metin', () => {
   });
 });
 
+describe('seyrek delikli beyaz alan', () => {
+  it('tram/kumaş deseni gibi seyrek noktalar yazı sayılmaz; kalın kısa yazı ("!!") sayılır', () => {
+    const r = resim();
+    balonCiz(r, 110, 140, 70, 55);
+    // 3x3 noktalar, 12 px arayla: yazı kutusunun ~%6'sı.
+    for (let y = 105; y <= 165; y += 12) for (let x = 60; x <= 150; x += 12) {
+      for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) boya(r, x + dx, y + dy, 20);
+    }
+    const sebepler = [];
+    assert.equal(balonlariBul(r, (t) => sebepler.push(t.sebep)).length, 0);
+    assert.ok(sebepler.some((s) => s.startsWith('seyrek')), sebepler.join());
+
+    const iki = resim();
+    balonCiz(iki, 110, 140, 40, 40);
+    for (let y = 125; y < 150; y++) for (let x = 100; x < 107; x++) { boya(iki, x, y, 20); boya(iki, x + 11, y, 20); }
+    assert.equal(balonlariBul(iki).length, 1);
+
+    const nokta = resim();
+    balonCiz(nokta, 110, 140, 40, 40);
+    // İki küçük leke birbirinden uzak: kısa yazı değil.
+    for (let dy = 0; dy < 4; dy++) for (let dx = 0; dx < 4; dx++) { boya(nokta, 95 + dx, 120 + dy, 20); boya(nokta, 98 + dx, 150 + dy, 20); }
+    assert.equal(balonlariBul(nokta).length, 0);
+  });
+});
+
 describe('işaret yeri', () => {
   const temizMi = (r, i) => {
     for (let y = i.y - i.r; y <= i.y + i.r; y++) {

@@ -81,6 +81,15 @@ const SEKIL = Object.freeze({
    */
   enCokParca: 60,
   enKucukHarf: 3,
+  /**
+   * Delik piksellerinin yazı kutusuna oranı en az bu. Kullanıcının 11
+   * sayfasında gerçek balonlarda ≥0,11 (en düşüğü saçın önündeki küçük
+   * çözünürlüklü balon), çizimdeki beyaz giysi/tram bulgularında ≤0,064.
+   */
+  enAzYogunluk: 0.09,
+  /** Bundan az parçalı yazıda yoğunluk en az azParcaYogunluk (gerçek "UAH" ≥0,52; yanlış bulgu ≤0,30). */
+  azParca: 4,
+  azParcaYogunluk: 0.4,
   /** Doluluk bundan yüksekse dikdörtgen kutu (anlatım), düşükse oval balon. */
   dikdortgenDoluluk: 0.88,
   /**
@@ -567,6 +576,14 @@ function balonMu(resim, etiket, bolge) {
   if (tutarli < SEKIL.enAzTutarlilik) return { sebep: `tutarlılık ${tutarli.toFixed(2)}` };
   const kenar = Math.max(1, Math.round(SEKIL.kenarBoslugu * Math.min(w, h)));
   if (yazi.x0 < kenar || yazi.y0 < kenar || yazi.x1 > w - 1 - kenar || yazi.y1 > h - 1 - kenar) return { sebep: 'kenarda yazı' };
+  const yaziG = yazi.x1 - yazi.x0 + 1;
+  const yaziH = yazi.y1 - yazi.y0 + 1;
+  // Harfler yazı kutusunun belirgin bir kısmını kaplar; seyrek noktalar
+  // (tram, kumaş deseni) kaplamaz. Az parçalı kısa yazıda ("!?", "UAH")
+  // kalın harfler kutunun yarısından çoğunu doldurur.
+  const yogunluk = delik / (yaziG * yaziH);
+  if (yogunluk < SEKIL.enAzYogunluk) return { sebep: `seyrek ${yogunluk.toFixed(3)}` };
+  if (parcaSayisi < SEKIL.azParca && yogunluk < SEKIL.azParcaYogunluk) return { sebep: `seyrek kısa ${yogunluk.toFixed(3)}` };
 
   // Yazı satırları arasına ve kenarına pay; balonun içinde kalarak.
   const pay = Math.round(Math.min(w, h) * 0.06) + 1;
@@ -577,7 +594,7 @@ function balonMu(resim, etiket, bolge) {
     ortancaBoy: +(ortanca / h).toFixed(3),
     tutarli: +tutarli.toFixed(2),
     yaziOrani: +(((yazi.x1 - yazi.x0 + 1) * (yazi.y1 - yazi.y0 + 1)) / (w * h)).toFixed(2),
-    yogunluk: +(delik / ((yazi.x1 - yazi.x0 + 1) * (yazi.y1 - yazi.y0 + 1))).toFixed(3),
+    yogunluk: +yogunluk.toFixed(3),
   };
   const payli = (k) => ({
     x0: x0 + Math.max(0, k.x0 - pay),
