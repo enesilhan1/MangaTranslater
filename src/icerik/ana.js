@@ -218,6 +218,10 @@ class Cevirmen {
             resim: { veri: d.veri, tur: d.tur, genislik: d.genislik, yukseklik: d.yukseklik, bolgeler: d.bolgeler },
           });
           if (ob) onbellekten++;
+          // Boş kalan balonun sebebi konsoldan anlaşılsın: model metni hiç mi
+          // döndürmedi, yoksa hangi numarayı verdi.
+          iz(kayit.kimlik, `dilim ${i}:`, `${d.bulunanlar?.length ?? 0} işaret,`,
+            `modelden ${balonlar.length} metin`, `(numaralar: ${balonlar.map((b) => b.bolge || '-').join(',')})`);
           // Numaralı metinler bulunan balonlara, numarasızlar en yakın balona
           // oturtulur (önbellekteki sonuç da: numaralar aynı resimde aynı).
           const oturmus = kutulariOturt(d.gri, balonlar, d.bulunanlar);
