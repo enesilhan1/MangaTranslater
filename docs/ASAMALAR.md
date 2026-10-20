@@ -217,3 +217,15 @@ yazı çevrilmeden kaldı. Balonsuz bir metnin kelimeleri modelin kutusu
 ve kesin bir eşleşme varsa yapılıyor; numaralı balonlardaki kelimeler
 sayılmıyor. Önbellekteki eski sonuçlar bir kez daha OCR'den geçiyor; model
 yeniden çağrılmıyor.
+
+## Sürüm 1.7.7 (2026-10-20)
+Kullanıcının sayfasında 7 balon işaretlendi ama modelden yalnızca 1
+metin geldi (konsol: "7 işaret, modelden 1 metin"). Kalan balonlar
+çevrilmedi; hata işareti de çıkmadı.
+
+- Model işaretli balonların yarısından azına metin verirse istek bir kez
+  daha gönderiliyor; daha çok balonu kapsayan yanıt kalıyor. Önbellekteki
+  eski eksik kayıtlar da bir kez yeniden soruluyor.
+- Kutusu bozuk ama numarası olan metinler artık atılmıyor.
+- Konsolda kullanılamayan kayıt sayısı ve yeniden sorma bilgisi
+  görünüyor.
