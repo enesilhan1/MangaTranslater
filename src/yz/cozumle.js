@@ -13,7 +13,12 @@ import { YzHatasi } from './ortak.js';
  * @property {number} h  Yükseklik (0-1).
  * @property {string} orijinal
  * @property {string} ceviri
+ * @property {'balon'|'anlatim'|'ses'} tur  Ses efektleri çizimi kapatmadan etiketle gösterilir.
  */
+
+const TURLER = ['balon', 'anlatim', 'ses'];
+/** Elle yazılan modeller İngilizce ad verebilir. */
+const TUR_ESLERI = { bubble: 'balon', speech: 'balon', narration: 'anlatim', caption: 'anlatim', sign: 'anlatim', sfx: 'ses', sound: 'ses' };
 
 /**
  * @param {string} metin  Modelin yanıt metni.
@@ -27,7 +32,9 @@ export function balonlariCoz(metin, saglayiciAdi) {
 
   const adaylar = liste
     .map((b) => ({
-      kutu: Array.isArray(b?.kutu) ? b.kutu.map(Number) : [],
+      // Gemini'nin yerleşik adı box_2d de kabul edilir.
+      kutu: Array.isArray(b?.kutu ?? b?.box_2d) ? (b.kutu ?? b.box_2d).map(Number) : [],
+      tur: turAl(b?.tur),
       orijinal: metinAl(b?.orijinal),
       ceviri: metinAl(b?.ceviri),
     }))
@@ -44,7 +51,7 @@ export function balonlariCoz(metin, saglayiciAdi) {
     const g = Math.abs(x2 - x1);
     const h = Math.abs(y2 - y1);
     if (g < 0.005 || h < 0.003) continue; // görünmeyecek kadar küçük
-    balonlar.push({ x, y, g, h, orijinal: b.orijinal, ceviri: b.ceviri || b.orijinal });
+    balonlar.push({ x, y, g, h, tur: b.tur, orijinal: b.orijinal, ceviri: b.ceviri || b.orijinal });
   }
   return balonlar;
 }
@@ -69,6 +76,11 @@ function jsonBul(metin) {
     }
   }
   return null;
+}
+
+function turAl(v) {
+  const t = String(v ?? '').toLowerCase().trim();
+  return TURLER.includes(t) ? t : TUR_ESLERI[t] ?? 'balon';
 }
 
 function metinAl(v) {

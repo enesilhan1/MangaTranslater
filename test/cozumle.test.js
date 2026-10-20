@@ -67,4 +67,13 @@ describe('balonlariCoz', () => {
     });
     assert.throws(() => balonlariCoz('{"baska":1}', 'X'), { anahtar: 'hata.bozukYanit' });
   });
+
+  it('türü okur (İngilizce eş adlarıyla), bilinmeyen tür balon; box_2d eş adı', () => {
+    const j = { balonlar: [
+      { kutu: [0, 0, 100, 100], tur: 'ses', orijinal: 'BOOM', ceviri: 'GÜM' },
+      { box_2d: [0, 0, 100, 100], tur: 'Narration', orijinal: 'A', ceviri: 'B' },
+      { kutu: [0, 0, 100, 100], orijinal: 'A', ceviri: 'B' },
+    ] };
+    assert.deepEqual(balonlariCoz(JSON.stringify(j), 'X').map((b) => b.tur), ['ses', 'anlatim', 'balon']);
+  });
 });

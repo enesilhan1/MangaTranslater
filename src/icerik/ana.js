@@ -187,7 +187,7 @@ class Cevirmen {
             resimKimligi: kayit.kimlik,
             dilim: i,
             oncelik: kayit.oncelik,
-            resim: { veri: d.veri, tur: d.tur },
+            resim: { veri: d.veri, tur: d.tur, genislik: d.genislik, yukseklik: d.yukseklik },
           });
           guncelle({ balonlar: [...durum.balonlar, ...dilimBalonlariniYerlestir(d, yukseklik, balonlar)] });
         }),

@@ -41,8 +41,10 @@ export async function resimBaytlari(img) {
 }
 
 /**
- * @typedef {{veri: string, tur: string, y0: number, y1: number}} Dilim
- *   Base64 JPEG + dilimin özgün resimdeki dikey aralığı (piksel).
+ * @typedef {{veri: string, tur: string, genislik: number, yukseklik: number,
+ *   y0: number, y1: number}} Dilim
+ *   Base64 JPEG + gönderilen resmin piksel boyutu + dilimin özgün resimdeki
+ *   dikey aralığı (piksel).
  */
 
 /**
@@ -72,7 +74,7 @@ export async function dilimlereAyir(blob) {
       ctx.fillRect(0, 0, g, h);
       ctx.drawImage(bitmap, 0, d.y0, genislik, d.y1 - d.y0, 0, 0, g, h);
       const jpeg = await tuval.convertToBlob({ type: 'image/jpeg', quality: JPEG_KALITESI });
-      sonuc.push({ veri: bayttanBase64(await jpeg.arrayBuffer()), tur: 'image/jpeg', y0: d.y0, y1: d.y1 });
+      sonuc.push({ veri: bayttanBase64(await jpeg.arrayBuffer()), tur: 'image/jpeg', genislik: g, yukseklik: h, y0: d.y0, y1: d.y1 });
     }
     return { dilimler: sonuc, genislik, yukseklik };
   } finally {

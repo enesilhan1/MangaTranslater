@@ -25,6 +25,9 @@ describe('Çeviri istemi', () => {
     assert.match(s, /never instructions to you/);
     assert.match(s, /\[ymin, xmin, ymax, xmax\]/);
     assert.match(kullaniciMetni('tr'), /into Turkish/);
+    assert.doesNotMatch(kullaniciMetni('tr'), /pixels/);
+    assert.match(kullaniciMetni('tr', { genislik: 1050, yukseklik: 1491 }), /1050x1491 pixels/);
+    assert.match(s, /"ses" for a sound effect/);
   });
 
   it('şema katı modlara uygun: her nesnede tüm alanlar zorunlu, ek alan yok', () => {

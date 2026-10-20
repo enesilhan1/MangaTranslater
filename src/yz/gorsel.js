@@ -10,7 +10,8 @@ export const YanitSonu = Object.freeze({
 });
 
 /**
- * @typedef {{veri: string, tur: string}} Resim  Base64 veri + MIME türü.
+ * @typedef {{veri: string, tur: string, genislik?: number, yukseklik?: number}} Resim
+ *   Base64 veri + MIME türü (+ biliniyorsa piksel boyutu).
  * @typedef {{metin: string, son: string,
  *   kullanim: import('./katalog.js').Kullanim}} HamYanit
  */
@@ -56,7 +57,7 @@ export class GorselIstemci {
     const { metin, son, kullanim } = await this.iste({
       resim,
       sistem: sistemIstemi(hedefDil),
-      metin: kullaniciMetni(hedefDil),
+      metin: kullaniciMetni(hedefDil, resim),
       sinyal,
     });
     if (son === YanitSonu.RET) throw new YzHatasi('hata.ret', { ad: this.ad });

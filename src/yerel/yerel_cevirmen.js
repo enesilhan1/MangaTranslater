@@ -35,7 +35,7 @@ export class YerelCevirmen {
 
     // Hedef dil kaynakla aynıysa çeviri gereksiz.
     if (hedefDil === KAYNAK_DIL) {
-      return { balonlar: gruplar.map((g) => ({ ...g, ceviri: g.orijinal })), kullanim };
+      return { balonlar: gruplar.map((g) => ({ ...g, tur: 'balon', ceviri: g.orijinal })), kullanim };
     }
 
     const cevirmen = await metinCevirmeniSec({
@@ -49,7 +49,8 @@ export class YerelCevirmen {
       { kaynak: KAYNAK_DIL, hedef: hedefDil, sinyal },
     );
     return {
-      balonlar: gruplar.map((g, i) => ({ ...g, ceviri: ceviriler[i]?.trim() || g.orijinal })),
+      // OCR ses efektlerini okuyamadığı için hepsi balon/anlatım sayılır.
+      balonlar: gruplar.map((g, i) => ({ ...g, tur: 'balon', ceviri: ceviriler[i]?.trim() || g.orijinal })),
       kullanim,
     };
   }
