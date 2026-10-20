@@ -238,3 +238,9 @@ ediliyor; önbellekteki sayfalar bir kez daha OCR'den geçiyor. Bilinen
 kusur: model iki metne aynı numarayı verip kutuyu da yanlış balona
 koyarsa (kullanıcının sayfasında "Shh..." ile "LA MAPPA..."), yanlış metin
 balonda kalabiliyor. Çizgisi kesik küçük "Shh..." balonu bulunamıyor.
+
+## Sürüm 1.7.9 (2026-10-20)
+Kullanıcının sayfasında kedinin gözü balon sanılıp numaralandı. Model
+yanındaki çizim üstü yazıya o numarayı verdi; çeviri göze sıkıştı.
+Uzun bir metin, modelin kutusu da uzaktaysa, birkaç parçalık küçük bir
+balonun numarasıyla artık oraya konmuyor; kendi yerinde gösteriliyor.
