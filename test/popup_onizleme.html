@@ -47,6 +47,12 @@
       },
     };
     window.depo = veri;
+    // ?ornek=1: mağaza görseli için site açık, Gemini seçili, anahtar girilmiş
+    // (anahtar sahte; pencerede maskeli görünür).
+    if (p.has('ornek')) {
+      document.write('<style>html { background: transparent; } body { margin: 0; box-shadow: none; overflow: hidden; }</style>');
+      veri.ayarlar = { siteler: ['mangadex.org'], motor: 'gorsel', saglayici: 'gemini', anahtarlar: { gemini: 'ornek-anahtar-0000000000000000' }, hedefDil: p.get('hedef') ?? 'tr', arayuzDili: p.get('arayuz') ?? 'tr' };
+    }
     const c = p.get('cevirmen');
     if (c) {
       let durum = c;

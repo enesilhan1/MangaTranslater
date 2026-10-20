@@ -1,0 +1,106 @@
+<!doctype html>
+<!-- Chrome Web Store görselleri (docs/MAGAZA.md). Eklentinin gerçek görünüm
+     katmanı (src/icerik/gorunum.js) ve gerçek açılır penceresi
+     (test/popup_onizleme.html) kendi çizdiğimiz örnek sayfayla gösterilir;
+     telifli manga kullanılmaz. Depo kökünden bir HTTP sunucusuyla açılır.
+     ?sahne=once-sonra | pencere | tanitim   ?dil=tr | en
+     Ekran görüntüsü 1280x800 (tanıtım kutusu 440x280) alınır. -->
+<html lang="tr">
+<meta charset="utf-8">
+<title>Mağaza görseli</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: #f4f4f6;
+         background: linear-gradient(135deg, #1b1b2a 0%, #2a1f3d 100%); }
+  .baslik { position: absolute; left: 0; right: 0; top: 28px; text-align: center; }
+  .baslik h1 { margin: 0; font-size: 38px; font-weight: 750; letter-spacing: -.01em; }
+  .baslik p { margin: 8px 0 0; font-size: 19px; color: #c9c6d8; }
+  .sahne { position: absolute; left: 0; right: 0; top: 150px; bottom: 0; display: flex;
+           justify-content: center; align-items: flex-start; gap: 56px; }
+  .kart { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .kart img.sayfa { display: block; height: 600px; border-radius: 6px; box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+  .etiket { font-size: 16px; font-weight: 650; color: #ffd166; letter-spacing: .04em; text-transform: uppercase; }
+  .ok { align-self: center; font-size: 54px; color: #ff6b9a; margin-top: -40px; }
+  iframe { width: 340px; height: 612px; border: 0; border-radius: 12px; background: transparent;
+           box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+  /* Tanıtım kutusu 440x280 */
+  body.tanitim { width: 440px; height: 280px; }
+  body.tanitim .kutu { position: absolute; inset: 0; display: flex; align-items: center; gap: 18px; padding: 0 28px; }
+  body.tanitim .kutu img { width: 96px; height: 96px; }
+  body.tanitim h1 { margin: 0; font-size: 30px; line-height: 1.1; }
+  body.tanitim p { margin: 8px 0 0; font-size: 15px; color: #c9c6d8; line-height: 1.35; }
+</style>
+<body>
+<script type="module">
+  import { Gorunum } from '../src/icerik/gorunum.js';
+
+  const p = new URLSearchParams(location.search);
+  const sahne = p.get('sahne') ?? 'once-sonra';
+  const en = p.get('dil') === 'en';
+  const yazi = en
+    ? {
+        baslik: 'Translate the text inside manga pages',
+        alt: 'Speech bubbles, captions and sound effects — drawn right over the original, automatically.',
+        once: 'Original', sonra: 'Translated',
+        pencere: 'Turn it on once per site — every page after that is translated by itself',
+        tanitim: ['Manga Translator', 'Translates the text inside manga images, right over the bubbles.'],
+      }
+    : {
+        baslik: 'Manga sayfalarındaki yazıları çevir',
+        alt: 'Konuşma balonları, anlatım kutuları ve ses efektleri — orijinalin üstüne, kendiliğinden.',
+        once: 'Orijinal', sonra: 'Çeviri',
+        pencere: 'Bir sitede bir kez aç — sonraki bütün sayfalar kendiliğinden çevrilir',
+        tanitim: ['Manga Çevirmen', 'Manga resimlerindeki yazıları balonların üstüne çevirir.'],
+      };
+  document.documentElement.lang = en ? 'en' : 'tr';
+
+  // test/onizleme.html ile aynı kutular (örnek sayfa 800x1100).
+  const G = 800, Y = 1100;
+  const kutu = (x, y, g, h) => ({ x: x / G, y: y / Y, g: g / G, h: h / Y });
+  const ceviriler = en
+    ? ['¿Dónde escondiste el mapa?', '¡Te lo dije, no lo tengo!', 'Entonces ya llegamos tarde...', 'CRAC']
+    : ['Haritayı nereye sakladın?', 'Sana söyledim, bende değil!', 'O zaman çoktan geç kaldık...', 'ÇATIRT'];
+  const balonlar = [
+    { ...kutu(90, 83, 228, 112), orijinal: 'WHERE DID YOU HIDE THE MAP?', ceviri: ceviriler[0] },
+    { ...kutu(481, 273, 226, 111), orijinal: "I TOLD YOU, I DON'T HAVE IT", ceviri: ceviriler[1] },
+    { ...kutu(130, 607, 218, 112), orijinal: 'THEN WE ARE ALREADY LATE...', ceviri: ceviriler[2] },
+    { ...kutu(430, 850, 270, 110), tur: 'ses', orijinal: 'CRASH', ceviri: ceviriler[3] },
+  ];
+
+  const el = (etiket, ozellik = {}, ...cocuk) => {
+    const e = Object.assign(document.createElement(etiket), ozellik);
+    e.append(...cocuk);
+    return e;
+  };
+  const sayfa = () => el('img', { className: 'sayfa', src: 'ornek_sayfa.png', alt: '' });
+
+  if (sahne === 'tanitim') {
+    document.body.className = 'tanitim';
+    document.body.append(el('div', { className: 'kutu' },
+      el('img', { src: '../icons/ikon128.png', alt: '' }),
+      el('div', {}, el('h1', { textContent: yazi.tanitim[0] }), el('p', { textContent: yazi.tanitim[1] }))));
+  } else {
+    document.body.append(el('div', { className: 'baslik' },
+      el('h1', { textContent: sahne === 'pencere' ? yazi.pencere : yazi.baslik }),
+      el('p', { textContent: yazi.alt })));
+    const cevrilen = sayfa();
+    const alan = el('div', { className: 'sahne' });
+    if (sahne === 'pencere') {
+      alan.append(el('div', { className: 'kart' }, cevrilen),
+        el('iframe', { src: `popup_onizleme.html?ornek=1&cevirmen=available&hedef=${en ? 'es' : 'tr'}&arayuz=${en ? 'en' : 'tr'}` }));
+    } else {
+      alan.append(
+        el('div', { className: 'kart' }, el('div', { className: 'etiket', textContent: yazi.once }), sayfa()),
+        el('div', { className: 'ok', textContent: '→' }),
+        el('div', { className: 'kart' }, el('div', { className: 'etiket', textContent: yazi.sonra }), cevrilen));
+    }
+    document.body.append(alan);
+    await Promise.all([...document.images].map((i) => i.decode()));
+    const gorunum = new Gorunum({ dil: () => (en ? 'en' : 'tr') });
+    gorunum.guncelle(cevrilen, { kimlik: 'magaza', durum: 'tamam', balonlar, hata: null });
+  }
+  document.body.dataset.hazir = '1';
+</script>
+</body>
+</html>
