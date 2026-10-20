@@ -41,6 +41,12 @@ const ISARET_YARICAPLARI = [8, 6, 4];
 
 /** Sahipsiz balon eşleştirmesinde en çok uzaklık (resmin köşegenine oranla). */
 const SAHIPSIZ_UZAKLIK = 0.3;
+/**
+ * Aynı numarayı alıp o balonun içine düşen (devamı sayılabilecek) metin için
+ * daha sıkı sınır: model gerçekten tek balonu bölmüşse uzaktaki bir yanlış
+ * bulgu metnin yarısını kapmasın.
+ */
+const SAHIPSIZ_BIRLESME_UZAKLIK = 0.15;
 
 /** Bir sayfada işaretlenecek en çok balon (fazlası çoğunlukla yanlış bulgu). */
 export const AZAMI_BALON = 40;
@@ -165,7 +171,7 @@ export function balonlariBul(resim, tani) {
  *   başka kayda verilmemiş geçerli balona oturtulur; yoksa tahminde kalır.
  *   Tek istisna: aynı numarayı alıp yerinden edilen bir metnin tahmini
  *   kutusu da o balonun içindeyse model tek balonu ikiye bölmüştür; metin
- *   o balona eklenir. Baştan numarasız gelen metin hiçbir zaman başka
+ *   o balona eklenir (yakında çevirisiz bir balon yoksa). Baştan numarasız gelen metin hiçbir zaman başka
  *   metinle birleştirilmez ("... vardır. AH" hatası).
  * Sonuç girdinin sırasını korur.
  * @param {GriResim} resim
@@ -241,6 +247,8 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
       }
     }
   }
+  /** kayıt sırası → eklenebileceği balon numarası (sahipsiz balon bulunamazsa) */
+  const birlesecek = new Map();
   numarasiz.sort((a, b) => a - b);
   for (const i of numarasiz) {
     const b = balonlar[i];
@@ -257,19 +265,12 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
       sonuc[i] = { ...b, ...oran(secilen.yazi), balon: { ...oran(secilen.kutu), elips: secilen.elips }, oturdu: true, bolge: 0 };
       continue;
     }
-    // Aynı numarayı alıp tahmini de o balonun içindeyse aynı balonun devamıdır.
+    // Aynı numarayı alıp tahmini de o balonun içindeyse büyük ihtimalle aynı
+    // balonun devamıdır; ama yakında çevirisiz bir balon varsa önce o denenir
+    // (kullanıcının sayfasında model dar balonun metnine komşu anlatım
+    // kutusunun numarasını verip kutusunu da onun kenarına koydu).
     const n = yerinden.get(i);
-    if (n && kesisimAlani(bulunanlar[n - 1].kutu, tahmin) / alan(tahmin) >= 0.5) {
-      const hi = atanan.get(n).i;
-      const hedef = sonuc[hi];
-      if (hedef.ceviri !== b.ceviri) {
-        // Okuma sırası: girdide önce gelen önce yazılır.
-        const [ilk, son] = i < hi ? [b, hedef] : [hedef, b];
-        hedef.ceviri = `${ilk.ceviri} ${son.ceviri}`;
-        hedef.orijinal = `${ilk.orijinal} ${son.orijinal}`;
-      }
-      continue;
-    }
+    if (n && kesisimAlani(bulunanlar[n - 1].kutu, tahmin) / alan(tahmin) >= 0.5) birlesecek.set(i, n);
     sonuc[i] = b;
   }
 
@@ -296,7 +297,8 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
         const parca = sb.bb.parca ?? harf;
         if (harf && (parca < 0.3 * harf || parca > 2.5 * harf)) continue;
         const m = uzaklik(y.x, sb.bb);
-        if (m <= esik) ciftler.push({ y, sb, m });
+        // Bir balonun devamı olabilecek metin için yalnızca yakındaki balon.
+        if (m <= (birlesecek.has(y.i) ? SAHIPSIZ_BIRLESME_UZAKLIK * Math.hypot(G, Y) : esik)) ciftler.push({ y, sb, m });
       }
     }
     ciftler.sort((a, b) => a.m - b.m);
@@ -308,6 +310,22 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
       sAlindi.add(sb.n);
       sonuc[y.i] = { ...y.x, ...oran(sb.bb.yazi), balon: { ...oran(sb.bb.kutu), elips: sb.bb.elips }, oturdu: true };
     }
+  }
+
+  // Sahipsiz balona gitmeyen devam metinleri asıl balona eklenir (model tek
+  // balonu ikiye bölmüş).
+  for (const [i, n] of birlesecek) {
+    if (sonuc[i]?.oturdu) continue;
+    const hi = atanan.get(n).i;
+    const hedef = sonuc[hi];
+    const b = balonlar[i];
+    if (hedef.ceviri !== b.ceviri) {
+      // Okuma sırası: girdide önce gelen önce yazılır.
+      const [ilk, son] = i < hi ? [b, hedef] : [hedef, b];
+      hedef.ceviri = `${ilk.ceviri} ${son.ceviri}`;
+      hedef.orijinal = `${ilk.orijinal} ${son.orijinal}`;
+    }
+    sonuc[i] = null;
   }
   return sonuc.filter(Boolean);
 }

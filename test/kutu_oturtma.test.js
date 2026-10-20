@@ -253,6 +253,28 @@ describe('sahipsiz balon ve yersiz metin', () => {
     ], bulunanlar);
     assert.notEqual(s.find((b) => b.ceviri === 'uzun').oturdu, true);
   });
+
+  it('komşu balonun numarasını alıp onun kenarına düşen metin birleşmez, yanındaki çevirisiz dar balona gider', () => {
+    // Kullanıcının Rusça sayfası: model dar balonun metnine yandaki anlatım
+    // kutusunun numarasını verdi, kutusunu da onun sol kenarına koydu.
+    const r = resim();
+    balonCiz(r, 110, 140, 80, 60);
+    yaziCiz(r, 70, 125, 150);
+    yaziCiz(r, 75, 145, 145);
+    balonCiz(r, 240, 150, 30, 55);
+    for (let y = 125; y <= 165; y += 16) yaziCiz(r, 222, y, 260);
+    const bulunanlar = balonlariBul(r);
+    assert.equal(bulunanlar.length, 2);
+    const s = kutulariOturt(r, [
+      balon(70, 125, 150, 155, { bolge: 1, ceviri: 'bir', orijinal: 'ABCDEFGHIJKLMN' }),
+      balon(150, 130, 185, 160, { bolge: 1, ceviri: 'iki', orijinal: 'NE PODHODI' }),
+    ], bulunanlar);
+    assert.equal(s.length, 2);
+    assert.equal(s[0].ceviri, 'bir');
+    const iki = s.find((b) => b.ceviri === 'iki');
+    assert.equal(iki.oturdu, true);
+    assert.ok(piksel(iki).x0 > 205, JSON.stringify(piksel(iki)));
+  });
 });
 
 describe('seyrek delikli beyaz alan', () => {
