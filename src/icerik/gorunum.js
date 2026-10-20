@@ -11,7 +11,7 @@
 
 import { cevir } from '../dil.js';
 import { hecele } from './heceleme.js';
-import { puntoBul, puntoTavani } from './sigdir.js';
+import { ACIL_PUNTO, puntoBul, puntoTavani } from './sigdir.js';
 
 /**
  * @typedef {Object} ResimDurumu
@@ -338,6 +338,32 @@ export class Gorunum {
     const tavan = puntoTavani(w * ic, h * ic, harf);
     let p = puntoBul(sigarMi, undefined, tavan);
     if (!sigarMi(p)) p = this._sigmiyorsa(el, sigarMi, tavan);
+    if (!sigarMi(p)) p = this._sonCare(el, sigarMi, w, h, tavan);
     el.style.fontSize = `${p}px`;
+  }
+
+  /**
+   * Şekilli balonda en küçük puntoda bile sığmayan yazı kesiliyordu
+   * (kullanıcının iki sayfalık geniş resmi ekranda %30 boyutta, dar
+   * balonlarda "…güvenmenizi de söyle"). Sırayla: dolgu azalır, punto
+   * ACIL_PUNTO'ya kadar iner, olmazsa kutu yazıyı kesmeyecek kadar dikey
+   * büyür (balonun biraz dışına taşar ama yazının tamamı okunur).
+   */
+  _sonCare(el, sigarMi, w, h, tavan) {
+    const oran = el.classList.contains('elips') ? 0.08 : 0.02;
+    el.style.padding = `${Math.round(h * oran)}px ${Math.round(w * oran)}px`;
+    let p = puntoBul(sigarMi, ACIL_PUNTO, tavan);
+    if (sigarMi(p)) return p;
+    p = ACIL_PUNTO;
+    el.style.fontSize = `${p}px`;
+    const yeni = el.scrollHeight + 2;
+    if (yeni > el.clientHeight) {
+      const ust = parseFloat(el.style.top) || 0;
+      const kapYuksekligi = el.parentElement?.clientHeight || 0;
+      el.style.height = `${yeni}px`;
+      // Merkez aynı kalsın: üst kenar yüzde cinsinden yukarı kaydırılır.
+      if (kapYuksekligi) el.style.top = `${Math.max(0, ust - ((yeni - h) / 2 / kapYuksekligi) * 100)}%`;
+    }
+    return p;
   }
 }

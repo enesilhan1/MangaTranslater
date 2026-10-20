@@ -38,6 +38,13 @@
       ceviri: 'O zaman şimdiden çok geç kaldık demektir, acele etmemiz lazım...' },
     { ...kutu(430, 850, 270, 110), tur: 'ses', orijinal: 'CRASH', ceviri: 'ÇATIRT' },
   ];
+  // ?dar=1: iki sayfalık geniş resmin küçük gösterildiği durum: dar oval
+  // balona uzun çeviri (en küçük puntoda bile sığmıyor; kesilmemeli).
+  if (new URLSearchParams(location.search).has('dar')) {
+    balonlar.push({ ...kutu(560, 560, 70, 150), tur: 'balon', orijinal: 'ANZI, NON VI DIRÒ DI FIDARVI DI QUALUNQUE COSA.',
+      ceviri: 'Hatta, her şeye güvenmenizi de söylemeyeceğim.', balon: { ...kutu(545, 530, 100, 210), elips: true } });
+    for (const i of document.querySelectorAll('#okuyucu img')) i.style.width = '260px';
+  }
   const gorunum = new Gorunum({ tekrarDene: (img) => tamam(img) });
   const r1 = document.getElementById('r1');
   const r2 = document.getElementById('r2');

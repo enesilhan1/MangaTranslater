@@ -3,6 +3,11 @@
 
 /** Bundan küçük yazı okunmuyor; sığmasa da bu boyutta gösterilir. */
 export const EN_KUCUK_PUNTO = 8;
+/**
+ * Son çare: şekilli balonda EN_KUCUK_PUNTO'da bile sığmayan yazı kesilmesin
+ * diye bu boyuta kadar inilir (gorunum.js _sonCare).
+ */
+export const ACIL_PUNTO = 6;
 /** Çok büyük balonda bile yazı bundan büyük olmasın. */
 export const EN_BUYUK_PUNTO = 42;
 
