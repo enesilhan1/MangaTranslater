@@ -208,3 +208,22 @@ describe('zor balon biçimleri (kullanıcının sayfalarından)', () => {
     assert.ok(b[0].kutu.y1 - b[0].kutu.y0 > 180, JSON.stringify(b[0].kutu));
   });
 });
+
+describe('ortak beyaz alanda birden çok metin', () => {
+  it('birbirinden uzak iki yazı bloğu ayrı balon sayılır; yakın satırlar ve tek kelimelik parçalar bölünmez', () => {
+    const r = resim();
+    // Tek büyük beyaz alan (iç içe geçmiş iki balon gibi), içinde iki ayrı metin.
+    for (let y = 100; y < 400; y++) for (let x = 120; x < 330; x++) {
+      r.gri[y * G + x] = y < 103 || y > 396 || x < 123 || x > 326 ? 0 : 255;
+    }
+    yaziCiz(r, 150, 130, 300);
+    yaziCiz(r, 150, 145, 300);
+    yaziCiz(r, 150, 160, 300);
+    yaziCiz(r, 160, 300, 290);
+    yaziCiz(r, 160, 315, 290);
+    const b = balonlariBul(r);
+    assert.equal(b.length, 2, JSON.stringify(b.map((x) => x.yazi)));
+    assert.ok(b[0].yazi.y1 < 230 && b[1].yazi.y0 > 260);
+    assert.ok(b.every((x) => x.elips === false));
+  });
+});

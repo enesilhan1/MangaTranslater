@@ -49,8 +49,12 @@ const SEKIL = Object.freeze({
   enCokDelik: 0.45,
   /** En büyük tek delik parçası bölgenin bu oranından geniş/uzun olamaz (harf ≠ çizim çizgisi). */
   enBuyukParca: 0.5,
-  /** Yazı balonun kenarına yapışık olamaz: her kenarda en az bu oranda boşluk. */
-  kenarBoslugu: 0.03,
+  /**
+   * Yazı balonun kenarına yapışık olamaz: her kenarda en az bu oranda (ve
+   * en az 1 px) boşluk. %3 iken panel kenarında kesilmiş balonda kenara 4 px
+   * yaklaşan gerçek yazı eleniyordu.
+   */
+  kenarBoslugu: 0.01,
   /** Bölge resmin bu oranından büyük olamaz. */
   enCokAlan: 0.15,
   /**
@@ -116,7 +120,13 @@ export function balonlariBul(resim, tani) {
       }
       const sonuc = balonMu(resim, etiket, bolge);
       tani?.({ kutu: sonuc.kutu ?? bolge.govde, sebep: sonuc.sebep ?? 'balon', ozellik: sonuc.ozellik });
-      if (sonuc.yazi) bulunan.push({ kutu: sonuc.kutu, yazi: sonuc.yazi, elips: sonuc.elips });
+      if (sonuc.bloklar) {
+        // Ortak beyaz alanda birden çok blok: her bloğun zemini kendi kutusu
+        // (ortak balon şekli iki çeviriyi üst üste bindirirdi).
+        for (const b of sonuc.bloklar) bulunan.push({ kutu: b, yazi: b, elips: false });
+      } else if (sonuc.yazi) {
+        bulunan.push({ kutu: sonuc.kutu, yazi: sonuc.yazi, elips: sonuc.elips });
+      }
     }
   }
   const satir = 0.03 * Y;
@@ -220,9 +230,10 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
       continue;
     }
     const tahmin = tahminKutusu(b);
-    const secilen = enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, () => ++sonEtiket);
+    const doluKutular = sonuc.filter((x) => x?.oturdu).map((x) => tahminKutusu(x));
+    const secilen = enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, () => ++sonEtiket, doluKutular);
     if (secilen) {
-      kullanilan.add(secilen.no);
+      if (secilen.tekBlok) kullanilan.add(secilen.no);
       sonuc[i] = { ...b, ...oran(secilen.yazi), balon: { ...oran(secilen.kutu), elips: secilen.elips }, oturdu: true, bolge: 0 };
       continue;
     }
@@ -248,7 +259,7 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
  * Tahmini kutunun çevresindeki geçerli balonlardan tahminle en çok
  * örtüşen ve henüz kullanılmamış olanı.
  */
-function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket) {
+function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket, doluKutular = []) {
   const { genislik: G, yukseklik: Y } = resim;
   const tg = tahmin.x1 - tahmin.x0 + 1;
   const th = tahmin.y1 - tahmin.y0 + 1;
@@ -272,7 +283,7 @@ function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket) {
         no = yeniEtiket();
         bolgeler.set(no, doldur(resim, etiket, x, y, no, azamiAlan));
       }
-      if (denenen.has(no) || kullanilan.has(no)) continue;
+      if (denenen.has(no)) continue;
       denenen.add(no);
       const bolge = bolgeler.get(no);
       if (!bolge || bolge.alan > azamiAlan) continue;
@@ -280,9 +291,15 @@ function enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, yeniEtiket) {
       if (ortusme < EN_AZ_ORTUSME) continue;
       const bulgu = balonMu(resim, etiket, bolge);
       if (!bulgu.yazi) continue;
-      const { yazi } = bulgu;
-      const puan = kesisimAlani(yazi, tahmin) / alan(yazi) + ortusme;
-      if (!enIyi || puan > enIyi.puan) enIyi = { puan, yazi, no, kutu: bulgu.kutu, elips: bulgu.elips };
+      // Çok bloklu bölgede dolu olmayan bloklar ayrı ayrı aday; tek bloklu
+      // bölge başka kayda verildiyse atlanır.
+      const adaylar = bulgu.bloklar
+        ? bulgu.bloklar.filter((b) => !doluKutular.some((k) => kesisimAlani(k, b) > 0)).map((b) => ({ yazi: b, kutu: b, elips: false }))
+        : kullanilan.has(no) ? [] : [{ yazi: bulgu.yazi, kutu: bulgu.kutu, elips: bulgu.elips }];
+      for (const a of adaylar) {
+        const puan = kesisimAlani(a.yazi, tahmin) / alan(a.yazi) + ortusme;
+        if (!enIyi || puan > enIyi.puan) enIyi = { puan, no, ...a, tekBlok: !bulgu.bloklar };
+      }
     }
   }
   return enIyi;
@@ -430,8 +447,9 @@ function balonMu(resim, etiket, bolge) {
   let enBuyukG = 0;
   let enBuyukH = 0;
   let yazi = null;
-  /** Parçaların yükseklikleri (harf boyu tutarlılığı için). */
+  /** Parçaların yükseklikleri (harf boyu tutarlılığı için) ve kutuları (bloklar için). */
   const parcaBoylari = [];
+  const parcalar = [];
   for (let i = 0; i < w * h; i++) {
     if (durum[i] !== 0) continue;
     parcaSayisi++;
@@ -463,6 +481,7 @@ function balonMu(resim, etiket, bolge) {
     enBuyukG = Math.max(enBuyukG, p.x1 - p.x0 + 1);
     enBuyukH = Math.max(enBuyukH, p.y1 - p.y0 + 1);
     parcaBoylari.push(p.y1 - p.y0 + 1);
+    parcalar.push(p);
     yazi = yazi
       ? { x0: Math.min(yazi.x0, p.x0), y0: Math.min(yazi.y0, p.y0), x1: Math.max(yazi.x1, p.x1), y1: Math.max(yazi.y1, p.y1) }
       : p;
@@ -508,16 +527,21 @@ function balonMu(resim, etiket, bolge) {
     tutarli: +tutarli.toFixed(2),
     yaziOrani: +(((yazi.x1 - yazi.x0 + 1) * (yazi.y1 - yazi.y0 + 1)) / (w * h)).toFixed(2),
   };
-  const yaziKutusu = {
-    x0: x0 + Math.max(0, yazi.x0 - pay),
-    y0: y0 + Math.max(0, yazi.y0 - pay),
-    x1: x0 + Math.min(w - 1, yazi.x1 + pay),
-    y1: y0 + Math.min(h - 1, yazi.y1 + pay),
-  };
+  const payli = (k) => ({
+    x0: x0 + Math.max(0, k.x0 - pay),
+    y0: y0 + Math.max(0, k.y0 - pay),
+    x1: x0 + Math.min(w - 1, k.x1 + pay),
+    y1: y0 + Math.min(h - 1, k.y1 + pay),
+  });
+  const yaziKutusu = payli(yazi);
+  const bloklar = yaziBloklari(parcalar, ortanca);
   return {
     ozellik,
     doluluk,
     yazi: yaziKutusu,
+    // Bölgede birbirinden ayrık birden çok yazı bloğu varsa (iç içe geçmiş
+    // balonlar tek beyaz alan görünür) her biri ayrı balon sayılır.
+    bloklar: bloklar.length > 1 ? bloklar.map((b) => payli(b)) : null,
     // Çizilecek balon kutusu: gövde, yazıyı da kesinlikle kapsayacak şekilde.
     kutu: {
       x0: Math.min(gv.x0, yaziKutusu.x0),
@@ -528,6 +552,53 @@ function balonMu(resim, etiket, bolge) {
     // Dolu şekil gövde kutusunun ~%79'u: elips; ~%95+: dikdörtgen anlatım kutusu.
     elips: doluluk < SEKIL.dikdortgenDoluluk,
   };
+}
+
+/**
+ * Delik parçalarını yazı bloklarına ayırır: genişletilmiş kutuları kesişen
+ * parçalar aynı bloktadır (aynı satırda yan yana harfler ya da dar satır
+ * aralığıyla alt alta satırlar; yerel OCR gruplamasıyla aynı mantık).
+ * Tek parçalı ve harften küçük bloklar (gürültü) atılır; bölme belirgin
+ * değilse tek blok döner.
+ * @param {PikselKutu[]} parcalar
+ * @param {number} harfBoyu  Ortanca parça yüksekliği.
+ * @returns {PikselKutu[]}
+ */
+export function yaziBloklari(parcalar, harfBoyu) {
+  const gx = 1.6 * harfBoyu;
+  // Satır aralığı çoğunlukla harf boyunun yarısından az; ayrı balonların
+  // metinleri arasında ise birkaç harf boyu boşluk olur.
+  const gy = 1.5 * harfBoyu;
+  const ata = parcalar.map((_, i) => i);
+  const bul = (i) => (ata[i] === i ? i : (ata[i] = bul(ata[i])));
+  for (let i = 0; i < parcalar.length; i++) {
+    const a = parcalar[i];
+    for (let j = i + 1; j < parcalar.length; j++) {
+      const b = parcalar[j];
+      if (a.x0 - gx <= b.x1 && b.x0 - gx <= a.x1 && a.y0 - gy <= b.y1 && b.y0 - gy <= a.y1) ata[bul(i)] = bul(j);
+    }
+  }
+  const gruplar = new Map();
+  parcalar.forEach((p, i) => {
+    const k = bul(i);
+    const g = gruplar.get(k);
+    if (!g) gruplar.set(k, { ...p, n: 1 });
+    else {
+      g.x0 = Math.min(g.x0, p.x0);
+      g.y0 = Math.min(g.y0, p.y0);
+      g.x1 = Math.max(g.x1, p.x1);
+      g.y1 = Math.max(g.y1, p.y1);
+      g.n++;
+    }
+  });
+  const bloklar = [...gruplar.values()].filter((g) => g.n >= 2 || g.y1 - g.y0 + 1 >= 0.8 * harfBoyu);
+  // Bölme yalnızca belirgin ayrı metinlerde: her blokta en az 3 parça ve en
+  // çok 3 blok. Yoksa tek metin sayılır (tireli kelimeler, geniş harf
+  // aralığı bir balonu küçük parçalara bölüyordu).
+  if (bloklar.length > 3 || bloklar.some((g) => g.n < 3)) {
+    return bloklar.length ? [bloklar.reduce((a, b) => ({ x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) }))] : [];
+  }
+  return bloklar.map(({ x0, y0, x1, y1 }) => ({ x0, y0, x1, y1 }));
 }
 
 /** İki piksel kutusunun kesişim alanı (uçlar dahil). */
