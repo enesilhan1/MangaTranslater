@@ -277,6 +277,22 @@ describe('sahipsiz balon ve yersiz metin', () => {
   });
 });
 
+describe('balona karışan çizim lekeleri', () => {
+  it('uzun metnin altındaki birkaç küçük leke yazı kutusunu uzatmaz, ayrı balon da sayılmaz', () => {
+    const r = resim();
+    balonCiz(r, 110, 140, 80, 60);
+    yaziCiz(r, 70, 120, 150);
+    yaziCiz(r, 75, 140, 145);
+    // Alt ucu açık balonda kızın saçı gibi: 1-3 piksellik birkaç leke.
+    for (const [x, y] of [[100, 182], [103, 185], [106, 188], [140, 180]]) {
+      for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 2; dx++) boya(r, x + dx, y + dy, 20);
+    }
+    const b = balonlariBul(r);
+    assert.equal(b.length, 1);
+    assert.ok(b[0].yazi.y1 < 170, JSON.stringify(b[0].yazi));
+  });
+});
+
 describe('seyrek delikli beyaz alan', () => {
   it('tram/kumaş deseni gibi seyrek noktalar yazı sayılmaz; kalın kısa yazı ("!!") sayılır', () => {
     const r = resim();

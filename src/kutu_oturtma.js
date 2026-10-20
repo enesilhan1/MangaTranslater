@@ -620,8 +620,9 @@ function balonMu(resim, etiket, bolge) {
     x1: x0 + Math.min(w - 1, k.x1 + pay),
     y1: y0 + Math.min(h - 1, k.y1 + pay),
   });
-  const yaziKutusu = payli(yazi);
   const bloklar = yaziBloklari(parcalar, ortanca);
+  // Tek metinde kutu, lekeleri atılmış bloğun kutusu.
+  const yaziKutusu = payli(bloklar.length === 1 ? bloklar[0] : yazi);
   const bolgeIntegrali = integral(durum, w, h);
   const kacinilacak = (bloklar.length > 1 ? bloklar.map(payli) : [yaziKutusu]);
   const yer = (hedef) => isaretYeri(bolgeIntegrali, w, h, x0, y0, hedef, kacinilacak);
@@ -691,6 +692,10 @@ function isaretYeri(I, w, h, x0, y0, hedef, kacinilacak) {
   return null;
 }
 
+/** Bu kadar parçalı metnin yanında, onun bu oranından az parçalı bloklar leke sayılır. */
+const UZUN_METIN = 10;
+const LEKE_ORANI = 0.1;
+
 /**
  * Delik parçalarını yazı bloklarına ayırır: genişletilmiş kutuları kesişen
  * parçalar aynı bloktadır (aynı satırda yan yana harfler ya da dar satır
@@ -719,16 +724,24 @@ export function yaziBloklari(parcalar, harfBoyu) {
   parcalar.forEach((p, i) => {
     const k = bul(i);
     const g = gruplar.get(k);
-    if (!g) gruplar.set(k, { ...p, n: 1 });
+    if (!g) gruplar.set(k, { ...p, n: 1, boy: p.y1 - p.y0 + 1 });
     else {
       g.x0 = Math.min(g.x0, p.x0);
       g.y0 = Math.min(g.y0, p.y0);
       g.x1 = Math.max(g.x1, p.x1);
       g.y1 = Math.max(g.y1, p.y1);
       g.n++;
+      g.boy = Math.max(g.boy, p.y1 - p.y0 + 1);
     }
   });
-  const bloklar = [...gruplar.values()].filter((g) => g.n >= 2 || g.y1 - g.y0 + 1 >= 0.8 * harfBoyu);
+  let bloklar = [...gruplar.values()].filter((g) => g.n >= 2 || g.y1 - g.y0 + 1 >= 0.8 * harfBoyu);
+  // Başka bir metnin yanında, harften kısa ya da o metne göre çok az
+  // parçalı uzak bloklar leke: alt ucu açık balonda çizimin balona karışan
+  // kısmı (kullanıcının sayfasında 45 parçalık metnin altında kızın
+  // saçındaki 1-3 piksellik lekeler yazı kutusunu yüzüne kadar uzatıyordu).
+  const enCok = Math.max(0, ...bloklar.map((g) => g.n));
+  const leke = (g) => g.boy < 0.6 * harfBoyu || (enCok >= UZUN_METIN && g.n < LEKE_ORANI * enCok);
+  if (bloklar.some((g) => !leke(g))) bloklar = bloklar.filter((g) => !leke(g));
   // Bölme yalnızca belirgin ayrı metinlerde: her blokta en az 3 parça ve en
   // çok 3 blok. Yoksa tek metin sayılır (tireli kelimeler, geniş harf
   // aralığı bir balonu küçük parçalara bölüyordu).
