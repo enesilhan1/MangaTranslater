@@ -227,3 +227,30 @@ describe('ortak beyaz alanda birden çok metin', () => {
     assert.ok(b.every((x) => x.elips === false));
   });
 });
+
+describe('sahipsiz balon ve yersiz metin', () => {
+  it('numarasız, balonu bulunamayan metin yakındaki sahipsiz balona gider', () => {
+    const r = ikiBalon();
+    const bulunanlar = balonlariBul(r);
+    // 1 numaralı balon numaralı kayda gitti; ikinci metne model numara vermedi
+    // ve kutusunu boş bir yere (çizim ortası) koydu. 2 numaralı balon sahipsiz.
+    const s = kutulariOturt(r, [
+      balon(0, 0, 1, 1, { bolge: 1, ceviri: 'bir', orijinal: 'ABCDEFGHI' }),
+      balon(200, 250, 330, 300, { bolge: 0, ceviri: 'iki', orijinal: 'NE PODHODI' }),
+    ], bulunanlar);
+    const iki = s.find((b) => b.ceviri === 'iki');
+    assert.equal(iki.oturdu, true);
+    assert.ok(piksel(iki).y0 > 360, JSON.stringify(piksel(iki)));
+  });
+
+  it('harf sayısı balonla uyumsuz uzun metin sahipsiz balona taşınmaz', () => {
+    const r = ikiBalon();
+    const bulunanlar = balonlariBul(r);
+    const uzun = 'BU CIZIMIN USTUNE YAZILMIS COK UZUN BIR ANLATIM METNIDIR VE BALONA SIGMAZ';
+    const s = kutulariOturt(r, [
+      balon(0, 0, 1, 1, { bolge: 1, ceviri: 'bir', orijinal: 'ABCDEFGHI' }),
+      balon(200, 250, 330, 300, { bolge: 0, ceviri: 'uzun', orijinal: uzun }),
+    ], bulunanlar);
+    assert.notEqual(s.find((b) => b.ceviri === 'uzun').oturdu, true);
+  });
+});
