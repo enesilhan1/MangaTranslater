@@ -22,8 +22,12 @@ desteklenir. Öncelikli test sitesi: **MangaDex**.
 Ayarlardan seçilir; iki motor vardır.
 
 ### 2.1 Görsel yapay zekâ (varsayılan)
-Resim bir görsel modele gönderilir; model balonları bulur, yazıyı okur ve
-bağlama uygun çevirir. Tek istekte konum + orijinal + çeviri döner.
+Resim bir görsel modele gönderilir; model yazıyı okur ve bağlama uygun
+çevirir. Tek istekte konum + orijinal + çeviri döner. Balonları eklenti
+piksellerden kendisi bulup modele giden kopyada numaralar; yerleştirme
+§7'deki gibi. Model işaretli balonların yarısından azına metin verirse
+(en az 3 işaret varken) istek bir kez daha gönderilir; daha çok balonu
+kapsayan yanıt kalır.
 - Sağlayıcılar: **Gemini (Google)** (varsayılan), **Claude (Anthropic)**,
   **ChatGPT (OpenAI)**. (DeepSeek resim okuyamadığı için yok.)
 - Web Asistanı'ndaki yapı: her sağlayıcı için hazır model listesi (ilki
@@ -73,6 +77,8 @@ listesi).
   ekrandaki resim önceliklidir.
 - Aynı anda sınırlı sayıda istek gönderilir (sağlayıcı kotasını aşmamak için).
 - Gönderilmeden önce resim makul bir boyuta küçültülür.
+- Görsel YZ'de OCR yalnızca balonsuz ya da numarası şüpheli metin olan
+  sayfalarda çalışır (sayfa başına birkaç saniye).
 - Sonuçlar resmin içeriğine (özet/hash) göre **önbellekte** tutulur; aynı
   resim tekrar açıldığında anında gösterilir. Önbellek boyutu sınırlıdır,
   en eski kayıtlar silinir. Önbellek motor + model + hedef dile özeldir.
@@ -95,7 +101,14 @@ listesi).
   gösterilen resim değişmez.
 - Balonsuz metinler (çizim üstü başlık/anlatım) yerel OCR ile harflerin
   üstüne oturtulur: modelin okuduğu metnin kelimeleri OCR kelimeleriyle
-  eşlenir. OCR yalnızca böyle bir metin varsa çalışır.
+  eşlenir. OCR yalnızca böyle bir metin varsa çalışır. Modelin kutusu
+  çevresinde eşleşme yoksa bütün sayfada aranır; yalnızca tek ve kesin bir
+  eşleşme kabul edilir, numaralı balonlardaki kelimeler sayılmaz.
+- Metin, numarasını aldığı alana sığmayacak kadar uzunsa (alandaki harf
+  parçası metnin harflerine göre çok az; ör. balon sanılan bir göz) o
+  numaraya güvenilmez; metin OCR ile asıl yazısında aranır, bulunamazsa
+  modelin kutusunda gösterilir. Hiçbir metin sığmayacağı küçük bir alana
+  konmaz.
 - **Ses efektleri** çizimi kapatmamak için beyaz kutuyla değil, efektin
   köşesinde küçük, yarı saydam bir etiketle gösterilir (2026-10-20,
   kullanıcının Claude denemesinden sonra).
