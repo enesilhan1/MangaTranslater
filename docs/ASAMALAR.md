@@ -391,3 +391,11 @@ sebep büyümede değil OCR kümelemesindeydi:
   önceden tek numara alıyor, ikinci yazının çevirisi birincininkinin
   altında kalıyordu. Kayıtlı 30 sayfada başka algılama değişmedi.
   İşaretler değiştiği için bu tür sayfalar bir kez yeniden çevrilir.
+
+## Sürüm 1.8.9 (2026-10-21)
+- 1.8.6'daki OCR kümeleme değişikliğinin gerilemesi düzeltildi: bozuk
+  okunan satırlar atlanınca ortalı yazının uzak satır uçları ("QUELLI
+  DELLA RESISTENZA…", 85a8b00a…/11) ve okunmayan tek harfli kelimenin iki
+  yanı ("Yuuki o Merry") yeniden aynı kümede. Yan sütundaki ortak kelime
+  ise aynı satırda geniş boşlukla ayrıldığı için yine katılmıyor.
+- OCR sürümü 10.
