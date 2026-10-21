@@ -346,3 +346,24 @@ Firefox'ta doğrulananlar (geçici profil, web-ext run):
 - açılır pencere.
 
 Gerçek bir yapay zekâ anahtarıyla Firefox'ta henüz denenmedi.
+
+## Sürüm 1.8.5 (2026-10-21)
+Kullanıcının gönderdiği yedi sayfa tek tek, gerçek resimleri ve Chrome'un
+gri kopyası/OCR sonucuyla incelendi; düzeltmeler:
+- Tırtıklı kenarlı balon ("GLI UMANI..."): yoğunluk lekesiz yazı bloğunda
+  ölçülüyor; kenar lekeleri balonu "seyrek" göstermiyor.
+- Büyük balonda çok kısa yazı ("SAI..."): delik oranı %0,8–1,5 olsa da
+  harfler sıksa balon sayılıyor.
+- OCR'de 7+ harfli kelimede iki harf hatası kabul ("DAVVERO?" →
+  "PAVWERO?").
+- OCR kutusu bir alanın tamamen içindeyse oraya taşınmıyor (çadır
+  listesi panel zemininden çıkan oval alana taşınıp kesiliyordu).
+- Sığmayan kutular büyürken komşu kutuların üstüne çıkmıyor (yan yana
+  anlatımlar birbirini kesiyordu).
+- Model iki yazıyı tek metin döndürdüyse yakındaki ikinci OCR kümesi de
+  örtülüyor ("ATTENZIONE!" + "RADUNATEVI...").
+- OCR sürümü 8: önbellekteki sayfalar bir kez daha OCR'den geçiyor.
+
+Düzeltilemeyenler: kesik çizgili (bulanık) balon kenarları dolguyu
+sızdırıyor; OCR'nin hiç okuyamadığı eğik çerçeveli satırlar ("MA
+PERCHÉ…" ilk/son satırları, "È IL MASSIMO…") örtülemiyor.

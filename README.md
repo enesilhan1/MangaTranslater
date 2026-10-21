@@ -121,6 +121,9 @@ Bir sayfa çevrilmediyse ya da çeviri yanlış yere düştüyse:
   yanlış metin balonda kalabilir.
 - Balonsuz yazısı olan sayfalarda OCR yüzünden çeviri birkaç saniye
   gecikebilir.
+- Kenarı kesik kesik ya da bulanık çizgilerden oluşan balonlar balon olarak
+  bulunamayabilir; o zaman yazının yeri OCR'ye kalır. OCR'nin okuyamadığı
+  eğik, çerçeveli küçük satırlar örtülmeyebilir.
 
 ## Geliştirme
 Derleme adımı yok (düz JavaScript, Manifest V3). Node 22+ gerekir.
