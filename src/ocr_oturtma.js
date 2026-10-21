@@ -43,6 +43,15 @@ const SES_EN_AZ_HARF = 3;
 const UZAK_EN_AZ_UZUN = 2;
 /** Sayfa genelindeki aramada eşleşen kelimeler arası en çok boşluk (kelime boyu cinsinden). */
 const UZAK_ARALIK = 4;
+/**
+ * Kümelemede yan yana kelimeler arası en çok boşluk (kelime boyu cinsinden).
+ * Satırdaki kelime aralığı boyun yarısı kadar; iki kelime boyu yan
+ * sütundaki yazıya uzanıyordu: kullanıcının sayfasında "NEGLI ULTIMI…"
+ * anlatımı yanındaki "…TINA, MA..." satırının "MA..."sını, "QUINDI…"
+ * balonu yanındaki "PROVE-RANNO"nun "RANNO"sunu alıp komşusunun üstüne
+ * taşıyordu.
+ */
+const YATAY_ARALIK = 1;
 
 /** Karşılaştırma için: yalnızca harf ve rakam, büyük harf. */
 export function sadelestir(metin) {
@@ -325,9 +334,9 @@ export function atlananaUyar(atlanan, orijinal) {
 }
 
 /**
- * Kelimeleri yakınlığa göre kümeler (aralarındaki boşluk iki kelime boyunu
- * geçmeyenler aynı kümede; [aralik] kelime boyu cinsinden); kümelerin sıra
- * numaraları, kalabalıktan aza.
+ * Kelimeleri yakınlığa göre kümeler (aralarındaki dikey boşluk [aralik],
+ * yatay boşluk YATAY_ARALIK kelime boyunu geçmeyenler aynı kümede);
+ * kümelerin sıra numaraları, kalabalıktan aza.
  */
 function tumKumeler(kelimeler, numaralar, aralik = 2) {
   if (!kelimeler.length) return [];
@@ -337,8 +346,10 @@ function tumKumeler(kelimeler, numaralar, aralik = 2) {
     for (let j = i + 1; j < kelimeler.length; j++) {
       const a = kelimeler[i].kutu;
       const c = kelimeler[j].kutu;
-      const boy = aralik * Math.max(a.y1 - a.y0, c.y1 - c.y0);
-      if (a.x0 - boy <= c.x1 && c.x0 - boy <= a.x1 && a.y0 - boy <= c.y1 && c.y0 - boy <= a.y1) ata[bul(i)] = bul(j);
+      const h = Math.max(a.y1 - a.y0, c.y1 - c.y0);
+      const boy = aralik * h;
+      const en = Math.min(aralik, YATAY_ARALIK) * h;
+      if (a.x0 - en <= c.x1 && c.x0 - en <= a.x1 && a.y0 - boy <= c.y1 && c.y0 - boy <= a.y1) ata[bul(i)] = bul(j);
     }
   }
   const gruplar = new Map();

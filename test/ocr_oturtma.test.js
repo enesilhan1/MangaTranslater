@@ -133,6 +133,21 @@ describe('ocrIleOturt', () => {
     assert.ok(b.y * Y < 405 && (b.y + b.h) * Y > 640 && (b.y + b.h) * Y < 700, JSON.stringify(b));
   });
 
+  it('yan sütundaki yazının ortak kısa kelimesi kümeye katılmaz (arası dar iki anlatım)', () => {
+    // Kullanıcının sayfası: "NEGLI ULTIMI…MA IL NEMICO…" ile sağında "CAPISCO… MA...".
+    const kelimeler = [
+      k('NEGLI', 100, 100), k('ULTIMI', 184, 100), k('GIORNI', 100, 130), k('HO', 198, 130),
+      k('PROVATO', 100, 160), k('MA', 100, 190), k('IL', 142, 190), k('NEMICO', 100, 220),
+      k('CAPISCO', 301, 100), k('MA...', 301, 130),
+    ];
+    const [sol, sag] = ocrIleOturt([
+      balon(90, 90, 280, 250, { orijinal: 'NEGLI ULTIMI GIORNI HO PROVATO MA IL NEMICO' }),
+      balon(295, 90, 410, 160, { orijinal: 'CAPISCO MA...' }),
+    ], { kelimeler, genislik: G, yukseklik: Y });
+    assert.ok(sol.ocrOturdu && (sol.x + sol.g) * G < 301, JSON.stringify(sol));
+    assert.ok(sag.ocrOturdu && (sag.y + sag.h) * Y > 152, JSON.stringify(sag));
+  });
+
   it('sayfa genelinde kısa kelimeler de sayılır ama en az iki uzun kelime gerekir', () => {
     // Kullanıcının sayfası: "...HO UNA COSA DI CUI VI DEVO PARLARE."; uzaktaki model kutusu.
     const metin = '...HO UNA COSA DI CUI VI DEVO PARLARE.';
