@@ -108,6 +108,11 @@ listesi).
   koordinatı kullanılmaz). İşaretsiz metinlerde modelin kutusu ipucudur ve
   en yakın balona oturtulur. Farklı metinler birleştirilmez. Sayfada
   gösterilen resim değişmez.
+- Koyu zeminli yazılar (siyah balondaki beyaz harfler, beyaz haleli koyu
+  harfler) da piksellerden bulunup numara alır; çevirileri koyu zeminde
+  açık renkle yazılır. Çevresi koyu olmayan yazılar bu yolla aranmaz
+  (beyaz zemindeki sıradan yazılarla karışmasın diye). Bütün satırlar
+  boyunca boş oluğu olan yan yana iki yazı ayrı numara alır.
 - Çizimdeki beyaz alanlar (tramlı kumaş, saç, yüz) numara almaz: "harfleri"
   çok küçük ve boyları tutarsız olan alan balon sayılmaz. Yanlış bir numara
   modelin öbür metinlerin numaralarını da kaydırmasına yol açabiliyor.

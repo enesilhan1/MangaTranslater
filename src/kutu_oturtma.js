@@ -18,6 +18,8 @@
 // Saf hesaplama: gri tonlu piksel dizisi üzerinde çalışır (içerik betiği
 // küçük bir analiz tuvalinden verir).
 
+import { tersYazilariBul } from './ters_yazi.js';
+
 /** Bu parlaklıktan açık pikseller balon içi sayılır (JPEG gürültüsüne pay). */
 export const BEYAZ_ESIGI = 190;
 /** Tahmini kutunun içinde denenecek tohum noktaları (her eksende). */
@@ -152,10 +154,11 @@ const SEKIL = Object.freeze({
  *   Satır satır parlaklık değerleri (0 siyah, 255 beyaz).
  * @typedef {{x0: number, y0: number, x1: number, y1: number}} PikselKutu
  *   Uçlar dahil.
- * @typedef {{kutu: PikselKutu, yazi: PikselKutu, elips: boolean, parca?: number,
+ * @typedef {{kutu: PikselKutu, yazi: PikselKutu, elips: boolean, ters?: boolean, parca?: number,
  *   isaret?: {x: number, y: number, r: number} | null}} BulunanBalon
  *   Balonun içi, içindeki yazının sınırları (gri resmin pikselleriyle) ve
- *   şekli (oval mi, dikdörtgen anlatım kutusu mu).
+ *   şekli (oval mi, dikdörtgen anlatım kutusu mu). [ters] koyu zeminli yazı
+ *   (siyah balon; ters_yazi.js).
  */
 
 /**
@@ -196,6 +199,8 @@ export function balonlariBul(resim, tani) {
       }
     }
   }
+  // Koyu zeminli yazılar (siyah balonlar) da numara alır.
+  bulunan.push(...tersYazilariBul(resim, bulunan));
   const satir = 0.03 * Y;
   return bulunan
     .sort((a, b) => (Math.abs(a.kutu.y0 - b.kutu.y0) < satir ? a.kutu.x0 - b.kutu.x0 : a.kutu.y0 - b.kutu.y0))
@@ -223,6 +228,8 @@ export function balonlariBul(resim, tani) {
 export function kutulariOturt(resim, balonlar, bulunanlar = []) {
   const { genislik: G, yukseklik: Y } = resim;
   const oran = (k) => ({ x: k.x0 / G, y: k.y0 / Y, g: (k.x1 - k.x0 + 1) / G, h: (k.y1 - k.y0 + 1) / Y });
+  /** Sonuçtaki balon şekli: içi (0-1), oval mi, koyu zeminli mi. */
+  const balonBicimi = (bb) => ({ ...oran(bb.kutu), elips: bb.elips, ...(bb.ters ? { ters: true } : {}) });
   const tahminKutusu = (b) => ({
     x0: Math.floor(b.x * G),
     y0: Math.floor(b.y * Y),
@@ -268,7 +275,7 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
   });
   for (const [n, { i }] of atanan) {
     const bb = bulunanlar[n - 1];
-    sonuc[i] = { ...balonlar[i], ...oran(bb.yazi), balon: { ...oran(bb.kutu), elips: bb.elips }, oturdu: true };
+    sonuc[i] = { ...balonlar[i], ...oran(bb.yazi), balon: balonBicimi(bb), oturdu: true };
   }
 
   // Numarasızlar: dolu balonların içleri başka kayda verilemesin diye
@@ -321,7 +328,7 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
       if (secilenNo) {
         const bb = bulunanlar[secilenNo - 1];
         ocrAlinan.add(secilenNo);
-        sonuc[i] = { ...b, ...oran(bb.yazi), balon: { ...oran(bb.kutu), elips: bb.elips }, oturdu: true, ocrOturdu: false };
+        sonuc[i] = { ...b, ...oran(bb.yazi), balon: balonBicimi(bb), oturdu: true, ocrOturdu: false };
         continue;
       }
     }
@@ -336,7 +343,7 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
     const secilen = enIyiBolge(resim, etiket, bolgeler, kullanilan, tahmin, () => ++sonEtiket, doluKutular, harf);
     if (secilen) {
       if (secilen.tekBlok) kullanilan.add(secilen.no);
-      sonuc[i] = { ...b, ...oran(secilen.yazi), balon: { ...oran(secilen.kutu), elips: secilen.elips }, oturdu: true, bolge: 0 };
+      sonuc[i] = { ...b, ...oran(secilen.yazi), balon: balonBicimi(secilen), oturdu: true, bolge: 0 };
       continue;
     }
     // Aynı numarayı alıp tahmini de o balonun içindeyse büyük ihtimalle aynı
@@ -382,7 +389,7 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
       if (yAlindi.has(y.i) || sAlindi.has(sb.n)) continue;
       yAlindi.add(y.i);
       sAlindi.add(sb.n);
-      sonuc[y.i] = { ...y.x, ...oran(sb.bb.yazi), balon: { ...oran(sb.bb.kutu), elips: sb.bb.elips }, oturdu: true };
+      sonuc[y.i] = { ...y.x, ...oran(sb.bb.yazi), balon: balonBicimi(sb.bb), oturdu: true };
     }
   }
 

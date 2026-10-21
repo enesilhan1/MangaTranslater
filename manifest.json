@@ -57,6 +57,7 @@
         "src/kutu_oturtma.js",
         "src/kuyruk.js",
         "src/tarayici.js",
+        "src/ters_yazi.js",
         "src/yz/katalog.js",
         "src/yz/ortak.js"
       ],
