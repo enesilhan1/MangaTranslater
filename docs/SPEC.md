@@ -108,6 +108,9 @@ listesi).
   koordinatı kullanılmaz). İşaretsiz metinlerde modelin kutusu ipucudur ve
   en yakın balona oturtulur. Farklı metinler birleştirilmez. Sayfada
   gösterilen resim değişmez.
+- Çizimdeki beyaz alanlar (tramlı kumaş, saç, yüz) numara almaz: "harfleri"
+  çok küçük ve boyları tutarsız olan alan balon sayılmaz. Yanlış bir numara
+  modelin öbür metinlerin numaralarını da kaydırmasına yol açabiliyor.
 - Birbirine değen balonlar tek beyaz alan olsa da içindeki ayrı metinler
   ayrı numara alır: aralarında boşluk olan yazı blokları, ya da hemen alt
   alta durup yatayda neredeyse hiç örtüşmeyen (kayık) satır grupları ayrı

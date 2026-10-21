@@ -112,6 +112,16 @@ const SEKIL = Object.freeze({
    */
   enAzTutarlilik: 0.45,
   /**
+   * "Harfleri" bölge yüksekliğinin bu oranından küçük (ortanca parça) ve
+   * tutarlılığı kucukHarfTutarlilik'ten az bölge balon değil: tramlı kumaş,
+   * saç, yüz. Kullanıcının sayfasında balonun yanındaki benekli kapüşon
+   * numara aldı, model alttaki metinlerin numaralarını kaydırdı (0,014 /
+   * 0,55). 32 sayfada yanlış bulgular ≤0,014 / ≤0,58; gerçek balonlarda
+   * oran ≥0,029, tek istisna küçük çözünürlüklü Rusça balon (0,011 / 0,70).
+   */
+  kucukHarfOrani: 0.02,
+  kucukHarfTutarlilik: 0.65,
+  /**
    * Çok sayıda minik parça tram dokusu/korkuluktur: parça sayısı bundan
    * fazla ve ortanca parça boyu en çok enKucukHarf pikselse balon değil.
    * (Kullanıcının sayfasında yanlış bulguda 122 parça, ortanca boy 1 px;
@@ -700,6 +710,9 @@ function balonMu(resim, etiket, bolge) {
   }
   const tutarli = parcaBoylari.filter((b) => b >= ortanca * 0.6 && b <= ortanca * 1.7).length / parcaSayisi;
   if (tutarli < SEKIL.enAzTutarlilik) return { sebep: `tutarlılık ${tutarli.toFixed(2)}` };
+  if (ortanca < SEKIL.kucukHarfOrani * h && tutarli < SEKIL.kucukHarfTutarlilik) {
+    return { sebep: `küçük harf ${(ortanca / h).toFixed(3)} / ${tutarli.toFixed(2)}` };
+  }
   const kenar = Math.max(1, Math.round(SEKIL.kenarBoslugu * Math.min(w, h)));
   if (yazi.x0 < kenar || yazi.y0 < kenar || yazi.x1 > w - 1 - kenar || yazi.y1 > h - 1 - kenar) return { sebep: 'kenarda yazı' };
   const bloklar = yaziBloklari(parcalar, ortanca);

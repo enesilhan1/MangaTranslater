@@ -209,6 +209,26 @@ describe('zor balon biçimleri (kullanıcının sayfalarından)', () => {
   });
 });
 
+describe('tramlı çizim', () => {
+  it('minik beneklerle farklı boyda saç telleri olan beyaz alan balon sayılmaz', () => {
+    // Kullanıcının sayfası: balonun yanındaki benekli kapüşon numara aldı,
+    // model alttaki metinlerin numaralarını kaydırdı.
+    const r = resim();
+    balonCiz(r, 200, 300, 60, 70);
+    let n = 0;
+    for (let y = 260; y < 345 && n < 22; y += 7) {
+      for (let x = 165; x < 235 && n < 22; x += 7) {
+        for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 3; dx++) boya(r, x + dx, y + dy, 30);
+        n++;
+      }
+    }
+    [5, 7, 9, 12, 6, 10, 8, 11, 14, 4, 13, 6, 9, 15, 7, 10].forEach((boy, i) => {
+      for (let y = 0; y < boy; y++) for (let dx = 0; dx < 3; dx++) boya(r, 168 + (i % 8) * 8 + dx, (i < 8 ? 300 : 322) + y, 20);
+    });
+    assert.equal(balonlariBul(r).length, 0);
+  });
+});
+
 describe('ortak beyaz alanda birden çok metin', () => {
   it('birbirinden uzak iki yazı bloğu ayrı balon sayılır; yakın satırlar ve tek kelimelik parçalar bölünmez', () => {
     const r = resim();
