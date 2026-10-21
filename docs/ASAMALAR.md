@@ -329,3 +329,20 @@ beyaz zemin yalnızca yazının çevresine çiziliyor; çizimi örtmüyor. Bu,
 1.7.3'teki "zemin kızın saçını biraz kapatabilir" kusurunu da gideriyor.
 Sorun, eklentinin gerçek Chrome'da ürettiği gri kopya alınarak birebir
 canlandırıldı.
+
+## Sürüm 1.8.4 (2026-10-21)
+Eklenti ilk kez gerçek Firefox'ta (158) denendi. Firefox'ta hiçbir sayfa
+çevrilmiyordu: içerik betiği gönderilecek resmi base64'e çevirirken
+"Permission denied to access property constructor" hatası veriyordu.
+Sebep, içerik betiğinin OffscreenCanvas'ının sayfanın bölmesinde (Xray)
+nesne üretmesi. Çeviri artık FileReader ile yapılıyor.
+
+Firefox'ta doğrulananlar (geçici profil, web-ext run):
+- yükleme, site izni (Firefox 158 kurulumda veriyor), içerik betiği
+  kaydı;
+- yerel motorla uçtan uca çeviri (arka plandaki Tesseract + MyMemory)
+  ve önbellek;
+- görsel yapay zekâda balon bulma, işaret çizme, anahtar yok hatası;
+- açılır pencere.
+
+Gerçek bir yapay zekâ anahtarıyla Firefox'ta henüz denenmedi.
