@@ -355,6 +355,22 @@ describe('balona karışan çizim lekeleri', () => {
   });
 });
 
+describe('balona karışan çizim', () => {
+  it('parçaları harf boyunda olmayan blok ayrı balon sayılmaz; beyaz zemin yalnızca yazının çevresi', () => {
+    const r = resim();
+    balonCiz(r, 150, 260, 90, 110);
+    // Balonun üst kısmına çizilmiş bir baş: uzun çizgiler ve minik noktalar.
+    for (const x of [110, 130, 150, 170]) for (let y = 170; y < 200; y++) for (let dx = 0; dx < 3; dx++) boya(r, x + dx, y, 20);
+    for (const [x, y] of [[120, 210], [140, 212], [160, 210], [180, 212]]) for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) boya(r, x + dx, y + dy, 20);
+    for (let y = 250; y <= 310; y += 15) yaziCiz(r, 100, y, 200);
+    const b = balonlariBul(r);
+    assert.equal(b.length, 1, JSON.stringify(b.map((x) => x.kutu)));
+    assert.ok(b[0].yazi.y0 > 230, JSON.stringify(b[0].yazi));
+    assert.ok(b[0].kutu.y0 > 230, 'zemin çizimi örtmemeli: ' + JSON.stringify(b[0].kutu));
+    assert.equal(b[0].elips, false);
+  });
+});
+
 describe('OCR ile oturmuş metin', () => {
   it('OCR kutusu çevirisiz balona değiyorsa o balona yerleşir; balondan uzaksa olduğu gibi kalır', () => {
     const r = ikiBalon();

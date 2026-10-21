@@ -708,6 +708,7 @@ function balonMu(resim, etiket, bolge) {
     y1: y0 + Math.min(h - 1, k.y1 + pay),
   });
   const bloklar = yaziBloklari(parcalar, ortanca);
+  const cizimli = bloklar.length === 1 && bloklar.cizimAtildi;
   // Tek metinde kutu, lekeleri atılmış bloğun kutusu.
   const yaziKutusu = payli(bloklar.length === 1 ? bloklar[0] : yazi);
   const bolgeIntegrali = integral(durum, w, h);
@@ -728,14 +729,16 @@ function balonMu(resim, etiket, bolge) {
     // balonlar tek beyaz alan görünür) her biri ayrı balon sayılır.
     bloklar: bloklar.length > 1 ? bloklar.map((b, i) => ({ kutu: payli(b), parca: b.n, isaret: blokIsaretleri[i] })) : null,
     // Çizilecek balon kutusu: gövde, yazıyı da kesinlikle kapsayacak şekilde.
-    kutu: {
+    // Balona bir çizim karışmışsa (atılan çizim bloğu) gövde o çizimi de
+    // içerir; beyaz zemin onu örtmesin diye yalnızca yazının çevresi.
+    kutu: cizimli ? yaziKutusu : {
       x0: Math.min(gv.x0, yaziKutusu.x0),
       y0: Math.min(gv.y0, yaziKutusu.y0),
       x1: Math.max(gv.x1, yaziKutusu.x1),
       y1: Math.max(gv.y1, yaziKutusu.y1),
     },
     // Dolu şekil gövde kutusunun ~%79'u: elips; ~%95+: dikdörtgen anlatım kutusu.
-    elips: doluluk < SEKIL.dikdortgenDoluluk,
+    elips: !cizimli && doluluk < SEKIL.dikdortgenDoluluk,
   };
 }
 
@@ -819,6 +822,10 @@ const LEKE_ORANI = 0.1;
  * @returns {PikselKutu[]}
  */
 export function yaziBloklari(parcalar, harfBoyu) {
+  const harfBoyundaMi = (p) => {
+    const h = p.y1 - p.y0 + 1;
+    return h >= harfBoyu * 0.6 && h <= harfBoyu * 1.7;
+  };
   const gx = 1.6 * harfBoyu;
   // Satır aralığı çoğunlukla harf boyunun yarısından az; ayrı balonların
   // metinleri arasında ise birkaç harf boyu boşluk olur.
@@ -836,7 +843,8 @@ export function yaziBloklari(parcalar, harfBoyu) {
   parcalar.forEach((p, i) => {
     const k = bul(i);
     const g = gruplar.get(k);
-    if (!g) gruplar.set(k, { ...p, n: 1, boy: p.y1 - p.y0 + 1 });
+    const harfBoyunda = harfBoyundaMi(p) ? 1 : 0;
+    if (!g) gruplar.set(k, { ...p, n: 1, boy: p.y1 - p.y0 + 1, tutarli: harfBoyunda });
     else {
       g.x0 = Math.min(g.x0, p.x0);
       g.y0 = Math.min(g.y0, p.y0);
@@ -844,6 +852,7 @@ export function yaziBloklari(parcalar, harfBoyu) {
       g.y1 = Math.max(g.y1, p.y1);
       g.n++;
       g.boy = Math.max(g.boy, p.y1 - p.y0 + 1);
+      g.tutarli += harfBoyunda;
     }
   });
   let bloklar = [...gruplar.values()].filter((g) => g.n >= 2 || g.y1 - g.y0 + 1 >= 0.8 * harfBoyu);
@@ -852,15 +861,28 @@ export function yaziBloklari(parcalar, harfBoyu) {
   // kısmı (kullanıcının sayfasında 45 parçalık metnin altında kızın
   // saçındaki 1-3 piksellik lekeler yazı kutusunu yüzüne kadar uzatıyordu).
   const enCok = Math.max(0, ...bloklar.map((g) => g.n));
-  const leke = (g) => g.boy < 0.6 * harfBoyu || (enCok >= UZUN_METIN && g.n < LEKE_ORANI * enCok);
-  if (bloklar.some((g) => !leke(g))) bloklar = bloklar.filter((g) => !leke(g));
+  // Parçalarının çoğu harf boyunda olmayan blok da yazı değil: kullanıcının
+  // sayfasında balonun üstüne çizilmiş kızın başı balonla tek alan oldu ve
+  // ayrı bir "metin" bloğu sayılıp numara aldı (parçaların 4/15'i harf
+  // boyunda; yazı bloğunda 22/25). Model yazıya o numarayı verdi, çeviri
+  // kızın yüzüne gitti.
+  const leke = (g) => g.boy < 0.6 * harfBoyu || (enCok >= UZUN_METIN && g.n < LEKE_ORANI * enCok) ||
+    (g.n >= 3 && g.tutarli / g.n < SEKIL.enAzTutarlilik);
+  const cizimMi = (g) => g.n >= 3 && g.tutarli / g.n < SEKIL.enAzTutarlilik;
+  let cizimAtildi = false;
+  if (bloklar.some((g) => !leke(g))) {
+    cizimAtildi = bloklar.some((g) => cizimMi(g) && !(g.boy < 0.6 * harfBoyu));
+    bloklar = bloklar.filter((g) => !leke(g));
+  }
+  /** Sonuca not: yazı olmayan büyük bir çizim bloğu atıldı (balona çizim karışmış). */
+  const isaretle = (liste) => Object.assign(liste, { cizimAtildi });
   // Bölme yalnızca belirgin ayrı metinlerde: her blokta en az 3 parça ve en
   // çok 3 blok. Yoksa tek metin sayılır (tireli kelimeler, geniş harf
   // aralığı bir balonu küçük parçalara bölüyordu).
   if (bloklar.length > 3 || bloklar.some((g) => g.n < 3)) {
-    return bloklar.length ? [bloklar.reduce((a, b) => ({ x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1), n: a.n + b.n }))] : [];
+    return isaretle(bloklar.length ? [bloklar.reduce((a, b) => ({ x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1), n: a.n + b.n }))] : []);
   }
-  return bloklar.map(({ x0, y0, x1, y1, n }) => ({ x0, y0, x1, y1, n }));
+  return isaretle(bloklar.map(({ x0, y0, x1, y1, n }) => ({ x0, y0, x1, y1, n })));
 }
 
 /** İki piksel kutusunun kesişim alanı (uçlar dahil). */
