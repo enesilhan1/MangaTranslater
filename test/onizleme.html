@@ -45,6 +45,12 @@
       ceviri: 'Hatta, her şeye güvenmenizi de söylemeyeceğim.', balon: { ...kutu(545, 530, 100, 210), elips: true } });
     for (const i of document.querySelectorAll('#okuyucu img')) i.style.width = '260px';
   }
+  // ?ters=1: koyu zeminli yazı (siyah balon) bulunmuş gibi; çeviri koyu
+  // zeminde açık renkle yazılmalı.
+  if (new URLSearchParams(location.search).has('ters')) {
+    balonlar.push({ ...kutu(440, 600, 200, 70), tur: 'balon', orijinal: 'I CAN DO IT... I CAN DEFINITELY KILL THEM!',
+      ceviri: 'Yapabilirim... Kesinlikle hepsini öldürebilirim!', balon: { ...kutu(430, 590, 220, 90), elips: false, ters: true } });
+  }
   // ?yanyana=1: balonsuz iki anlatım yan yana, çevirileri orijinalden uzun
   // (büyüyen kutular birbirinin üstüne çıkmamalı). ?arasiz=1: aynısı ama
   // kutular birkaç piksel kesişiyor (arasında boşluk olmayan iki anlatım).

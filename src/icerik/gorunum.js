@@ -54,6 +54,8 @@ const STIL = `
    _sigdir'de verilir. */
 .balon.sekilli { box-shadow: none; border-radius: 12%; }
 .balon.sekilli.elips { border-radius: 50%; }
+/* Koyu zeminli yazı (siyah balon): çeviri de koyu zeminde açık renkle. */
+.balon.ters, .ortu.ters { background: #111; color: #fff; }
 /* Orijinal yazının kendisini örten beyaz dikdörtgen: balon tam oval
    değilse (ör. panel kenarında düz kesilmişse) oval zeminin dışında kalan
    harf uçlarını kapatır. Yazının sınırında olduğu için balonun dışına
@@ -180,6 +182,7 @@ export class Gorunum {
       kutu = [x + g * 0.02, y + h * 0.02, g * 0.96, h * 0.96];
       el.classList.add('sekilli');
       if (b.balon.elips) el.classList.add('elips');
+      if (b.balon.ters) el.classList.add('ters');
     }
     el.dataset.kutu = JSON.stringify(kutu);
     this._kutuyaKoy(el, ...kutu);
@@ -193,7 +196,7 @@ export class Gorunum {
    */
   _ortu(b) {
     const el = document.createElement('div');
-    el.className = 'ortu';
+    el.className = b.balon?.ters ? 'ortu ters' : 'ortu';
     const px = b.g * 0.05;
     const py = b.h * 0.05;
     this._kutuyaKoy(el, b.x + px, b.y + py, b.g - 2 * px, b.h - 2 * py);
