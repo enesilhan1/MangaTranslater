@@ -64,11 +64,14 @@ export function puntoBul(sigarMi, enAz = EN_KUCUK_PUNTO, enCok = EN_BUYUK_PUNTO)
 
 /**
  * Büyütülen kutuyu komşu kutulara değmeyecek şekilde kırpar. Kutular
- * {x, y, g, h} (0-1). Asıl kutuyla zaten kesişen komşu yok sayılır (önceden
- * üst üste olanları ayırmaya çalışmaz); ayrı duran komşu hangi yandaysa
- * kutunun o kenarı komşunun kenarına çekilir. Kullanıcının sayfasında yan
- * yana iki anlatımın kutuları %30 büyürken birbirinin üstüne çıkıp
- * yazıları kesiyordu.
+ * {x, y, g, h} (0-1). Komşu hangi yandaysa kutunun o kenarı komşunun
+ * kenarına çekilir. Asıl kutuyla zaten biraz kesişen komşuda kenar
+ * kesişmenin ortasına çekilir (iki kutu da büyürken kesişmeyi paylaşır).
+ * Biri öbürünü içine alıyorsa komşu yok sayılır.
+ * Kullanıcının sayfasında yan yana iki anlatımın kutuları %30 büyürken
+ * birbirinin üstüne çıkıp yazıları kesiyordu; aralarında boşluk olmayan
+ * iki anlatımın kutuları ise paylarından ötürü zaten birkaç piksel
+ * kesiştiği için hiç kırpılmıyordu.
  * @returns {{x: number, y: number, g: number, h: number}}
  */
 export function buyumeyiKirp(buyuk, ozgun, digerleri) {
@@ -76,21 +79,25 @@ export function buyumeyiKirp(buyuk, ozgun, digerleri) {
   const b = kenar(buyuk);
   const o = kenar(ozgun);
   const kesisir = (a, c) => a.x0 < c.x1 && c.x0 < a.x1 && a.y0 < c.y1 && c.y0 < a.y1;
+  const icerir = (a, c) => a.x0 <= c.x0 && a.y0 <= c.y0 && a.x1 >= c.x1 && a.y1 >= c.y1;
   for (const d of digerleri.map(kenar)) {
-    if (!kesisir(b, d) || kesisir(o, d)) continue;
-    // Komşunun asıl kutuya göre yönü; çaprazsa aradaki boşluğu büyük olan eksen.
+    if (!kesisir(b, d) || icerir(d, o) || icerir(o, d)) continue;
+    // Komşunun asıl kutuya göre yönü; çaprazsa aradaki boşluğu (ya da
+    // kesişmesi az olan) eksen.
     const sag = d.x0 - o.x1;
     const sol = o.x0 - d.x1;
     const alt = d.y0 - o.y1;
     const ust = o.y0 - d.y1;
     const yatay = Math.max(sag, sol);
     const dikey = Math.max(alt, ust);
+    // Yeni kenar: komşunun kenarı; kesişiyorlarsa kesişmenin ortası.
+    const sinir = (asil, komsu, bosluk) => (bosluk >= 0 ? komsu : (asil + komsu) / 2);
     if (yatay >= dikey) {
-      if (sag >= sol) b.x1 = Math.min(b.x1, d.x0);
-      else b.x0 = Math.max(b.x0, d.x1);
-    } else if (alt >= ust) b.y1 = Math.min(b.y1, d.y0);
-    else b.y0 = Math.max(b.y0, d.y1);
+      if (sag >= sol) b.x1 = Math.min(b.x1, sinir(o.x1, d.x0, sag));
+      else b.x0 = Math.max(b.x0, sinir(o.x0, d.x1, sol));
+    } else if (alt >= ust) b.y1 = Math.min(b.y1, sinir(o.y1, d.y0, alt));
+    else b.y0 = Math.max(b.y0, sinir(o.y0, d.y1, ust));
   }
-  // Komşular asıl kutuyla kesişmediği için kırpılan kutu asıl kutudan küçülmez.
+  // Kırpılan kutu asıl kutudan en çok kesişmenin yarısı kadar küçülür.
   return { x: b.x0, y: b.y0, g: b.x1 - b.x0, h: b.y1 - b.y0 };
 }

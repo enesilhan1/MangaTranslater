@@ -62,4 +62,16 @@ describe('buyumeyiKirp', () => {
     const ust = { x: 0.15, y: 0.15, g: 0.1, h: 0.1 };
     assert.ok(yakin(buyumeyiKirp(buyuk, sol, [ust]), buyuk));
   });
+
+  it('asıl kutuya birkaç piksel binen yan komşuda kenar kesişmenin ortasına çekilir (arasız iki anlatım)', () => {
+    const sol = { x: 0.1, y: 0.1, g: 0.2, h: 0.3 };
+    const sag = { x: 0.29, y: 0.1, g: 0.1, h: 0.1 };
+    const buyuk = { x: 0.07, y: 0.055, g: 0.26, h: 0.39 };
+    const k = buyumeyiKirp(buyuk, sol, [sag]);
+    // Sağ kenar 0,29–0,30 kesişmesinin ortasında; öbür yönlere büyüme sürer.
+    assert.ok(yakin(k, { x: 0.07, y: 0.055, g: 0.225, h: 0.39 }), JSON.stringify(k));
+    // Komşu da aynı kuralla kırpılınca iki kutu artık kesişmez.
+    const k2 = buyumeyiKirp({ x: 0.275, y: 0.085, g: 0.13, h: 0.13 }, sag, [sol]);
+    assert.ok(k2.x >= k.x + k.g - 1e-9, JSON.stringify(k2));
+  });
 });
