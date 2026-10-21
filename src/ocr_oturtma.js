@@ -26,7 +26,7 @@ const UZUN_KELIME = 7;
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
  */
-export const OCR_SURUMU = 9;
+export const OCR_SURUMU = 10;
 /** Model kutusundan uzakta bu uzunlukta (ve üstü) kelimeler "uzun" sayılır. */
 const UZAK_KELIME = 4;
 /**
@@ -45,13 +45,22 @@ const UZAK_EN_AZ_UZUN = 2;
 const UZAK_ARALIK = 4;
 /**
  * Kümelemede yan yana kelimeler arası en çok boşluk (kelime boyu cinsinden).
- * Satırdaki kelime aralığı boyun yarısı kadar; iki kelime boyu yan
- * sütundaki yazıya uzanıyordu: kullanıcının sayfasında "NEGLI ULTIMI…"
- * anlatımı yanındaki "…TINA, MA..." satırının "MA..."sını, "QUINDI…"
- * balonu yanındaki "PROVE-RANNO"nun "RANNO"sunu alıp komşusunun üstüne
- * taşıyordu.
+ * Satırdaki kelime aralığı boyun yarısı kadar; eşlemeye girmeyen tek harfli
+ * kelime ("Yuuki o Merry") ~1,2 kelime boyu boşluk bırakır. İki kelime boyu
+ * yan sütundaki yazıya uzanıyordu: kullanıcının sayfasında "NEGLI ULTIMI…"
+ * anlatımı yanındaki "…TINA, MA..." satırının "MA..."sını alıp komşusunun
+ * üstüne taşıyordu.
  */
-const YATAY_ARALIK = 1;
+const YATAY_ARALIK = 1.5;
+/** Dikey boşluğu bundan (kelime boyu cinsinden) az olan kelimeler aynı ya da bitişik satırda sayılır. */
+const BITISIK_SATIR = 0.5;
+/**
+ * Aynı satırda aralarında bundan (kelime boyu cinsinden) fazla boşluk olan
+ * kelimeler ayrı sütunlardadır, aynı kümeye girmez. Okunmamış tek kısa
+ * kelimenin bıraktığı boşluk (~2 kelime boyu) bundan az; kullanıcının
+ * sayfasında yan sütunun "RANNO"su 2,5 kelime boyu uzaktaydı.
+ */
+const SUTUN_ARALIGI = 2.2;
 
 /** Karşılaştırma için: yalnızca harf ve rakam, büyük harf. */
 export function sadelestir(metin) {
@@ -335,27 +344,59 @@ export function atlananaUyar(atlanan, orijinal) {
 
 /**
  * Kelimeleri yakınlığa göre kümeler (aralarındaki dikey boşluk [aralik],
- * yatay boşluk YATAY_ARALIK kelime boyunu geçmeyenler aynı kümede);
- * kümelerin sıra numaraları, kalabalıktan aza.
+ * aynı ya da bitişik satırda yatay boşluk YATAY_ARALIK kelime boyunu
+ * geçmeyenler aynı kümede); kümelerin sıra numaraları, kalabalıktan aza.
+ * Bağlar en yakından başlayarak kurulur; aynı satırda aralarında
+ * SUTUN_ARALIGI kelime boyundan fazla boşluk olan iki kelime (yan yana iki
+ * sütun) aynı kümeye girmez.
  */
 function tumKumeler(kelimeler, numaralar, aralik = 2) {
   if (!kelimeler.length) return [];
-  const ata = kelimeler.map((_, i) => i);
-  const bul = (i) => (ata[i] === i ? i : (ata[i] = bul(ata[i])));
+  const boyu = (a, c) => Math.max(a.y1 - a.y0, c.y1 - c.y0);
+  const yatayBosluk = (a, c) => Math.max(c.x0 - a.x1, a.x0 - c.x1);
+  const dikeyBosluk = (a, c) => Math.max(c.y0 - a.y1, a.y0 - c.y1);
+  // Aynı satırda yan yana (aralarında başka kelime olmayan) ve arası geniş
+  // iki kelime; satırın ilk ve son kelimesi arası doğal olarak geniştir.
+  const ayriSutun = (a, c) => {
+    const ust = Math.max(a.y0, c.y0);
+    const alt = Math.min(a.y1, c.y1);
+    if (alt - ust < 0.5 * Math.min(a.y1 - a.y0, c.y1 - c.y0) || yatayBosluk(a, c) <= SUTUN_ARALIGI * boyu(a, c)) return false;
+    const [sol, sag] = a.x1 <= c.x0 ? [a, c] : [c, a];
+    return !kelimeler.some(({ kutu: k }) => {
+      const cx = (k.x0 + k.x1) / 2;
+      const cy = (k.y0 + k.y1) / 2;
+      return cx > sol.x1 && cx < sag.x0 && cy > ust && cy < alt;
+    });
+  };
+  const baglar = [];
   for (let i = 0; i < kelimeler.length; i++) {
     for (let j = i + 1; j < kelimeler.length; j++) {
       const a = kelimeler[i].kutu;
       const c = kelimeler[j].kutu;
-      const h = Math.max(a.y1 - a.y0, c.y1 - c.y0);
+      const h = boyu(a, c);
       const boy = aralik * h;
-      const en = Math.min(aralik, YATAY_ARALIK) * h;
-      if (a.x0 - en <= c.x1 && c.x0 - en <= a.x1 && a.y0 - boy <= c.y1 && c.y0 - boy <= a.y1) ata[bul(i)] = bul(j);
+      // Dar yatay erişim aynı ya da bitişik satırdaki kelimelerde (yan
+      // sütun oradan karışıyordu). Arada satır atlanan kelimelerde geniş:
+      // ortalı yazıda bozuk okunan satır atlanınca "DELLA" ile iki satır
+      // alttaki "CHE" yatayda iki kelime boyu uzak; 1.8.6'da bu yüzden
+      // "QUELLI…" balonu hiç oturmadı.
+      const en = dikeyBosluk(a, c) < BITISIK_SATIR * h ? Math.min(aralik, YATAY_ARALIK) * h : boy;
+      if (yatayBosluk(a, c) <= en && dikeyBosluk(a, c) <= boy) {
+        baglar.push({ i, j, uzaklik: Math.max(yatayBosluk(a, c), dikeyBosluk(a, c), 0) / h });
+      }
     }
   }
-  const gruplar = new Map();
-  kelimeler.forEach((_, i) => {
-    const k = bul(i);
-    gruplar.set(k, [...(gruplar.get(k) ?? []), numaralar[i]]);
-  });
-  return [...gruplar.values()].sort((a, b) => b.length - a.length);
+  baglar.sort((x, y) => x.uzaklik - y.uzaklik);
+  const uyeler = kelimeler.map((_, i) => [i]);
+  const kume = kelimeler.map((_, i) => i);
+  for (const { i, j } of baglar) {
+    const ki = kume[i];
+    const kj = kume[j];
+    if (ki === kj) continue;
+    if (uyeler[ki].some((p) => uyeler[kj].some((q) => ayriSutun(kelimeler[p].kutu, kelimeler[q].kutu)))) continue;
+    for (const q of uyeler[kj]) kume[q] = ki;
+    uyeler[ki].push(...uyeler[kj]);
+    uyeler[kj] = [];
+  }
+  return uyeler.filter((u) => u.length).map((u) => u.map((i) => numaralar[i])).sort((a, b) => b.length - a.length);
 }

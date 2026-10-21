@@ -138,14 +138,35 @@ describe('ocrIleOturt', () => {
     const kelimeler = [
       k('NEGLI', 100, 100), k('ULTIMI', 184, 100), k('GIORNI', 100, 130), k('HO', 198, 130),
       k('PROVATO', 100, 160), k('MA', 100, 190), k('IL', 142, 190), k('NEMICO', 100, 220),
-      k('CAPISCO', 301, 100), k('MA...', 301, 130),
+      k('CAPISCO', 306, 100), k('MA...', 306, 130),
     ];
     const [sol, sag] = ocrIleOturt([
       balon(90, 90, 280, 250, { orijinal: 'NEGLI ULTIMI GIORNI HO PROVATO MA IL NEMICO' }),
-      balon(295, 90, 410, 160, { orijinal: 'CAPISCO MA...' }),
+      balon(300, 90, 415, 160, { orijinal: 'CAPISCO MA...' }),
     ], { kelimeler, genislik: G, yukseklik: Y });
-    assert.ok(sol.ocrOturdu && (sol.x + sol.g) * G < 301, JSON.stringify(sol));
+    assert.ok(sol.ocrOturdu && (sol.x + sol.g) * G < 306, JSON.stringify(sol));
     assert.ok(sag.ocrOturdu && (sag.y + sag.h) * Y > 152, JSON.stringify(sag));
+  });
+
+  it('bozuk okunan satırlar atlanınca ortalı yazının uzak satır uçları yine aynı kümede', () => {
+    // Kullanıcının sayfası: "QUELLI DELLA RESI-STENZA PEN-SERANNO CHE…";
+    // yalnızca 2., 4., 6. ve 7. satırlardan birer kelime eşleşiyor.
+    const kelimeler = [k('DELLA', 100, 100), k('CHE', 220, 162), k('PLICEMENTE', 110, 224), k('SCAPPATI.', 120, 256)];
+    const [b] = ocrIleOturt([balon(90, 90, 270, 290, { orijinal: 'QUELLI DELLA RESISTENZA PENSERANNO CHE SIANO SEMPLICEMENTE SCAPPATI.' })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.equal(b.ocrOturdu, true, JSON.stringify(b));
+    assert.ok(b.y * Y < 100 && (b.y + b.h) * Y > 278, JSON.stringify(b));
+  });
+
+  it('aynı satırda okunmayan tek harfli kelimenin iki yanı aynı kümede; satırın uçları arası geniş olsa da', () => {
+    // Çadır listesi: "…Takako, Merry / Kururu, Tina, Yuuki o Merry"; "o"
+    // eşlemeye girmiyor, "MERRY" üst satırda zaten eşleştiği için sonradan
+    // da katılmaz.
+    const kelimeler = [
+      k('TAKAKO,', 100, 100), k('MERRY', 210, 100),
+      k('KURURU,', 100, 135), k('TINA,', 210, 135), k('YUUKI', 290, 135), k('MERRY', 390, 135),
+    ];
+    const [b] = ocrIleOturt([balon(90, 90, 470, 165, { orijinal: 'TAKAKO, MERRY KURURU, TINA, YUUKI O MERRY' })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.ok(b.ocrOturdu && (b.x + b.g) * G > 460, JSON.stringify(b));
   });
 
   it('sayfa genelinde kısa kelimeler de sayılır ama en az iki uzun kelime gerekir', () => {

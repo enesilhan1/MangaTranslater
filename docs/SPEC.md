@@ -117,8 +117,9 @@ listesi).
   eşlenir. OCR yalnızca böyle bir metin varsa çalışır. Modelin kutusu
   çevresinde eşleşme yoksa bütün sayfada aranır; yalnızca tek ve kesin bir
   eşleşme kabul edilir, numaralı balonlardaki kelimeler sayılmaz. Bir
-  metnin kelimeleri satırlar boyunca kümelenir; yan sütundaki başka bir
-  yazının ortak kelimesi ("MA", "RANNO") kümeye katılmaz.
+  metnin kelimeleri satırlar boyunca kümelenir (arada bozuk okunmuş
+  satırlar olsa da); aynı satırda geniş boşlukla ayrılan yan sütundaki
+  başka bir yazının ortak kelimesi ("MA", "RANNO") kümeye katılmaz.
 - Balonsuz metnin kutusu, çeviri sığmazsa biraz büyür ama komşu kutuların
   üstüne çıkmaz; kutular zaten biraz kesişiyorsa kesişmeyi ikiye bölerler
   (bir kutunun beyaz zemini öbürünün yazısını örtmez).
