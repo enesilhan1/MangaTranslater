@@ -122,6 +122,17 @@ describe('ocrIleOturt', () => {
     assert.notEqual(ocrIleOturt([sfx()], { kelimeler: iki, genislik: G, yukseklik: Y })[0].ocrOturdu, true);
   });
 
+  it('model iki yazıyı tek metin döndürdüyse yakındaki ikinci küme de kutuya katılır', () => {
+    // "ATTENZIONE!" ile altındaki "RADUNATEVI TUTTI NELLA PIAZZA CENTRALE!".
+    const kelimeler = [
+      k('ATTEN-', 200, 400), k('RADUNATEVI', 60, 510), k('TUTTI', 60, 547), k('NELLA', 130, 547), k('PIAZZA', 90, 584), k('CENTRALE!', 70, 621),
+      k('LONTANO', 400, 800), // uzakta, metinde yok
+    ];
+    const [b] = ocrIleOturt([balon(50, 500, 200, 640, { orijinal: 'ATTENZIONE! RADUNATEVI TUTTI NELLA PIAZZA CENTRALE!' })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.equal(b.ocrOturdu, true);
+    assert.ok(b.y * Y < 405 && (b.y + b.h) * Y > 640 && (b.y + b.h) * Y < 700, JSON.stringify(b));
+  });
+
   it('sayfa genelinde kısa kelimeler de sayılır ama en az iki uzun kelime gerekir', () => {
     // Kullanıcının sayfası: "...HO UNA COSA DI CUI VI DEVO PARLARE."; uzaktaki model kutusu.
     const metin = '...HO UNA COSA DI CUI VI DEVO PARLARE.';

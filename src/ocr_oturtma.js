@@ -26,7 +26,7 @@ const UZUN_KELIME = 7;
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
  */
-export const OCR_SURUMU = 7;
+export const OCR_SURUMU = 8;
 /** Model kutusundan uzakta bu uzunlukta (ve üstü) kelimeler "uzun" sayılır. */
 const UZAK_KELIME = 4;
 /**
@@ -197,6 +197,30 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
       if (sayfada.length === 1) kume = sayfada[0];
     }
     if (!kume) return b;
+    // Aynı metnin başka bir kümesi: model iki ayrı yazıyı tek metin
+    // döndürdüyse (kullanıcının sayfasında "ATTENZIONE!" ile altındaki
+    // "RADUNATEVI TUTTI...") yalnızca kalabalık küme örtülüyor, öbürü açıkta
+    // kalıyordu. Kümenin UZAK_ARALIK kelime boyu yakınında, metnin henüz
+    // eşleşmemiş bir kelimesine uyan eşleşmiş kelimeler de katılır.
+    kume = [...kume];
+    for (let degisti = true; degisti;) {
+      degisti = false;
+      const tutulan = kume.map((i) => sozluk[i].sade);
+      const kalan = kelimelerB.filter((tk) => !tutulan.some((w) => kelimeEslesir(tk, w)));
+      if (!kalan.length) break;
+      const kx0 = Math.min(...kume.map((i) => sozluk[i].kutu.x0));
+      const ky0 = Math.min(...kume.map((i) => sozluk[i].kutu.y0));
+      const kx1 = Math.max(...kume.map((i) => sozluk[i].kutu.x1));
+      const ky1 = Math.max(...kume.map((i) => sozluk[i].kutu.y1));
+      const kboy = Math.max(...kume.map((i) => sozluk[i].kutu.y1 - sozluk[i].kutu.y0));
+      const pay = UZAK_ARALIK * kboy;
+      sozluk.forEach((w, i) => {
+        if (degisti || kume.includes(i) || kullanildi.has(i) || !kalan.some((tk) => kelimeEslesir(tk, w.sade))) return;
+        if (w.kutu.x1 < kx0 - pay || w.kutu.x0 > kx1 + pay || w.kutu.y1 < ky0 - pay || w.kutu.y0 > ky1 + pay) return;
+        kume.push(i);
+        degisti = true;
+      });
+    }
     for (const i of kume) kullanildi.add(i);
 
     const kutular = kume.map((i) => sozluk[i].kutu);
