@@ -384,3 +384,10 @@ sebep büyümede değil OCR kümelemesindeydi:
   denenmiyordu; yanlış oturmuş kutular önbellekten aynen geliyordu.
   Artık bu kayıtlar da yeni kurallarla bir kez daha oturtuluyor (eski
   kutu arama ipucu; eşleşme bulunmazsa eski kutu kalır).
+
+## Sürüm 1.8.8 (2026-10-21)
+- Birbirine değen iki balonda alt alta ama yatayda kayık duran iki metin
+  (b4644ec6…/16, "È MEGLIO…" + "MENOU HA DETTO…") ayrı numara alıyor;
+  önceden tek numara alıyor, ikinci yazının çevirisi birincininkinin
+  altında kalıyordu. Kayıtlı 30 sayfada başka algılama değişmedi.
+  İşaretler değiştiği için bu tür sayfalar bir kez yeniden çevrilir.
