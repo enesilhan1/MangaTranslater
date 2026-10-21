@@ -44,6 +44,10 @@ const ISARET_YARICAPLARI = [8, 6, 4];
  */
 const YAKINLIK_ORANI = 0.5;
 
+/** Yoğunluk lekesiz blokta ölçülecekse blokta en az bu kadar parça ve ortanca parça boyu (gri px). */
+const BLOK_OLCU_PARCA = 4;
+const BLOK_OLCU_HARF = 3;
+
 /** Sahipsiz balon eşleştirmesinde en çok uzaklık (resmin köşegenine oranla). */
 const SAHIPSIZ_UZAKLIK = 0.3;
 /**
@@ -615,12 +619,13 @@ function balonMu(resim, etiket, bolge) {
   for (let i = 0; i < w * h; i++) {
     if (durum[i] !== 0) continue;
     parcaSayisi++;
-    const p = { x0: w, y0: h, x1: -1, y1: -1 };
+    const p = { x0: w, y0: h, x1: -1, y1: -1, piksel: 0 };
     durum[i] = 3;
     yigin.push(i);
     while (yigin.length) {
       const j = yigin.pop();
       delik++;
+      p.piksel++;
       const lx = j % w;
       const ly = (j - lx) / w;
       if (lx < p.x0) p.x0 = lx;
@@ -681,12 +686,24 @@ function balonMu(resim, etiket, bolge) {
   if (tutarli < SEKIL.enAzTutarlilik) return { sebep: `tutarlılık ${tutarli.toFixed(2)}` };
   const kenar = Math.max(1, Math.round(SEKIL.kenarBoslugu * Math.min(w, h)));
   if (yazi.x0 < kenar || yazi.y0 < kenar || yazi.x1 > w - 1 - kenar || yazi.y1 > h - 1 - kenar) return { sebep: 'kenarda yazı' };
-  const yaziG = yazi.x1 - yazi.x0 + 1;
-  const yaziH = yazi.y1 - yazi.y0 + 1;
+  const bloklar = yaziBloklari(parcalar, ortanca);
   // Harfler yazı kutusunun belirgin bir kısmını kaplar; seyrek noktalar
   // (tram, kumaş deseni) kaplamaz. Az parçalı kısa yazıda ("!?", "UAH")
-  // kalın harfler kutunun yarısından çoğunu doldurur.
-  const yogunluk = delik / (yaziG * yaziH);
+  // kalın harfler kutunun yarısından çoğunu doldurur. Tek metinde ölçü
+  // lekeleri atılmış bloğun kutusu: kullanıcının sayfasında tırtıklı kenarlı
+  // "GLI UMANI..." balonunda kenar lekeleri ham kutuyu balon kadar büyütüp
+  // gerçek yazıyı "seyrek" gösteriyordu.
+  // Yalnızca blok harflerden oluşuyorsa (en az BLOK_OLCU_PARCA parça, ortanca
+  // boyu en az BLOK_OLCU_HARF px): yoksa ince çizgi/tram bloğu (bir panelin
+  // hız çizgileri) ya da iki lekelik bir yüz yoğun görünüp balon sanılıyordu.
+  const blokParcalari = bloklar.length === 1
+    ? parcalar.filter((p) => p.x0 >= bloklar[0].x0 && p.x1 <= bloklar[0].x1 && p.y0 >= bloklar[0].y0 && p.y1 <= bloklar[0].y1)
+    : [];
+  const blokBoylari = blokParcalari.map((p) => p.y1 - p.y0 + 1).sort((a, b) => a - b);
+  const blokHarfli = blokParcalari.length >= BLOK_OLCU_PARCA && blokBoylari[blokBoylari.length >> 1] >= BLOK_OLCU_HARF;
+  const olcuKutusu = blokHarfli ? bloklar[0] : yazi;
+  const olcuDelik = blokHarfli ? blokParcalari.reduce((s, p) => s + p.piksel, 0) : delik;
+  const yogunluk = olcuDelik / ((olcuKutusu.x1 - olcuKutusu.x0 + 1) * (olcuKutusu.y1 - olcuKutusu.y0 + 1));
   if (yogunluk < SEKIL.enAzYogunluk) return { sebep: `seyrek ${yogunluk.toFixed(3)}` };
   if (parcaSayisi < SEKIL.azParca && yogunluk < SEKIL.azParcaYogunluk) return { sebep: `seyrek kısa ${yogunluk.toFixed(3)}` };
 
@@ -707,7 +724,6 @@ function balonMu(resim, etiket, bolge) {
     x1: x0 + Math.min(w - 1, k.x1 + pay),
     y1: y0 + Math.min(h - 1, k.y1 + pay),
   });
-  const bloklar = yaziBloklari(parcalar, ortanca);
   const cizimli = bloklar.length === 1 && bloklar.cizimAtildi;
   // Tek metinde kutu, lekeleri atılmış bloğun kutusu.
   const yaziKutusu = payli(bloklar.length === 1 ? bloklar[0] : yazi);

@@ -355,6 +355,21 @@ describe('balona karışan çizim lekeleri', () => {
   });
 });
 
+describe('tırtıklı kenarlı balon', () => {
+  it('kenardaki küçük lekeler kısa yazıyı seyrek göstermez; balon bulunur', () => {
+    const r = resim();
+    balonCiz(r, 200, 300, 90, 120);
+    // Kısa yazı: iki satır, birkaç harf ("GLI / UMANI...").
+    yaziCiz(r, 175, 285, 220);
+    yaziCiz(r, 165, 305, 235);
+    // Tırtıklı kenarın içe düşen minik lekeleri, yazıdan uzakta.
+    for (const [x, y] of [[125, 230], [128, 380], [270, 220], [275, 385], [200, 190], [200, 410]]) boya(r, x, y, 20);
+    const b = balonlariBul(r);
+    assert.equal(b.length, 1);
+    assert.ok(b[0].yazi.y0 > 260 && b[0].yazi.y1 < 340, JSON.stringify(b[0].yazi));
+  });
+});
+
 describe('balona karışan çizim', () => {
   it('parçaları harf boyunda olmayan blok ayrı balon sayılmaz; beyaz zemin yalnızca yazının çevresi', () => {
     const r = resim();
