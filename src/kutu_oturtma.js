@@ -300,6 +300,11 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
         if (atanan.has(n + 1) || ocrAlinan.has(n + 1)) return;
         const parca = bb.parca ?? harf;
         if (harf && (parca < SIGMA_ORANI * harf || parca > 2.5 * harf)) return;
+        // Yalnızca OCR kutusu balonun dışına taşıyorsa: tamamen içindeyse
+        // yazı zaten yerinde (kullanıcının sayfasında doğru oturmuş bir liste,
+        // panel zemininden çıkan oval "balona" taşınıp kesiliyordu).
+        const k = bb.kutu;
+        if (t.x0 >= k.x0 && t.y0 >= k.y0 && t.x1 <= k.x1 && t.y1 <= k.y1) return;
         const ortak = kesisimAlani(t, bb.kutu) / Math.min(alan(t), alan(bb.kutu));
         if (ortak >= 0.2 && ortak > enIyi) [enIyi, secilenNo] = [ortak, n + 1];
       });
