@@ -85,6 +85,14 @@ const SEKIL = Object.freeze({
   enAzDoluluk: 0.6,
   /** Deliklerin (yazı) dolu şekle oranı. */
   enAzDelik: 0.015,
+  /**
+   * enAzDelikKisa-enAzDelik arası delik oranı yalnızca yazı bloğu harflerden
+   * oluşup en az kisaYaziYogunluk sıklığındaysa kabul (kullanıcının
+   * sayfasında büyük, panelle kesilmiş balonda "SAI...": %1,4, blok 0,34;
+   * aynı aralıktaki yanlış bulgular: sayfa numarası, tram, 0,13'lük çizim).
+   */
+  enAzDelikKisa: 0.008,
+  kisaYaziYogunluk: 0.25,
   enCokDelik: 0.45,
   /** En büyük tek delik parçası bölgenin bu oranından geniş/uzun olamaz (harf ≠ çizim çizgisi). */
   enBuyukParca: 0.5,
@@ -671,7 +679,10 @@ function balonMu(resim, etiket, bolge) {
   const doluluk = doluSekil / govdeAlani;
   if (doluluk < SEKIL.enAzDoluluk) return { sebep: `doluluk ${doluluk.toFixed(2)}` };
   const delikOrani = govdeDelik / doluSekil;
-  if (delikOrani < SEKIL.enAzDelik || delikOrani > SEKIL.enCokDelik) return { sebep: `delik ${delikOrani.toFixed(3)}` };
+  if (delikOrani < SEKIL.enAzDelikKisa || delikOrani > SEKIL.enCokDelik) return { sebep: `delik ${delikOrani.toFixed(3)}` };
+  // Büyük balonda çok kısa yazı ("SAI...") delik oranını enAzDelik'in altına
+  // düşürüyor; o zaman aşağıda yazı bloğu harflerden oluşmalı ve sık olmalı.
+  const azDelik = delikOrani < SEKIL.enAzDelik;
   // Tek parçalı "yazı" balon değil (gerçek en kısa balonlarda bile, ör. "!?",
   // "UAH", en az 2 parça var; kullanıcının sayfasında tek lekeli küçük beyaz
   // bir alan balon sayılıyordu).
@@ -705,6 +716,7 @@ function balonMu(resim, etiket, bolge) {
   const olcuDelik = blokHarfli ? blokParcalari.reduce((s, p) => s + p.piksel, 0) : delik;
   const yogunluk = olcuDelik / ((olcuKutusu.x1 - olcuKutusu.x0 + 1) * (olcuKutusu.y1 - olcuKutusu.y0 + 1));
   if (yogunluk < SEKIL.enAzYogunluk) return { sebep: `seyrek ${yogunluk.toFixed(3)}` };
+  if (azDelik && !(blokHarfli && yogunluk >= SEKIL.kisaYaziYogunluk)) return { sebep: `delik ${delikOrani.toFixed(3)}` };
   if (parcaSayisi < SEKIL.azParca && yogunluk < SEKIL.azParcaYogunluk) return { sebep: `seyrek kısa ${yogunluk.toFixed(3)}` };
 
   // Yazı satırları arasına ve kenarına pay; balonun içinde kalarak.

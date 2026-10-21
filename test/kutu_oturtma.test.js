@@ -355,6 +355,21 @@ describe('balona karışan çizim lekeleri', () => {
   });
 });
 
+describe('büyük balonda çok kısa yazı', () => {
+  it('delik oranı düşük ama harfleri sık olan kısa yazı balon sayılır; aynı oranda seyrek noktalar sayılmaz', () => {
+    const r = resim();
+    balonCiz(r, 200, 300, 90, 120);
+    // "SAI...": beş harf, balonun %1'inden az yer kaplıyor.
+    for (let i = 0; i < 5; i++) for (let y = 295; y < 306; y++) for (let dx = 0; dx < 7; dx++) boya(r, 176 + i * 10 + dx, y, 20);
+    const b = balonlariBul(r);
+    assert.equal(b.length, 1);
+    const seyrek = resim();
+    balonCiz(seyrek, 200, 300, 90, 120);
+    for (let i = 0; i < 5; i++) for (let y = 260; y < 271; y++) for (let dx = 0; dx < 7; dx++) boya(seyrek, 140 + i * 30 + dx, y + (i % 2) * 60, 20);
+    assert.equal(balonlariBul(seyrek).length, 0);
+  });
+});
+
 describe('tırtıklı kenarlı balon', () => {
   it('kenardaki küçük lekeler kısa yazıyı seyrek göstermez; balon bulunur', () => {
     const r = resim();
