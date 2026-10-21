@@ -1,7 +1,7 @@
 // Sayfadaki resmin baytlarını alır ve gönderilecek dilimlere ayırır
 // (docs/SPEC.md §5, §6). İçerik betiğinde çalışır.
 
-import { base64tenBayt, bayttanBase64 } from '../base64.js';
+import { base64tenBayt } from '../base64.js';
 import { dilimleriPlanla, satirSkoru } from '../dilimleme.js';
 import { bolgeListesi, isaretKonumlari } from '../isaretler.js';
 import { balonlariBul } from '../kutu_oturtma.js';
@@ -95,7 +95,7 @@ export async function dilimlereAyir(blob, { isaretle = false } = {}) {
       if (bulunanlar.length) isaretleriCiz(ctx, isaretKonumlari(bulunanlar, g / gri.genislik, g, h));
       const jpeg = await tuval.convertToBlob({ type: 'image/jpeg', quality: JPEG_KALITESI });
       sonuc.push({
-        veri: bayttanBase64(await jpeg.arrayBuffer()),
+        veri: await blobBase64(jpeg),
         tur: 'image/jpeg',
         genislik: g,
         yukseklik: h,
@@ -110,6 +110,23 @@ export async function dilimlereAyir(blob, { isaretle = false } = {}) {
   } finally {
     bitmap.close();
   }
+}
+
+/**
+ * Blob'un base64 metni (data: önekisiz). FileReader ile: Firefox'ta içerik
+ * betiğinin OffscreenCanvas'ı sayfanın bölmesinde nesne üretiyor; onun
+ * ArrayBuffer'ına dokunmak ("instanceof", "new Uint8Array") "Permission
+ * denied to access property constructor" hatası veriyordu ve hiçbir sayfa
+ * çevrilmiyordu. Metin bölmeler arasında sorunsuz geçer; Chrome'da da yerel
+ * ve hızlı.
+ */
+function blobBase64(blob) {
+  return new Promise((coz, reddet) => {
+    const okuyucu = new FileReader();
+    okuyucu.onload = () => coz(String(okuyucu.result).slice(String(okuyucu.result).indexOf(',') + 1));
+    okuyucu.onerror = () => reddet(okuyucu.error);
+    okuyucu.readAsDataURL(blob);
+  });
 }
 
 /** Kırmızı daire içinde beyaz numara (modelin kolay okuyacağı, çizimden ayrışan). */
