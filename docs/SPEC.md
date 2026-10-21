@@ -108,6 +108,10 @@ listesi).
   koordinatı kullanılmaz). İşaretsiz metinlerde modelin kutusu ipucudur ve
   en yakın balona oturtulur. Farklı metinler birleştirilmez. Sayfada
   gösterilen resim değişmez.
+- Birbirine değen balonlar tek beyaz alan olsa da içindeki ayrı metinler
+  ayrı numara alır: aralarında boşluk olan yazı blokları, ya da hemen alt
+  alta durup yatayda neredeyse hiç örtüşmeyen (kayık) satır grupları ayrı
+  metin sayılır.
 - Balonsuz metinler (çizim üstü başlık/anlatım) yerel OCR ile harflerin
   üstüne oturtulur: modelin okuduğu metnin kelimeleri OCR kelimeleriyle
   eşlenir. OCR yalnızca böyle bir metin varsa çalışır. Modelin kutusu

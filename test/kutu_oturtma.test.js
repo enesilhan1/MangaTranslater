@@ -227,6 +227,28 @@ describe('ortak beyaz alanda birden çok metin', () => {
     assert.ok(b.every((x) => x.elips === false));
   });
 
+  it('hemen alt alta ama yatayda kayık iki metin ayrılır; sola yaslı tek metin bölünmez', () => {
+    // Kullanıcının sayfası: "…SALDI, OK?" satırının hemen altında, solda
+    // başlayan "MENOU HA DETTO…"; satır aralığı iki metinde de aynı.
+    const alanCiz = (r) => {
+      for (let y = 100; y < 330; y++) for (let x = 150; x < 300; x++) {
+        r.gri[y * G + x] = y < 103 || y > 326 || x < 153 || x > 296 ? 0 : 255;
+      }
+    };
+    const r = resim();
+    alanCiz(r);
+    for (let y = 120; y <= 165; y += 15) yaziCiz(r, 220, y, 290);
+    for (let y = 180; y <= 225; y += 15) yaziCiz(r, 160, y, 222);
+    const b = balonlariBul(r);
+    assert.equal(b.length, 2, JSON.stringify(b.map((x) => x.yazi)));
+    assert.ok(b.some((x) => x.yazi.x0 >= 205 && x.yazi.y1 < 190) && b.some((x) => x.yazi.x1 <= 235 && x.yazi.y0 >= 165), JSON.stringify(b.map((x) => x.yazi)));
+    // Sola yaslı tek metin: kısa satırlar uzunlarla örtüşür, bölünmez.
+    const r2 = resim();
+    alanCiz(r2);
+    [290, 200, 290, 215, 285, 190, 280, 210].forEach((son, i) => yaziCiz(r2, 160, 120 + 15 * i, son));
+    assert.equal(balonlariBul(r2).length, 1);
+  });
+
   it('birbirine değen iki balonda her işaret kendi metnine yakın ve öbürüyle çakışmıyor', () => {
     const r = resim();
     // Kullanıcının sayfası: iki balon birbirine değiyor, beyaz alan tek parça.

@@ -843,6 +843,71 @@ function noktaKutuUzakligi(x, y, k) {
 /** Bu kadar parçalı metnin yanında, onun bu oranından az parçalı bloklar leke sayılır. */
 const UZUN_METIN = 10;
 const LEKE_ORANI = 0.1;
+/**
+ * Alt alta iki satır yatayda bu orandan az örtüşüyorsa (kısa satırın
+ * genişliğine göre) ayrı metinlerdir: tek metnin satırları ortalı ya da
+ * sola yaslı olsa da büyük ölçüde örtüşür.
+ */
+const SATIR_ORTUSME = 0.3;
+
+/**
+ * Bir bloğun parçalarını satırlara ayırır ve yatayda neredeyse hiç
+ * örtüşmeyen ardışık satırlardan böler. Kullanıcının sayfasında birbirine
+ * değen iki balonun yazıları ("…SALDI, OK?" ile hemen altında, solda
+ * başlayan "MENOU HA DETTO…") satır aralığından yakın durduğu için tek blok
+ * oluyor, iki metin tek numara alıyordu.
+ * @param {PikselKutu[]} parcalar
+ * @param {number[]} liste  Bloğun parça sıra numaraları.
+ * @returns {number[][]}
+ */
+function satirdanBol(parcalar, liste, harfBoyu) {
+  // Harf boyunda parçalar satırları kurar; aksan, nokta gibi küçükler ve
+  // tek parçalı satırlar en yakın bölüme katılır.
+  const buyuk = liste.filter((i) => parcalar[i].y1 - parcalar[i].y0 + 1 >= 0.6 * harfBoyu)
+    .sort((a, b) => parcalar[a].y0 + parcalar[a].y1 - parcalar[b].y0 - parcalar[b].y1);
+  const satirlar = [];
+  for (const i of buyuk) {
+    const p = parcalar[i];
+    const st = satirlar.find((s) => Math.min(s.y1, p.y1) - Math.max(s.y0, p.y0) >= 0.5 * (p.y1 - p.y0 + 1));
+    if (st) {
+      st.liste.push(i);
+      st.x0 = Math.min(st.x0, p.x0); st.x1 = Math.max(st.x1, p.x1);
+      st.y0 = Math.min(st.y0, p.y0); st.y1 = Math.max(st.y1, p.y1);
+    } else satirlar.push({ liste: [i], x0: p.x0, y0: p.y0, x1: p.x1, y1: p.y1 });
+  }
+  // Tek parçalı "satır" (aksan, leke, satıra sığmayan harf) satır sayılmaz.
+  const tam = satirlar.filter((st) => st.liste.length >= 2);
+  if (tam.length < 4) return [liste];
+  const tamlar = new Set(tam.flatMap((st) => st.liste));
+  tam.sort((a, b) => a.y0 - b.y0);
+  const bolumler = [[tam[0]]];
+  for (let k = 1; k < tam.length; k++) {
+    const a = tam[k - 1];
+    const b = tam[k];
+    const ortusme = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) + 1;
+    const kisa = Math.min(a.x1 - a.x0, b.x1 - b.x0) + 1;
+    if (ortusme < SATIR_ORTUSME * kisa) bolumler.push([b]);
+    else bolumler[bolumler.length - 1].push(b);
+  }
+  // Her bölüm en az iki satırlı olmalı: yan yana iki sütunun satırları
+  // sırayla dizilince tek satırlık bölümler çıkıyor; orada bölme yapılmaz.
+  if (bolumler.length < 2 || bolumler.some((sl) => sl.length < 2)) return [liste];
+  const kutular = bolumler.map((sl) => ({
+    x0: Math.min(...sl.map((s) => s.x0)), y0: Math.min(...sl.map((s) => s.y0)),
+    x1: Math.max(...sl.map((s) => s.x1)), y1: Math.max(...sl.map((s) => s.y1)),
+  }));
+  const sonuc = bolumler.map((sl) => sl.flatMap((s) => s.liste));
+  for (const i of liste) {
+    if (tamlar.has(i)) continue;
+    const p = parcalar[i];
+    let enYakin = 0;
+    kutular.forEach((k, j) => {
+      if (noktaKutuUzakligi((p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2, k) < noktaKutuUzakligi((p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2, kutular[enYakin])) enYakin = j;
+    });
+    sonuc[enYakin].push(i);
+  }
+  return sonuc;
+}
 
 /**
  * Delik parçalarını yazı bloklarına ayırır: genişletilmiş kutuları kesişen
@@ -872,9 +937,19 @@ export function yaziBloklari(parcalar, harfBoyu) {
       if (a.x0 - gx <= b.x1 && b.x0 - gx <= a.x1 && a.y0 - gy <= b.y1 && b.y0 - gy <= a.y1) ata[bul(i)] = bul(j);
     }
   }
+  const kokler = new Map();
+  parcalar.forEach((_, i) => kokler.set(bul(i), [...(kokler.get(bul(i)) ?? []), i]));
+  const blokNo = new Array(parcalar.length);
+  let no = 0;
+  for (const liste of kokler.values()) {
+    for (const parca of satirdanBol(parcalar, liste, harfBoyu)) {
+      for (const i of parca) blokNo[i] = no;
+      no++;
+    }
+  }
   const gruplar = new Map();
   parcalar.forEach((p, i) => {
-    const k = bul(i);
+    const k = blokNo[i];
     const g = gruplar.get(k);
     const harfBoyunda = harfBoyundaMi(p) ? 1 : 0;
     if (!g) gruplar.set(k, { ...p, n: 1, boy: p.y1 - p.y0 + 1, tutarli: harfBoyunda });
