@@ -399,3 +399,10 @@ sebep büyümede değil OCR kümelemesindeydi:
   yanı ("Yuuki o Merry") yeniden aynı kümede. Yan sütundaki ortak kelime
   ise aynı satırda geniş boşlukla ayrıldığı için yine katılmıyor.
 - OCR sürümü 10.
+
+## Sürüm 1.8.10 (2026-10-22)
+- Tramlı çizim (benekli kumaş, saç, yüz) artık balon sayılıp numara
+  almıyor (77829b28…/23: kapüşona verilen numara modelin alttaki iki
+  balonun numaralarını kaydırmasına yol açıyordu). Kayıtlı 32 sayfada
+  yalnızca dört yanlış bulgu kalktı. İşaretleri değişen sayfalar bir kez
+  yeniden çevrilir.
