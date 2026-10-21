@@ -367,3 +367,13 @@ gri kopyası/OCR sonucuyla incelendi; düzeltmeler:
 Düzeltilemeyenler: kesik çizgili (bulanık) balon kenarları dolguyu
 sızdırıyor; OCR'nin hiç okuyamadığı eğik çerçeveli satırlar ("MA
 PERCHÉ…" ilk/son satırları, "È IL MASSIMO…") örtülemiyor.
+
+## Sürüm 1.8.6 (2026-10-21)
+1.8.5'ten sonra da 350df388…/13 sayfasında kutular üst üste biniyordu;
+sebep büyümede değil OCR kümelemesindeydi:
+- OCR kelime kümelemesinde yatay erişim iki kelime boyundan bire indi:
+  yan sütundaki yazının ortak kelimesi ("MA...", "RANNO") kümeye katılıp
+  kutuyu komşusunun üstüne taşımıyor.
+- Zaten birkaç piksel kesişen komşu kutular büyürken kesişmeyi ikiye
+  bölüyor (önceden kesişen komşu hiç hesaba katılmıyordu).
+- OCR sürümü 9: önbellekteki sayfalar bir kez daha OCR'den geçiyor.
