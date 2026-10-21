@@ -20,6 +20,8 @@ const EN_AZ_GUVEN = 30;
 const SATIR_EKLEME = 2;
 /** Bu oranda kelime eşleşmezse kutu değiştirilmez. */
 const EN_AZ_ESLESME = 0.4;
+/** Bu uzunlukta (ve üstü) kelimelerde OCR'nin iki harf hatası kabul edilir. */
+const UZUN_KELIME = 7;
 /**
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
@@ -54,6 +56,10 @@ export function kelimeEslesir(a, b) {
     if (a.includes(b) || b.includes(a)) return true;
     if (Math.abs(a.length - b.length) <= 1 && duzenlemeUzakligi(a, b) <= 1) return true;
   }
+  // Uzun kelimede iki harf hatası (kullanıcının sayfasında eğik, bulanık
+  // çerçeveli "DAVVERO?" → "PAVWERO?"); bu uzunlukta iki harfi farklı iki
+  // gerçek kelime nadir.
+  if (a.length >= UZUN_KELIME && b.length >= UZUN_KELIME && Math.abs(a.length - b.length) <= 2 && duzenlemeUzakligi(a, b) <= 2) return true;
   return false;
 }
 

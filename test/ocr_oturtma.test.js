@@ -19,6 +19,9 @@ describe('kelime eşleme', () => {
     assert.equal(kelimeEslesir('ABOUT', 'ABOUTTHE'), true);
     assert.equal(kelimeEslesir('THE', 'TNE'), false); // kısa kelimede hata kabul edilmez
     assert.equal(kelimeEslesir('TRUTH', 'WORLD'), false);
+    // 7+ harfte iki harf hatası (eğik çerçeveli yazı); kısa kelimede iki hata kabul edilmez.
+    assert.equal(kelimeEslesir('DAVVERO', 'PAVWERO'), true);
+    assert.equal(kelimeEslesir('MOLTO', 'MASTO'), false);
   });
 
   it('gevşek benzerlik: bölünmüş kelime parçası ve bozuk okuma, ama rastgele değil', () => {
