@@ -86,6 +86,9 @@ listesi).
 - Sonuçlar resmin içeriğine (özet/hash) göre **önbellekte** tutulur; aynı
   resim tekrar açıldığında anında gösterilir. Önbellek boyutu sınırlıdır,
   en eski kayıtlar silinir. Önbellek motor + model + hedef dile özeldir.
+  OCR eşleme kuralları değişince önbellekteki balonsuz metinler (önceden
+  OCR ile oturmuş olanlar dahil) bir kez daha OCR ile oturtulur; model
+  tekrar çağrılmaz.
 
 ## 7. Görünüm
 - Çeviri **balonun üstüne yazılır**: orijinal yazının üstüne beyaz kutu

@@ -66,7 +66,12 @@ export class Cevirici {
     // modelin kutusuna koyabiliyordu; OCR asıl yazıyı bulur.
     const bolgeler = resim.bolgeler ?? [];
     const supheli = (b) => b.bolge > 0 && b.tur !== 'ses' && metinSigmaz(b.orijinal, bolgeler[b.bolge - 1]?.parca);
-    const gerekli = (b) => (ocrGerekirMi(b) || supheli(b) || latinSesMi(b)) && !b.ocrOturdu && Number(b.ocrDenendi ?? 0) < OCR_SURUMU;
+    // Önceden OCR ile oturmuş kayıt da yeni kurallarla bir kez daha denenir:
+    // eskiden "ocrOturdu" kayıtlar hiç denenmiyordu, sürüm artışı yanlış
+    // oturmuş kutuları düzeltmiyordu (kullanıcının sayfasında komşu sütuna
+    // taşan kutular 1.8.6'dan sonra da önbellekten aynen geliyordu). Kutusu
+    // arama ipucu olur; eşleşme bulunmazsa eski kutusu kalır.
+    const gerekli = (b) => (ocrGerekirMi(b) || supheli(b) || latinSesMi(b)) && Number(b.ocrDenendi ?? 0) < OCR_SURUMU;
     // Atlanan yazı denetimi de OCR ister: balonsuz metni olan (OCR'nin bu
     // sayfada işe yaradığı) ve henüz denetlenmemiş dilimde OCR yeniden
     // çalışır. Önceden yalnızca yerleştirilecek metin varken çalışıyordu;

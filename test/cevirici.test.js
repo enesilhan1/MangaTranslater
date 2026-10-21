@@ -6,6 +6,7 @@ import { base64tenBayt, bayttanBase64 } from '../src/base64.js';
 import { Cevirici } from '../src/cevirici.js';
 import { Kuyruk } from '../src/kuyruk.js';
 import { Onbellek, kayitAnahtari, ozetCikar } from '../src/onbellek.js';
+import { OCR_SURUMU } from '../src/ocr_oturtma.js';
 import { sahteAlan } from './yardimci.js';
 
 function bellekOnbellek() {
@@ -145,6 +146,20 @@ describe('Cevirici: balonsuz metinlerde OCR', () => {
     assert.equal(s.balonlar[0].ocrOturdu, true);
     await t.c.dilimCevir({ id: 'b', oncelik: 1, resim: RESIM });
     assert.equal(t.ocrCagri.length, 1);
+  });
+
+  it('eski kurallarla OCR ile oturmuş kayıt da yeni sürümde bir kez daha oturtulur', async () => {
+    const t = kur([balonsuz]);
+    const ozet = await ozetCikar(RESIM.veri);
+    // Eski kurallarla yanlış yere (komşu yazıya taşarak) oturmuş kayıt.
+    const eski = { ...balonsuz, x: 0.4, y: 0.4, g: 0.55, h: 0.35, ocrOturdu: true, ocrDenendi: OCR_SURUMU - 1 };
+    await t.c.onbellek.koy(kayitAnahtari(ozet, 'gorsel:gemini:gemini-3.8-flash', 'tr'), [eski]);
+    const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(t.ocrCagri.length, 1);
+    const [b] = s.balonlar;
+    assert.ok(b.ocrOturdu && b.x > 0.55 && b.g < 0.4 && b.ocrDenendi === OCR_SURUMU, JSON.stringify(b));
+    await t.c.dilimCevir({ id: 'b', oncelik: 1, resim: RESIM });
+    assert.equal(t.ocrCagri.length, 1, 'yeni sürümle denendikten sonra tekrar çalışmamalı');
   });
 
   it('balonsuz metin OCR kelimesine oturur; OCR hatasında modelin kutusu kalır', async () => {
