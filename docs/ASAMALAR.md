@@ -406,3 +406,21 @@ sebep büyümede değil OCR kümelemesindeydi:
   balonun numaralarını kaydırmasına yol açıyordu). Kayıtlı 32 sayfada
   yalnızca dört yanlış bulgu kalktı. İşaretleri değişen sayfalar bir kez
   yeniden çevrilir.
+
+## Sürüm 1.9.0 (2026-10-22)
+Yeni özellik: siyah balonlardaki beyaz yazılar.
+- src/ters_yazi.js koyu zeminli yazı bloklarını piksellerden buluyor:
+  sınırı karşıt renkte olan harf boyunda parçalar (siyah zeminde açık
+  harf ya da beyaz haleli koyu harf), satırlara kümelenip boy tutarlılığı,
+  satır komşuluğu ve çevrelerinin koyuluğuyla denetleniyor. Bulunan bloklar
+  beyaz balonlar gibi numara alıyor; çeviri koyu zeminde açık renkle
+  yazılıyor. Kullanıcının sayfasında (8fb3ebce…/29) üç siyah balonun
+  çevirisi modelin kayık kutularında kalıyordu; OCR bu yazı tipini ters
+  çevrilmiş resimde de okuyamıyor.
+- Kayıtlı 32 sayfada hiç yanlış bulgu yok (eşiğe en yakın aday 0,50, eşik
+  0,70, gerçek siyah balonlar 0,89-0,90).
+- Bilinen sınır: açık renkli tram üstündeki beyaz konturlu yazı ("THEN…
+  AND ONLY THEN…") bulunmuyor; çevresi koyu değil, sıradan yazıdan
+  ayırt edilemiyor. Haleleri birbirine değen yan yana iki yazı tek numara
+  alabiliyor.
+- İşaretleri değişen sayfalar bir kez yeniden çevrilir.

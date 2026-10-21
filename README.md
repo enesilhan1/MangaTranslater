@@ -13,6 +13,7 @@ yazıya dokunmaz; bu eklenti tam olarak bunu yapar.
   hazırlanır. Çeviriler önbellekte tutulur; aynı sayfaya dönünce anında gelir.
 - **Balonun üstüne yazar:** Kutular resimdeki gerçek balona oturtulur, orijinal
   yazının üstüne beyaz kutu konur ve çeviri orijinal boyutta içine sığdırılır.
+  Siyah balonlardaki beyaz yazılar da bulunur; çevirileri koyu zeminle yazılır.
   Ses efektleri çizimi kapatmadan küçük bir etiketle gösterilir.
   <kbd>Alt</kbd>+<kbd>T</kbd> ile orijinali görürsün.
 - **Chrome** (ve Edge, Brave gibi Chromium tabanlılar) ve **Firefox 140+**.
@@ -124,6 +125,8 @@ Bir sayfa çevrilmediyse ya da çeviri yanlış yere düştüyse:
 - Kenarı kesik kesik ya da bulanık çizgilerden oluşan balonlar balon olarak
   bulunamayabilir; o zaman yazının yeri OCR'ye kalır. OCR'nin okuyamadığı
   eğik, çerçeveli küçük satırlar örtülmeyebilir.
+- Açık renkli tram ya da çizim üstündeki beyaz konturlu yazılar (siyah
+  balonda olmayanlar) bulunamayabilir; yerleri modelin tahminine kalır.
 
 ## Geliştirme
 Derleme adımı yok (düz JavaScript, Manifest V3). Node 22+ gerekir.
