@@ -377,3 +377,10 @@ sebep büyümede değil OCR kümelemesindeydi:
 - Zaten birkaç piksel kesişen komşu kutular büyürken kesişmeyi ikiye
   bölüyor (önceden kesişen komşu hiç hesaba katılmıyordu).
 - OCR sürümü 9: önbellekteki sayfalar bir kez daha OCR'den geçiyor.
+
+## Sürüm 1.8.7 (2026-10-21)
+- 1.8.6'nın düzeltmesi önbellekteki sayfaya ulaşmıyordu: OCR ile önceden
+  oturmuş (ocrOturdu) kayıtlar, OCR sürümü artsa da bir daha
+  denenmiyordu; yanlış oturmuş kutular önbellekten aynen geliyordu.
+  Artık bu kayıtlar da yeni kurallarla bir kez daha oturtuluyor (eski
+  kutu arama ipucu; eşleşme bulunmazsa eski kutu kalır).
