@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { EN_BUYUK_PUNTO, EN_KUCUK_PUNTO, orijinalPuntosu, puntoBul, puntoTavani, puntoUstSiniri } from '../src/icerik/sigdir.js';
+import { EN_BUYUK_PUNTO, EN_KUCUK_PUNTO, buyumeyiKirp, orijinalPuntosu, puntoBul, puntoTavani, puntoUstSiniri } from '../src/icerik/sigdir.js';
 
 describe('puntoBul', () => {
   it('sığan en büyük puntoyu az denemeyle bulur', () => {
@@ -41,5 +41,25 @@ describe('puntoTavani', () => {
   it('çok harfli küçük kutuda küçük ama en az okunabilir punto', () => {
     assert.equal(puntoTavani(40, 20, 200), EN_KUCUK_PUNTO);
     assert.ok(orijinalPuntosu(100, 100, 1) === orijinalPuntosu(100, 100, 4)); // tek harf kutuyu şişirmez
+  });
+});
+
+describe('buyumeyiKirp', () => {
+  const yakin = (a, b) => Object.keys(b).every((k) => Math.abs(a[k] - b[k]) < 1e-9);
+  it('yan yana kutular büyürken birbirinin üstüne çıkmaz; komşu yoksa büyüme aynen kalır', () => {
+    const sol = { x: 0.1, y: 0.1, g: 0.2, h: 0.2 };
+    const sag = { x: 0.32, y: 0.1, g: 0.2, h: 0.2 };
+    const buyuk = { x: 0.07, y: 0.07, g: 0.26, h: 0.26 }; // sol, %30 büyümüş
+    const k = buyumeyiKirp(buyuk, sol, [sag]);
+    assert.ok(k.x + k.g <= sag.x + 1e-9, JSON.stringify(k));
+    assert.ok(yakin({ x: k.x, y: k.y, h: k.h }, { x: 0.07, y: 0.07, h: 0.26 }));
+    assert.ok(yakin(buyumeyiKirp(buyuk, sol, []), buyuk));
+    // Altındaki komşu için alt kenar kırpılır.
+    const alt = { x: 0.1, y: 0.31, g: 0.2, h: 0.1 };
+    const k2 = buyumeyiKirp(buyuk, sol, [alt]);
+    assert.ok(k2.y + k2.h <= alt.y + 1e-9 && Math.abs(k2.g - 0.26) < 1e-9, JSON.stringify(k2));
+    // Asıl kutuyla zaten kesişen komşu yok sayılır.
+    const ust = { x: 0.15, y: 0.15, g: 0.1, h: 0.1 };
+    assert.ok(yakin(buyumeyiKirp(buyuk, sol, [ust]), buyuk));
   });
 });

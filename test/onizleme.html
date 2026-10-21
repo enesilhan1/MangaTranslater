@@ -45,6 +45,14 @@
       ceviri: 'Hatta, her şeye güvenmenizi de söylemeyeceğim.', balon: { ...kutu(545, 530, 100, 210), elips: true } });
     for (const i of document.querySelectorAll('#okuyucu img')) i.style.width = '260px';
   }
+  // ?yanyana=1: balonsuz iki anlatım yan yana, çevirileri orijinalden uzun
+  // (büyüyen kutular birbirinin üstüne çıkmamalı).
+  if (new URLSearchParams(location.search).has('yanyana')) {
+    balonlar.push(
+      { ...kutu(430, 620, 120, 48), tur: 'anlatim', orijinal: 'NEGLI ULTIMI DUE GIORNI HO PROVATO', ceviri: 'Son iki gündür bilerek savunmasız görünmeye çalıştım, banyoda ya da uykuda, ama düşman hiçbir şey yapmadı.' },
+      { ...kutu(556, 620, 100, 48), tur: 'anlatim', orijinal: 'CAPISCO QUELLO CHE DICE TINA, MA', ceviri: "Tina'nın ne demek istediğini çok iyi anlıyorum, ama yine de bir şeyler tuhaf." },
+    );
+  }
   const gorunum = new Gorunum({ tekrarDene: (img) => tamam(img) });
   const r1 = document.getElementById('r1');
   const r2 = document.getElementById('r2');

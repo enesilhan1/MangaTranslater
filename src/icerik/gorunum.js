@@ -11,7 +11,7 @@
 
 import { cevir } from '../dil.js';
 import { hecele } from './heceleme.js';
-import { ACIL_PUNTO, puntoBul, puntoTavani } from './sigdir.js';
+import { ACIL_PUNTO, buyumeyiKirp, puntoBul, puntoTavani } from './sigdir.js';
 
 /**
  * @typedef {Object} ResimDurumu
@@ -278,7 +278,13 @@ export class Gorunum {
 
   /** Kaptaki her balonun yazısını kutusuna sığdırır. */
   _sigdir(r) {
-    for (const el of r.kap.querySelectorAll('.balon')) {
+    const ogeler = [...r.kap.querySelectorAll('.balon')];
+    // Her kutunun o anki yeri: büyüyen kutu komşularının bu yerine değmesin.
+    const yerler = ogeler.map((el) => {
+      const [x, y, g, h] = JSON.parse(el.dataset.kutu);
+      return { x, y, g, h };
+    });
+    for (const [i, el] of ogeler.entries()) {
       const [x, y, g, h] = JSON.parse(el.dataset.kutu);
       const harf = Number(el.dataset.harf);
       el.classList.remove('kirilabilir');
@@ -295,12 +301,17 @@ export class Gorunum {
       let p = puntoBul(sigarMi, undefined, puntoTavani(g * r.genislik, h * r.yukseklik, harf));
       if (!sigarMi(p)) {
         // Çeviri orijinalden uzun: kutuyu merkezinden büyüt (resmin içinde kalarak).
+        // Komşu kutuların üstüne çıkmadan (bkz. buyumeyiKirp).
         const yg = Math.min(1, g * BUYUTME);
         const yh = Math.min(1, h * BUYUTME);
-        const yx = Math.min(Math.max(0, x - (yg - g) / 2), 1 - yg);
-        const yy = Math.min(Math.max(0, y - (yh - h) / 2), 1 - yh);
-        this._kutuyaKoy(el, yx, yy, yg, yh);
-        p = puntoBul(sigarMi, undefined, puntoTavani(yg * r.genislik, yh * r.yukseklik, harf));
+        const yer = buyumeyiKirp(
+          { x: Math.min(Math.max(0, x - (yg - g) / 2), 1 - yg), y: Math.min(Math.max(0, y - (yh - h) / 2), 1 - yh), g: yg, h: yh },
+          { x, y, g, h },
+          yerler.filter((_, j) => j !== i),
+        );
+        yerler[i] = yer;
+        this._kutuyaKoy(el, yer.x, yer.y, yer.g, yer.h);
+        p = puntoBul(sigarMi, undefined, puntoTavani(yer.g * r.genislik, yer.h * r.yukseklik, harf));
       }
       if (!sigarMi(p)) p = this._sigmiyorsa(el, sigarMi, puntoTavani(g * r.genislik, h * r.yukseklik, harf));
       el.style.fontSize = `${p}px`;
