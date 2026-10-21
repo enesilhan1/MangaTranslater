@@ -319,3 +319,13 @@ Chrome Web Store yayınına hazırlık:
 - minimum_chrome_version 121: Firefox için duran background.scripts
   anahtarı Chrome 120'de hata sayılabiliyordu.
 - GitHub Actions ile otomatik testler.
+
+## Sürüm 1.8.3 (2026-10-21)
+Kullanıcının sayfasında balonun üstüne çizilmiş bir karakterin başı balonla
+tek alan oldu ve ayrı bir "metin bloğu" olarak numara aldı. Model yazıya o
+numarayı verdi; çeviri karakterin yüzüne gitti. Parçalarının çoğu harf
+boyunda olmayan bloklar artık yazı sayılmıyor. Balona çizim karıştığında
+beyaz zemin yalnızca yazının çevresine çiziliyor; çizimi örtmüyor. Bu,
+1.7.3'teki "zemin kızın saçını biraz kapatabilir" kusurunu da gideriyor.
+Sorun, eklentinin gerçek Chrome'da ürettiği gri kopya alınarak birebir
+canlandırıldı.
