@@ -114,15 +114,20 @@ describe('Cevirici: balonsuz metinlerde OCR', () => {
     const latin = kur([{ ...balonsuz, tur: 'ses', orijinal: 'HELLO' }]);
     await latin.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
     assert.equal(latin.ocrCagri.length, 1);
-    const japonca = kur([{ ...balonsuz, tur: 'ses', orijinal: 'ガシャ' }]);
+    // (Model 3'ten az metin döndürünce atlanan yazı için OCR yine çalışır; burada yeterince metin var.)
+    const japonca = kur([{ ...balonsuz, tur: 'ses', orijinal: 'ガシャ' }, numarali, { ...numarali, orijinal: 'HO' }]);
     await japonca.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
     assert.equal(japonca.ocrCagri.length, 0);
   });
 
   it('yalnızca numaralı metinler varsa OCR çalışmaz', async () => {
-    const t = kur([numarali]);
+    const t = kur([numarali, { ...numarali, orijinal: 'HO' }, { ...numarali, orijinal: 'HA' }]);
     await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
     assert.equal(t.ocrCagri.length, 0);
+    // Model 3'ten az metin döndürdüyse atlanan yazı için bir kez OCR çalışır.
+    const az = kur([numarali]);
+    await az.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
+    assert.equal(az.ocrCagri.length, 1);
   });
 
   it('önbellekteki eski (OCR öncesi) sonuç bir kez düzeltilip önbelleğe yazılır', async () => {
@@ -221,6 +226,16 @@ describe('Cevirici: atlanan yazı', () => {
     assert.equal(t1.cagri.length, 1);
   });
 
+  it('model yalnızca numaralı tek metni döndürdüyse de (boş işaret, balonsuz metin yok) atlanan yazı aranır', async () => {
+    // comix.to sayfası: bulanık kenarlı balonlar numara almadı, model yalnızca "HEYYY!!".
+    const numarali = { ...kayit('HEYYY!!', 0.6, 0.6), bolge: 1 };
+    const t = kur([[numarali], [numarali, kayit('SPRIZZANO VOGLIA DI UCCIDERCI', 0.5, 0.2)]]);
+    const resim = { ...RESIM, bolgeler: [{ no: 1, kutu: [550, 550, 700, 700], parca: 6 }] };
+    const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim });
+    assert.equal(t.cagri.length, 2);
+    assert.ok(s.balonlar.some((b) => b.orijinal.startsWith('SPRIZZANO')), JSON.stringify(s.balonlar));
+  });
+
   it('atlanan yazı yoksa ikinci istek gitmez', async () => {
     const t = kur([[kayit('NO, KUU-CHAN', 0.6, 0.6), kayit('SPRIZZANO VOGLIA DI UCCIDERCI', 0.05, 0.58)]]);
     await t.c.dilimCevir({ id: 'a', oncelik: 1, resim: RESIM });
@@ -263,8 +278,9 @@ describe('Cevirici: şüpheli numara', () => {
     const s = await t.c.dilimCevir({ id: 'a', oncelik: 1, resim });
     assert.equal(s.balonlar[0].bolge, 2);
     assert.notEqual(s.balonlar[0].ocrOturdu, true);
-    // Tek işaretli alan kullanılmış, metin ona sığıyor: OCR gerekmez.
-    const u = kur([metin('FORSE PENSAVANO FOSSI MORTO', 1)]);
+    // Tek işaretli alan kullanılmış, metinler ona sığıyor ve model yeterince
+    // metin döndürmüş: OCR gerekmez.
+    const u = kur([metin('FORSE PENSAVANO FOSSI MORTO', 1), metin('A', 1), metin('B', 1)]);
     await u.c.dilimCevir({ id: 'a', oncelik: 1, resim: { ...resim, bolgeler: [resim.bolgeler[0]] } });
     assert.equal(u.ocrCagri.length, 0);
     // Bir işaretli alan kullanılmadıysa atlanan yazı için OCR çalışır.

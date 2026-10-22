@@ -19,6 +19,8 @@ import { YzHatasi } from './yz/ortak.js';
 const EN_AZ_KAPSAMA = 0.5;
 /** Bu kadar işaretten az olan dilimde yeniden sorulmaz (az sayıda balonda oran yanıltıcı). */
 const KAPSAMA_ICIN_EN_AZ_ISARET = 3;
+/** Model bundan az metin döndürdüyse atlanan yazı denetimi (OCR) dilim başına bir kez yapılır. */
+const EKSIK_ICIN_AZ_METIN = 3;
 
 /** Sonuçta metin verilmiş farklı işaret numarası sayısı. */
 function kapsananIsaret(balonlar) {
@@ -81,9 +83,13 @@ export class Cevirici {
     // uyuşmamış demektir (kullanıcının geniş resminde 8 işaretten 2'si
     // yanlış bulguydu ve atlandı; balon sayılmayan "VI DARÒ TEMPO PER
     // DECIDERE." da hiç dönmedi; sayfada balonsuz metin yoktu).
+    // Model çok az metin döndürdüyse de: kullanıcının sayfasında (comix.to,
+    // LV999 no Murabito 106/18) bulanık kenarlı dört balon numara almadı,
+    // model yalnızca numaralı "HEYYY!!"i döndürdü; balonsuz metin ve boş
+    // işaret olmadığı için denetim hiç çalışmıyor, dört yazı çevrilmiyordu.
     const kullanilmayanIsaret = bolgeler.some((_, i) => !balonlar.some((b) => b.bolge === i + 1));
     const eksikDenetimi = a.motor === Motor.GORSEL && !balonlar.some((b) => b.eksikDenendi) &&
-      (balonlar.some((b) => !b.bolge && b.tur !== 'ses') || kullanilmayanIsaret);
+      (balonlar.some((b) => !b.bolge && b.tur !== 'ses') || kullanilmayanIsaret || balonlar.length < EKSIK_ICIN_AZ_METIN);
     if (a.motor !== Motor.GORSEL || (!balonlar.some(gerekli) && !eksikDenetimi)) return { balonlar, degisti: false };
     let ocr;
     try {
