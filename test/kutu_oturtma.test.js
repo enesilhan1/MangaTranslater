@@ -289,6 +289,20 @@ describe('ortak beyaz alanda birden çok metin', () => {
     assert.ok(b.every((x) => x.elips === false));
   });
 
+  it('çok uzak duran iki parçalı kısa yazı (tek kelime) da ayrı metin sayılır', () => {
+    // Kullanıcının sayfası: birbirine değen iki balonda "SARADA." (harfleri
+    // kaynaşıp iki parça) ve altındaki uzun yazı tek numara alıyordu.
+    const r = resim();
+    for (let y = 100; y < 320; y++) for (let x = 150; x < 300; x++) {
+      r.gri[y * G + x] = y < 103 || y > 316 || x < 153 || x > 296 ? 0 : 255;
+    }
+    yaziCiz(r, 200, 125, 218); // iki "harf"
+    // Alttaki yazı da kısa (uzun yazının yanında küçük blok leke sayılır).
+    for (let y = 250; y <= 265; y += 15) yaziCiz(r, 200, y, 236);
+    const b = balonlariBul(r);
+    assert.equal(b.length, 2, JSON.stringify(b.map((x) => x.yazi)));
+  });
+
   it('hemen alt alta ama yatayda kayık iki metin ayrılır; sola yaslı tek metin bölünmez', () => {
     // Kullanıcının sayfası: "…SALDI, OK?" satırının hemen altında, solda
     // başlayan "MENOU HA DETTO…"; satır aralığı iki metinde de aynı.

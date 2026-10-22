@@ -970,6 +970,8 @@ export function inceParcalar(ince, kat, k) {
 
 /** Bu kadar parçalı metnin yanında, onun bu oranından az parçalı bloklar leke sayılır. */
 const UZUN_METIN = 10;
+/** Bloklar arası bu kadar harf boyu boşluk varsa 2 parçalı blok da ayrı metin (bkz. yaziBloklari). */
+const AYRI_BLOK_BOSLUK = 3;
 const LEKE_ORANI = 0.1;
 /**
  * Alt alta iki satır yatayda bu orandan az örtüşüyorsa (kısa satırın
@@ -1114,8 +1116,14 @@ export function yaziBloklari(parcalar, harfBoyu) {
   const isaretle = (liste) => Object.assign(liste, { cizimAtildi });
   // Bölme yalnızca belirgin ayrı metinlerde: her blokta en az 3 parça ve en
   // çok 3 blok. Yoksa tek metin sayılır (tireli kelimeler, geniş harf
-  // aralığı bir balonu küçük parçalara bölüyordu).
-  if (bloklar.length > 3 || bloklar.some((g) => g.n < 3)) {
+  // aralığı bir balonu küçük parçalara bölüyordu). Bloklar birbirinden
+  // AYRI_BLOK_BOSLUK harf boyundan uzaksa 2 parçalı blok da ayrı metindir:
+  // birbirine değen iki balonda tek kelimelik "SARADA." (harfleri bu
+  // çözünürlükte iki parçaya kaynaşıyor) altındaki yazıyla tek numara
+  // alıyordu.
+  const uzak = (a, c) => Math.max(c.x0 - a.x1, a.x0 - c.x1, c.y0 - a.y1, a.y0 - c.y1) >= AYRI_BLOK_BOSLUK * harfBoyu;
+  const belirgin = bloklar.every((g, i) => g.n >= 3 || (g.n >= 2 && bloklar.every((c, j) => i === j || uzak(g, c))));
+  if (bloklar.length > 3 || !belirgin) {
     return isaretle(bloklar.length ? [bloklar.reduce((a, b) => ({ x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1), n: a.n + b.n }))] : []);
   }
   return isaretle(bloklar.map(({ x0, y0, x1, y1, n }) => ({ x0, y0, x1, y1, n })));
