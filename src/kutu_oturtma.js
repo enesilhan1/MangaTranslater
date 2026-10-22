@@ -161,6 +161,24 @@ const SEKIL = Object.freeze({
   daginikHizali: 0.42,
 });
 
+/** Doluluğu düşük bölgede yazı bloğu şartları (bkz. karisikBolgeYazilari). */
+const KARISIK = Object.freeze({
+  /**
+   * Çizimdeki tarama ve hız çizgisi vuruşları 3-4 parçalık "satırlar"
+   * oluşturuyordu; 5 parçalık şart Boruto taramasında OCR'nin yazı okuduğu
+   * 69 yeni bloğun 66'sını korudu, kelimesiz 44 bloğu 15'e indirdi (10'u
+   * gerçek yazı).
+   */
+  enAzParca: 5,
+  /** Harf boyu bölgenin kısa kenarının bu oranından büyükse yazı değil. */
+  enCokHarfOrani: 0.15,
+  enAzTutarlilik: 0.7,
+  enAzYogunluk: 0.15,
+  enAzBeyazCevre: 0.6,
+  enAzInceHizali: 0.6,
+  enAzHizaliParca: 3,
+});
+
 /** İnce gri kopya en az bu kat büyükse yazı düzeni onunla ölçülür. */
 const INCE_EN_AZ_KAT = 1.5;
 
@@ -716,7 +734,12 @@ function balonMu(resim, etiket, bolge, ince) {
   const govdeAlani = (gv.x1 - gv.x0 + 1) * (gv.y1 - gv.y0 + 1);
   const doluSekil = govdeBolge + govdeDelik;
   const doluluk = doluSekil / govdeAlani;
-  if (doluluk < SEKIL.enAzDoluluk) return { sebep: `doluluk ${doluluk.toFixed(2)}` };
+  if (doluluk < SEKIL.enAzDoluluk) {
+    // Balon çevresindeki beyaz zeminle birleşmiş olabilir: içindeki yazı
+    // blokları ayrı ayrı (kendi kutularıyla) numara alır.
+    const ayri = ince && ince.genislik >= INCE_EN_AZ_KAT * G ? karisikBolgeYazilari(parcalar, durum, w, h, x0, y0, ince, G) : [];
+    return { sebep: `doluluk ${doluluk.toFixed(2)}${ayri.length ? `, ${ayri.length} yazı bloğu` : ''}`, ...(ayri.length ? { bloklar: ayri } : {}) };
+  }
   const delikOrani = govdeDelik / doluSekil;
   if (delikOrani < SEKIL.enAzDelikKisa || delikOrani > SEKIL.enCokDelik) return { sebep: `delik ${delikOrani.toFixed(3)}` };
   // Büyük balonda çok kısa yazı ("SAI...") delik oranını enAzDelik'in altına
@@ -823,6 +846,74 @@ function balonMu(resim, etiket, bolge, ince) {
     // Dolu şekil gövde kutusunun ~%79'u: elips; ~%95+: dikdörtgen anlatım kutusu.
     elips: !cizimli && doluluk < SEKIL.dikdortgenDoluluk,
   };
+}
+
+/**
+ * Doluluğu düşük (balon, çevresindeki beyaz zeminle tek bölge olmuş)
+ * bölgede yazıya benzeyen blokları ayrı ayrı bulur. Boruto taramasında
+ * sade çizimli sayfalarda balonların bir kısmı panelin beyaz zeminine
+ * açılıp tek bölge oluyor, doluluk 0,45-0,60'a düşüp numara almıyordu
+ * ("NU VOR FI CONVINȘI.", "RĂSPUNDE-MI SINCER."). Beyaz zeminde yüz ve
+ * çizim de olduğu için şartlar balondakinden sıkı: tutarlı harf boyu,
+ * yoğun blok, çevresi beyaz ve ince gri kopyada belirgin satır düzeni.
+ * @returns {{kutu: PikselKutu, parca: number, isaret: object | null}[]}
+ */
+function karisikBolgeYazilari(parcalar, durum, w, h, x0, y0, ince, G) {
+  const boy = (p) => p.y1 - p.y0 + 1;
+  const ata = parcalar.map((_, i) => i);
+  const bul = (i) => (ata[i] === i ? i : (ata[i] = bul(ata[i])));
+  for (let i = 0; i < parcalar.length; i++) {
+    for (let j = i + 1; j < parcalar.length; j++) {
+      const a = parcalar[i];
+      const c = parcalar[j];
+      const hh = Math.max(boy(a), boy(c));
+      if (Math.min(boy(a), boy(c)) < 0.5 * hh) continue;
+      if (Math.max(c.x0 - a.x1, a.x0 - c.x1) <= 1.2 * hh && Math.max(c.y0 - a.y1, a.y0 - c.y1) <= hh) ata[bul(i)] = bul(j);
+    }
+  }
+  const gruplar = new Map();
+  parcalar.forEach((p, i) => gruplar.set(bul(i), [...(gruplar.get(bul(i)) ?? []), p]));
+  const bloklar = [];
+  for (const ps of gruplar.values()) {
+    if (ps.length < KARISIK.enAzParca) continue;
+    const boylar = ps.map(boy).sort((a, c) => a - c);
+    const hg = boylar[boylar.length >> 1];
+    if (hg < BLOK_OLCU_HARF || hg > KARISIK.enCokHarfOrani * Math.min(w, h)) continue;
+    if (ps.filter((p) => boy(p) >= 0.6 * hg && boy(p) <= 1.7 * hg).length < KARISIK.enAzTutarlilik * ps.length) continue;
+    const k = { x0: Math.min(...ps.map((p) => p.x0)), y0: Math.min(...ps.map((p) => p.y0)), x1: Math.max(...ps.map((p) => p.x1)), y1: Math.max(...ps.map((p) => p.y1)) };
+    if (k.x0 < 1 || k.y0 < 1 || k.x1 > w - 2 || k.y1 > h - 2 || k.x1 - k.x0 + 1 < 2 * hg) continue;
+    const piksel = ps.reduce((t, p) => t + p.piksel, 0);
+    if (piksel < KARISIK.enAzYogunluk * (k.x1 - k.x0 + 1) * (k.y1 - k.y0 + 1)) continue;
+    // Çevresi (bir harf boyu) çoğunlukla bölgenin beyazı olmalı.
+    let beyaz = 0;
+    let top = 0;
+    for (let ly = Math.max(0, k.y0 - hg); ly <= Math.min(h - 1, k.y1 + hg); ly++) {
+      for (let lx = Math.max(0, k.x0 - hg); lx <= Math.min(w - 1, k.x1 + hg); lx++) {
+        if (lx >= k.x0 && lx <= k.x1 && ly >= k.y0 && ly <= k.y1) continue;
+        top++;
+        if (durum[ly * w + lx] === 2) beyaz++;
+      }
+    }
+    if (beyaz < KARISIK.enAzBeyazCevre * top) continue;
+    const kat = ince.genislik / G;
+    const inceler = inceParcalar(ince, kat, {
+      x0: x0 + Math.max(0, k.x0 - hg), y0: y0 + Math.max(0, k.y0 - hg),
+      x1: x0 + Math.min(w - 1, k.x1 + hg), y1: y0 + Math.min(h - 1, k.y1 + hg),
+    });
+    if (hizalilik(inceler) < KARISIK.enAzInceHizali || hizaliSayisi(inceler) < KARISIK.enAzHizaliParca) continue;
+    const pay = Math.round(0.4 * hg) + 1;
+    bloklar.push({
+      k: { x0: Math.max(0, k.x0 - pay), y0: Math.max(0, k.y0 - pay), x1: Math.min(w - 1, k.x1 + pay), y1: Math.min(h - 1, k.y1 + pay) },
+      n: ps.length,
+    });
+  }
+  if (!bloklar.length) return [];
+  const kure = (k) => ({ x0: x0 + k.x0, y0: y0 + k.y0, x1: x0 + k.x1, y1: y0 + k.y1 });
+  const kutular = bloklar.map((b) => kure(b.k));
+  const I = integral(durum, w, h);
+  const isaretler = [];
+  kutular.forEach((kt, i) => isaretler.push(isaretYeri(I, w, h, x0, y0, kt, kutular, { digerleri: kutular.filter((_, j) => j !== i), yerlesik: isaretler.filter(Boolean) })));
+  return bloklar.map((b, i) => ({ kutu: kutular[i], parca: b.n, isaret: isaretler[i] }));
 }
 
 /** Bölge piksellerinin (durum === 2) integral görüntüsü. */
@@ -937,7 +1028,7 @@ export function inceParcalar(ince, kat, k) {
   const sonuc = [];
   for (let i = 0; i < w * h; i++) {
     if (gorulen[i] || !koyu(i % w, (i - (i % w)) / w)) continue;
-    const p = { x0: w, y0: h, x1: -1, y1: -1 };
+    const p = { x0: w, y0: h, x1: -1, y1: -1, piksel: 0 };
     let kenar = false;
     gorulen[i] = 1;
     yigin.push(i);
@@ -945,6 +1036,7 @@ export function inceParcalar(ince, kat, k) {
       const j = yigin.pop();
       const lx = j % w;
       const ly = (j - lx) / w;
+      p.piksel++;
       if (lx < p.x0) p.x0 = lx;
       if (lx > p.x1) p.x1 = lx;
       if (ly < p.y0) p.y0 = ly;

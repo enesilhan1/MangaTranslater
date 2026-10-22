@@ -254,6 +254,19 @@ describe('beyaz yüz / giysi (ince gri kopyayla yazı düzeni)', () => {
     assert.equal(balonlariBul(r, (x) => t.push(x), buyut(r, 2)).length, 0, JSON.stringify(t.filter((x) => x.kutu.x0 > 100 && x.kutu.x0 < 200)));
   });
 
+  it('beyaz zeminle birleşmiş (doluluğu düşük) bölgedeki yazı bloğu ince kopyayla ayrıca numara alır', () => {
+    // Boruto taramasında panelin beyazına açılan balonlar ("NU VOR FI
+    // CONVINȘI.") tek bölge olup doluluk yüzünden hiç numara almıyordu.
+    const r = resim();
+    for (let y = 100; y < 160; y++) for (let x = 100; x < 300; x++) r.gri[y * G + x] = 255; // balon + zemin
+    for (let y = 160; y < 300; y++) for (let x = 100; x < 160; x++) r.gri[y * G + x] = 255; // L biçimi
+    for (let y = 115; y <= 130; y += 15) yaziCiz(r, 180, y, 280);
+    assert.equal(balonlariBul(r).length, 0, 'ince kopya yoksa eski davranış');
+    const b = balonlariBul(r, undefined, buyut(r, 2));
+    assert.equal(b.length, 1, JSON.stringify(b));
+    assert.ok(b[0].yazi.x0 >= 170 && b[0].yazi.x1 <= 290 && b[0].yazi.y0 >= 105 && b[0].yazi.y1 <= 150, JSON.stringify(b[0].yazi));
+  });
+
   it('seyrek ama satır düzenli yazı ince kopyayla da balon kalır', () => {
     const r = resim();
     balonCiz(r, 200, 300, 70, 60);
