@@ -137,6 +137,10 @@ listesi).
   %40'ını tutuyorsa yeterlidir (süslü yazıda kısa kelimeler okunmuyor).
   OCR'nin hiç okumadığı ilk/son satırlar modelin metninden tahmin edilip
   (kutu genişliğinde satırlara bölünerek) kutuya katılır; en çok üç satır.
+- OCR ile yerine oturan (balon şekli olmayan) metnin kutusu, çevresindeki
+  boş beyaz alana doğru (mürekkebe değmeden, en çok 1,8 kat) genişler.
+  Panelin beyaz zeminine açılıp onunla tek bölge olan balonlardaki yazılar
+  da (belirgin satır düzeni varsa) kendi kutularıyla numara alır.
 - Balonsuz metnin kutusu, çeviri sığmazsa biraz büyür ama komşu kutuların
   üstüne çıkmaz; kutular zaten biraz kesişiyorsa kesişmeyi ikiye bölerler
   (bir kutunun beyaz zemini öbürünün yazısını örtmez).

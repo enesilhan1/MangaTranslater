@@ -470,3 +470,12 @@ balonlar ("?!", "GAH...").
 - Çevirisi orijinaliyle aynı, yalnızca noktalama olan balonlar ("...",
   "?!") çizilmiyor.
 - OCR sürümü 13.
+
+## Sürüm 1.9.5 (2026-10-22)
+Boruto test turunun devamı (kullanıcı: "beyaz zemine karışıp numara
+almayan balonlar, OCR kutularındaki küçük punto"):
+- Beyaz zeminle birleşip doluluğu düşen bölgedeki yazı blokları ince
+  kopyada sıkı şartlarla ayrıca numara alıyor: 854 sayfada 81 yeni
+  işaret, 76'sı gerçek yazı; 01_05'in 14 balonunun hepsi numaralı.
+- OCR ile oturan, balon şekli olmayan metnin kutusu çevresindeki boş
+  beyaz alana doğru (en çok 1,8 kat) genişliyor; punto büyüyor.
