@@ -451,3 +451,15 @@ görünüm) çizilip denetlendi. Gerçek model kullanılmadı.
   1350 yazılı işaretin 5'i numarasını kaybediyor.
 - Birbirine değen balonlarda tek kelimelik yazı ("SARADA.") altındaki
   yazıyla tek numara alıyordu; uzak duran 2 parçalı blok artık ayrı.
+
+## Sürüm 1.9.3 (2026-10-22)
+Boruto test turunun devamı (854 sayfanın hepsi tarandı; uçtan uca
+denemeler benim yazdığım model yanıtıyla):
+- Modelin kutusu yakınında bozuk okunmuş konturlu yazıda iki eşleşen
+  kelime (biri en az 6 harfli) yetiyor ("IAR EU ÎȚI INVIDIEZ…").
+- Siyah zemin algılayıcısında koyu çizimdeki açık desenler (çizgi,
+  perçin, yıldız) yazı sayılmıyor: 17 bulgunun 6 yanlışı kalktı.
+- OCR sürümü 12.
+Güncel kodla kelimesiz işaretlerdeki yanlış bulgu oranı örnekte ~%60'tan
+~%22'ye indi; kalan kelimesizlerin çoğu OCR'nin okuyamadığı gerçek kısa
+balonlar ("?!", "GAH...").

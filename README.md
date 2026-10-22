@@ -125,7 +125,8 @@ Bir sayfa çevrilmediyse ya da çeviri yanlış yere düştüyse:
 - Kenarı kesik kesik ya da bulanık çizgilerden oluşan balonlar balon olarak
   bulunamayabilir; o zaman yazının yeri OCR'ye kalır. OCR'nin hiç
   okuyamadığı ilk/son satırlar metinden tahmin edilip örtülür; tahmin
-  birkaç piksel kayabilir.
+  birkaç piksel kayabilir. Yalnızca 2-3 harflik tek kelimelik bir ilk/son
+  satır ("AM / RATAT.") açıkta kalabilir.
 - Açık renkli tram ya da çizim üstündeki beyaz konturlu yazılar (siyah
   balonda olmayanlar) bulunamayabilir; yerleri modelin tahminine kalır.
 
