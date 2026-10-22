@@ -113,6 +113,11 @@ listesi).
   açık renkle yazılır. Çevresi koyu olmayan yazılar bu yolla aranmaz
   (beyaz zemindeki sıradan yazılarla karışmasın diye). Bütün satırlar
   boyunca boş oluğu olan yan yana iki yazı ayrı numara alır.
+- Beyaz yüz, saç, giysi gibi yazı düzeni olmayan beyaz alanlar numara
+  almaz: belirsiz (seyrek) bölgelerde harflerin satır hâlinde dizilip
+  dizilmediği, resmin gri kopyanın iki katı çözünürlükteki kopyasında
+  ölçülür. Birbirine değen balonlarda aralarında belirgin boşluk olan
+  tek kelimelik yazı da ayrı numara alır.
 - Çizimdeki beyaz alanlar (tramlı kumaş, saç, yüz) numara almaz: "harfleri"
   çok küçük ve boyları tutarsız olan alan balon sayılmaz. Yanlış bir numara
   modelin öbür metinlerin numaralarını da kaydırmasına yol açabiliyor.

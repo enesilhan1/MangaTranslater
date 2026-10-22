@@ -437,3 +437,17 @@ Yeni özellik: siyah balonlardaki beyaz yazılar.
   ilk satırını ve 350df388…/13 sayfasındaki "SE DAVVERO…", "CAPISCO…"
   ilk satırlarını da örtüyor.
 - OCR sürümü 11.
+
+## Sürüm 1.9.2 (2026-10-22)
+İlk kendi kendine test turu: Boruto: Two Blue Vortex'in 20 Rumence bölümü
+(854 sayfa; İngilizce bölümler MangaDex'te yalnızca resmî bağlantı)
+eklentinin kendi koduyla gerçek Chrome'da tarandı; OCR, işaretlerin
+yazılı olup olmadığını etiketlemek için kullanıldı. Seçilen sayfalar
+benim yazdığım model yanıtıyla uçtan uca (Cevirici + kutulariOturt +
+görünüm) çizilip denetlendi. Gerçek model kullanılmadı.
+- Beyaz yüz, saç, giysi ve nesneler balon sanılıp numara alıyordu (bu
+  sade çizim stilinde işaretlerin önemli bir kısmı). Belirsiz bölgelerde
+  yazı düzeni 2 kat gri kopyada ölçülüyor; ~450 yanlış numara kalkıyor,
+  1350 yazılı işaretin 5'i numarasını kaybediyor.
+- Birbirine değen balonlarda tek kelimelik yazı ("SARADA.") altındaki
+  yazıyla tek numara alıyordu; uzak duran 2 parçalı blok artık ayrı.
