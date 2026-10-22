@@ -51,6 +51,17 @@ describe('tersYazilariBul', () => {
     assert.equal(tersYazilariBul(tek).length, 1);
   });
 
+  it('koyu zemindeki açık desen (genişlikleri çok farklı çizgiler) yazı sayılmaz', () => {
+    // Boruto taramasında dikey çizgiler, perçinler, yıldız numara alıyordu.
+    const r = resim(15);
+    const genislikler = [2, 9, 3, 11, 2, 8, 2, 10, 3];
+    for (let y = 130; y <= 160; y += 15) {
+      let x = 100;
+      for (const w of genislikler) { dikdortgen(r, x, y, x + w, y + 10, 240); x += w + 3; }
+    }
+    assert.equal(tersYazilariBul(r).length, 0);
+  });
+
   it('beyaz zemindeki sıradan yazı ve koyu zemindeki dağınık benekler bulunmaz', () => {
     const beyaz = resim(250);
     for (let y = 130; y <= 175; y += 15) satir(beyaz, 110, y, 230, 10);

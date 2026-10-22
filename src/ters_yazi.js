@@ -30,6 +30,15 @@ export const TERS = Object.freeze({
    */
   enAzDisKoyu: 0.7,
   disEsik: 120,
+  /**
+   * Koyu zeminde açık parçalı blokta parça genişliklerinin değişkenlik
+   * katsayısı en çok bu: harfler benzer genişlikte; koyu çizimdeki açık
+   * desenler (dikey çizgiler, perçinler, yıldız, göz) uzun ve kısa
+   * parçaların karışımı. Boruto taramasında gerçek açık yazılarda ≤0,30,
+   * yanlış bulgularda ≥0,39. Beyaz haleli koyu harflerde (siyah balon)
+   * değişkenlik 0,38-0,44 olduğu için o kutupta uygulanmaz.
+   */
+  enCokGenislikDegiskenligi: 0.35,
 });
 
 /**
@@ -80,6 +89,13 @@ function harfAdaylari({ gri, genislik: G, yukseklik: Y }) {
     }
   }
   return sonuc;
+}
+
+/** Parça genişliklerinin değişkenlik katsayısı (standart sapma / ortalama). */
+function genislikDegiskenligi(ps) {
+  const w = ps.map((p) => p.x1 - p.x0 + 1);
+  const ort = w.reduce((t, v) => t + v, 0) / w.length;
+  return Math.sqrt(w.reduce((t, v) => t + (v - ort) ** 2, 0) / w.length) / ort;
 }
 
 /** Parçaların satır sayısı (dikeyde örtüşenler aynı satır). */
@@ -153,6 +169,7 @@ export function tersYazilariBul(resim, mevcut = []) {
       Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0) >= 0.5 * Math.min(p.h, q.h) &&
       Math.max(q.x0 - p.x1, p.x0 - q.x1) <= Math.max(p.h, q.h))).length / ps.length;
     if (komsulu < TERS.enAzKomsuluk) continue;
+    if (ps[0].kutup === 'acik' && genislikDegiskenligi(ps) > TERS.enCokGenislikDegiskenligi) continue;
     const k = {
       x0: Math.min(...ps.map((p) => p.x0)), y0: Math.min(...ps.map((p) => p.y0)),
       x1: Math.max(...ps.map((p) => p.x1)), y1: Math.max(...ps.map((p) => p.y1)),
