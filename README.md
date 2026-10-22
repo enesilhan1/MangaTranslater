@@ -123,8 +123,9 @@ Bir sayfa çevrilmediyse ya da çeviri yanlış yere düştüyse:
 - Balonsuz yazısı olan sayfalarda OCR yüzünden çeviri birkaç saniye
   gecikebilir.
 - Kenarı kesik kesik ya da bulanık çizgilerden oluşan balonlar balon olarak
-  bulunamayabilir; o zaman yazının yeri OCR'ye kalır. OCR'nin okuyamadığı
-  eğik, çerçeveli küçük satırlar örtülmeyebilir.
+  bulunamayabilir; o zaman yazının yeri OCR'ye kalır. OCR'nin hiç
+  okuyamadığı ilk/son satırlar metinden tahmin edilip örtülür; tahmin
+  birkaç piksel kayabilir.
 - Açık renkli tram ya da çizim üstündeki beyaz konturlu yazılar (siyah
   balonda olmayanlar) bulunamayabilir; yerleri modelin tahminine kalır.
 

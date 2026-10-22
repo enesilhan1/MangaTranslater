@@ -128,6 +128,10 @@ listesi).
   metnin kelimeleri satırlar boyunca kümelenir (arada bozuk okunmuş
   satırlar olsa da); aynı satırda geniş boşlukla ayrılan yan sütundaki
   başka bir yazının ortak kelimesi ("MA", "RANNO") kümeye katılmaz.
+  Kelimelerin %40'ı eşleşmese de en az üç kelime metnin harflerinin
+  %40'ını tutuyorsa yeterlidir (süslü yazıda kısa kelimeler okunmuyor).
+  OCR'nin hiç okumadığı ilk/son satırlar modelin metninden tahmin edilip
+  (kutu genişliğinde satırlara bölünerek) kutuya katılır; en çok üç satır.
 - Balonsuz metnin kutusu, çeviri sığmazsa biraz büyür ama komşu kutuların
   üstüne çıkmaz; kutular zaten biraz kesişiyorsa kesişmeyi ikiye bölerler
   (bir kutunun beyaz zemini öbürünün yazısını örtmez).

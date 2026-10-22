@@ -157,6 +157,23 @@ describe('ocrIleOturt', () => {
     assert.ok(b.y * Y < 100 && (b.y + b.h) * Y > 278, JSON.stringify(b));
   });
 
+  it('kısa kelimeleri okunmayan altyazı uzun kelimelerin harf oranıyla bulunur; okunmayan ilk/son satırları da örtülür', () => {
+    // "BUT THE / SITUATION / WOULDN'T / EVEN ALLOW / HER TO DO / THAT...";
+    // yalnızca SITUATION, EVEN, ALLOW okunuyor. Model kutuyu başka panele koymuş.
+    const kelimeler = [k('SITUATION', 100, 330), k('EVEN', 107, 382), k('ALLOW', 177, 382)];
+    const [b] = ocrIleOturt([balon(300, 700, 450, 780, { orijinal: "BUT THE SITUATION WOULDN'T EVEN ALLOW HER TO DO THAT..." })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.equal(b.ocrOturdu, true, JSON.stringify(b));
+    // Satırlar 26 px arayla: üstte 1 ("BUT THE"), altta 2 satır okunmadı.
+    assert.ok(b.y * Y <= 304 && (b.y + b.h) * Y >= 456, JSON.stringify([b.y * Y, (b.y + b.h) * Y]));
+    assert.ok(b.y * Y > 270 && (b.y + b.h) * Y < 500, JSON.stringify([b.y * Y, (b.y + b.h) * Y]));
+  });
+
+  it('okunmayan kısa baş kelime ("Va bene così?" içinde "Va") kutuyu üst satıra uzatmaz', () => {
+    const kelimeler = [k('BENE', 120, 300), k('COSI?', 110, 326)];
+    const [b] = ocrIleOturt([balon(100, 290, 200, 360, { orijinal: 'VA BENE COSI?' })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.ok(b.ocrOturdu && b.y * Y > 290, JSON.stringify(b));
+  });
+
   it('aynı satırda okunmayan tek harfli kelimenin iki yanı aynı kümede; satırın uçları arası geniş olsa da', () => {
     // Çadır listesi: "…Takako, Merry / Kururu, Tina, Yuuki o Merry"; "o"
     // eşlemeye girmiyor, "MERRY" üst satırda zaten eşleştiği için sonradan

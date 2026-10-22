@@ -20,13 +20,25 @@ const EN_AZ_GUVEN = 30;
 const SATIR_EKLEME = 2;
 /** Bu oranda kelime eşleşmezse kutu değiştirilmez. */
 const EN_AZ_ESLESME = 0.4;
+/**
+ * Kelimelerin EN_AZ_ESLESME'si tutmasa da en az bu kadar kelime eşleşip
+ * metnin harflerinin EN_AZ_ESLESME'sini kapsıyorsa yeterli: kısa kelimeler
+ * ("BUT", "THE", "TO") süslü yazıda okunmuyor. Kullanıcının sayfasında
+ * "BUT THE SITUATION WOULDN'T EVEN ALLOW HER TO DO THAT..." için yalnızca
+ * SITUATION, EVEN, ALLOW okunmuştu (10 kelimenin 3'ü, harflerin %40'ı).
+ */
+const HARF_EN_AZ_KELIME = 3;
+/** OCR'nin okumadığı ilk/son satırlar için kutu en çok bu kadar satır uzar (bkz. okunmayanSatirlar). */
+const OKUNMAYAN_EN_COK = 3;
+/** Okunmayan baş/son kelimeler toplam bu kadar harften azsa satır sayılmaz. */
+const OKUNMAYAN_EN_AZ_HARF = 4;
 /** Bu uzunlukta (ve üstü) kelimelerde OCR'nin iki harf hatası kabul edilir. */
 const UZUN_KELIME = 7;
 /**
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
  */
-export const OCR_SURUMU = 10;
+export const OCR_SURUMU = 11;
 /** Model kutusundan uzakta bu uzunlukta (ve üstü) kelimeler "uzun" sayılır. */
 const UZAK_KELIME = 4;
 /**
@@ -194,7 +206,13 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
       });
       return liste;
     };
-    const kumeler = (liste, aralik) => tumKumeler(liste.map((i) => sozluk[i]), liste, aralik).filter((km) => km.length >= gerekli);
+    const toplamHarf = kelimelerB.reduce((t, tk) => t + tk.length, 0);
+    /** Kümenin eşlediği (farklı) model kelimelerinin harfleri, metnin harflerine oranla yeterli mi? */
+    const harfYeterli = (km) => km.length >= HARF_EN_AZ_KELIME &&
+      kelimelerB.filter((tk) => km.some((i) => kelimeEslesir(tk, sozluk[i].sade))).reduce((t, tk) => t + tk.length, 0) >=
+        EN_AZ_ESLESME * toplamHarf;
+    const kumeler = (liste, aralik) => tumKumeler(liste.map((i) => sozluk[i]), liste, aralik)
+      .filter((km) => km.length >= gerekli || harfYeterli(km));
     // Eşleşen kelimelerin en kalabalık yakın kümesi (aynı metnin satırları).
     let kume = kumeler(eslesmeAra((cx, cy) => cx >= alan.x0 && cx <= alan.x1 && cy >= alan.y0 && cy <= alan.y1))[0];
     // Yakında yoksa bütün sayfada, kesin eşleşen tek bir küme varsa: model
@@ -211,7 +229,7 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
       // Aralık geniş: aradaki satırlar bozuk okunup eşleşmese de ("RICOR-
       // DARLO" → "LARLO") aynı metnin satırları bir arada kalsın.
       const sayfada = kumeler(eslesmeAra((cx, cy) => !isaretliMi(cx, cy)), UZAK_ARALIK)
-        .filter((km) => uzunSayisi(km) >= gerekenUzun);
+        .filter((km) => uzunSayisi(km) >= gerekenUzun || harfYeterli(km));
       if (sayfada.length === 1) kume = sayfada[0];
     }
     if (!kume) return b;
@@ -287,11 +305,64 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
     }
     const p = 0.3 * boy;
     const x0 = Math.max(0, Math.min(...kutular.map((k) => k.x0)) - p);
-    const y0 = Math.max(0, Math.min(...kutular.map((k) => k.y0)) - p);
     const x1 = Math.min(G, Math.max(...kutular.map((k) => k.x1)) + p);
-    const y1 = Math.min(Y, Math.max(...kutular.map((k) => k.y1)) + p);
+    const [ust, alt] = okunmayanSatirlar(b.orijinal, kume.map((i) => sozluk[i]), kutular, boy);
+    const y0 = Math.max(0, Math.min(ust, ...kutular.map((k) => k.y0)) - p);
+    const y1 = Math.min(Y, Math.max(alt, ...kutular.map((k) => k.y1)) + p);
     return { ...b, x: x0 / G, y: y0 / Y, g: (x1 - x0) / G, h: (y1 - y0) / Y, ocrOturdu: true };
   });
+}
+
+/**
+ * OCR'nin hiç okumadığı ilk ve son satırlar: modelin metni, okunan
+ * kelimelerin harf genişliğiyle kutu genişliğinde satırlara bölünür; ilk
+ * okunan kelimenin üstünde ve son okunanın altında kalan satır sayısı kadar
+ * (en çok OKUNMAYAN_EN_COK) kutu uzar. Kullanıcının sayfasında "BUT THE /
+ * SITUATION / WOULDN'T / EVEN ALLOW / HER TO DO / THAT..." altyazısında
+ * yalnızca orta satırlar okunuyor, ilk ve son iki satır açıkta kalıyordu.
+ * @returns {[number, number]}  Kutunun ulaşması gereken üst ve alt sınır (yoksa Infinity / -Infinity).
+ */
+function okunmayanSatirlar(orijinal, kumeKelimeleri, kutular, boy) {
+  const yok = [Infinity, -Infinity];
+  const kelimeler = String(orijinal).split(/\s+/).filter(Boolean);
+  const eslesen = kelimeler.map((w) => {
+    const s = sadelestir(w);
+    return s.length >= 2 ? kumeKelimeleri.find((k) => kelimeEslesir(s, k.sade)) ?? null : null;
+  });
+  const ilk = eslesen.findIndex(Boolean);
+  const son = eslesen.findLastIndex(Boolean);
+  if (ilk < 0) return yok;
+  const genislikler = kumeKelimeleri.filter((k) => k.metin.length >= 3)
+    .map((k) => (k.kutu.x1 - k.kutu.x0) / k.metin.length).sort((a, c) => a - c);
+  if (!genislikler.length) return yok;
+  const harf = genislikler[genislikler.length >> 1];
+  const satirHarf = (Math.max(...kutular.map((k) => k.x1)) - Math.min(...kutular.map((k) => k.x0))) / harf;
+  if (satirHarf < 4) return yok;
+  // Açgözlü satır kırma: her kelimenin satır numarası.
+  const satir = [];
+  let no = 0;
+  let uzunluk = 0;
+  for (const w of kelimeler) {
+    const ek = uzunluk ? uzunluk + 1 + w.length : w.length;
+    if (uzunluk && ek > satirHarf) {
+      no++;
+      uzunluk = w.length;
+    } else uzunluk = ek;
+    satir.push(no);
+  }
+  const ilkKutu = eslesen[ilk].kutu;
+  const sonKutu = eslesen[son].kutu;
+  const aralik = satir[son] > satir[ilk] ? (sonKutu.y0 - ilkKutu.y0) / (satir[son] - satir[ilk]) : 1.2 * boy;
+  // Model bölünmüş kelimeyi ("KURURU-DONO?") tek kelime yazınca satır
+  // numaraları azalır, aralık büyür; adım satır aralığının makul üst sınırında kesilir.
+  const adim = Math.min(1.4 * boy, Math.max(boy, aralik));
+  // Okunmayan uç bütün bir satır olacak kadar uzun olmalı: kutu okunmayan
+  // kelimeler yüzünden dar kalınca kısa bir kelime ("Va bene così?" içinde
+  // "Va") yanlışlıkla üst satıra düşüyordu.
+  const harfler = (liste) => liste.reduce((t, w) => t + sadelestir(w).length, 0);
+  const ustte = harfler(kelimeler.slice(0, ilk)) >= OKUNMAYAN_EN_AZ_HARF ? Math.min(OKUNMAYAN_EN_COK, satir[ilk]) : 0;
+  const altta = harfler(kelimeler.slice(son + 1)) >= OKUNMAYAN_EN_AZ_HARF ? Math.min(OKUNMAYAN_EN_COK, no - satir[son]) : 0;
+  return [ilkKutu.y0 - ustte * adim, sonKutu.y1 + altta * adim];
 }
 
 /**
