@@ -168,6 +168,17 @@ describe('ocrIleOturt', () => {
     assert.ok(b.y * Y > 270 && (b.y + b.h) * Y < 500, JSON.stringify([b.y * Y, (b.y + b.h) * Y]));
   });
 
+  it('modelin kutusu yakınında bozuk okunmuş yazıda iki kelime (biri uzun) yeter; uzakta yetmez', () => {
+    // "IAR EU ÎȚI INVIDIEZ LIPSA DE GRIJI.": OCR yalnızca "INVIVIEZ" ve "DE".
+    const kelimeler = [k('INVIVIEZ', 100, 300), k('DE', 170, 326, 90)];
+    const metin = 'IAR EU ÎȚI INVIDIEZ LIPSA DE GRIJI.';
+    const [yakin] = ocrIleOturt([balon(80, 280, 250, 360, { orijinal: metin })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.ok(yakin.ocrOturdu && Math.abs(yakin.x * G - 100) < 15, JSON.stringify(yakin));
+    // Model kutusu sayfanın öbür ucunda: sayfa genelindeki arama bu kadar azla yetinmez.
+    const [uzak] = ocrIleOturt([balon(400, 800, 560, 880, { orijinal: metin })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.notEqual(uzak.ocrOturdu, true);
+  });
+
   it('okunmayan kısa baş kelime ("Va bene così?" içinde "Va") kutuyu üst satıra uzatmaz', () => {
     const kelimeler = [k('BENE', 120, 300), k('COSI?', 110, 326)];
     const [b] = ocrIleOturt([balon(100, 290, 200, 360, { orijinal: 'VA BENE COSI?' })], { kelimeler, genislik: G, yukseklik: Y });

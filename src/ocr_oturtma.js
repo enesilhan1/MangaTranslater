@@ -28,6 +28,8 @@ const EN_AZ_ESLESME = 0.4;
  * SITUATION, EVEN, ALLOW okunmuştu (10 kelimenin 3'ü, harflerin %40'ı).
  */
 const HARF_EN_AZ_KELIME = 3;
+/** Modelin kutusu yakınında iki kelimelik eşleşmede birinin en az bu kadar harfli olması yeter. */
+const YAKIN_UZUN_KELIME = 6;
 /** OCR'nin okumadığı ilk/son satırlar için kutu en çok bu kadar satır uzar (bkz. okunmayanSatirlar). */
 const OKUNMAYAN_EN_COK = 3;
 /** Okunmayan baş/son kelimeler toplam bu kadar harften azsa satır sayılmaz. */
@@ -211,10 +213,16 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
     const harfYeterli = (km) => km.length >= HARF_EN_AZ_KELIME &&
       kelimelerB.filter((tk) => km.some((i) => kelimeEslesir(tk, sozluk[i].sade))).reduce((t, tk) => t + tk.length, 0) >=
         EN_AZ_ESLESME * toplamHarf;
-    const kumeler = (liste, aralik) => tumKumeler(liste.map((i) => sozluk[i]), liste, aralik)
-      .filter((km) => km.length >= gerekli || harfYeterli(km));
+    const kumeler = (liste, aralik, ek = () => false) => tumKumeler(liste.map((i) => sozluk[i]), liste, aralik)
+      .filter((km) => km.length >= gerekli || harfYeterli(km) || ek(km));
+    // Modelin kutusunun yakınında daha az kanıt yeter: en az iki kelime,
+    // biri YAKIN_UZUN_KELIME harfli. Çizgili zemindeki konturlu yazıda OCR
+    // çoğu kelimeyi bozuk okuyor (kullanıcının denediği Boruto sayfasında
+    // "IAR EU ÎȚI INVIDIEZ LIPSA DE GRIJI." için yalnızca INVIDIEZ ve DE).
+    const yakinda = (km) => km.length >= 2 && km.some((i) => sozluk[i].sade.length >= YAKIN_UZUN_KELIME &&
+      kelimelerB.some((tk) => tk.length >= YAKIN_UZUN_KELIME && kelimeEslesir(tk, sozluk[i].sade)));
     // Eşleşen kelimelerin en kalabalık yakın kümesi (aynı metnin satırları).
-    let kume = kumeler(eslesmeAra((cx, cy) => cx >= alan.x0 && cx <= alan.x1 && cy >= alan.y0 && cy <= alan.y1))[0];
+    let kume = kumeler(eslesmeAra((cx, cy) => cx >= alan.x0 && cx <= alan.x1 && cy >= alan.y0 && cy <= alan.y1), undefined, yakinda)[0];
     // Yakında yoksa bütün sayfada, kesin eşleşen tek bir küme varsa: model
     // kutuyu başka bir yere koymuş olabilir (kullanıcının sayfasında "È
     // ALICE!" kutusu üstteki balonun "...ALICE?!" satırındaydı; asıl yazı
