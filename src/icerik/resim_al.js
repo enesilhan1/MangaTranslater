@@ -20,6 +20,8 @@ const ANALIZ_GENISLIGI = 64;
  * iniyor, dar bir balonda işarete yer kalmıyordu.
  */
 const OTURTMA_ALANI = 500 * 710;
+/** Balon bulmada belirsiz bölgelerin ölçüldüğü ince gri kopya, gri kopyanın bu katı (bkz. inceGriKopya). */
+const INCE_KAT = 2;
 
 /**
  * Resmin baytları. blob:/data: ve aynı kökenli adresler doğrudan okunur
@@ -91,7 +93,7 @@ export async function dilimlereAyir(blob, { isaretle = false } = {}) {
       ctx.drawImage(bitmap, 0, d.y0, genislik, d.y1 - d.y0, 0, 0, g, h);
       // Gri kopya işaretlerden önce: balon bulma ve oturtma temiz resimle yapılır.
       const gri = griKopya(tuval);
-      const bulunanlar = isaretle ? balonlariBul(gri) : [];
+      const bulunanlar = isaretle ? balonlariBul(gri, undefined, inceGriKopya(bitmap, d, gri)) : [];
       if (bulunanlar.length) isaretleriCiz(ctx, isaretKonumlari(bulunanlar, g / gri.genislik, g, h));
       const jpeg = await tuval.convertToBlob({ type: 'image/jpeg', quality: JPEG_KALITESI });
       sonuc.push({
@@ -154,18 +156,40 @@ export function griBoyutu(genislik, yukseklik) {
   return Math.max(1, Math.min(genislik, Math.round(Math.sqrt((OTURTMA_ALANI * genislik) / yukseklik))));
 }
 
-function griKopya(kaynak) {
-  const g = griBoyutu(kaynak.width, kaynak.height);
-  const h = Math.max(1, Math.round((kaynak.height * g) / kaynak.width));
+/**
+ * Balon bulmada belirsiz bölgelerin yazı düzenini ölçmek için dilimin
+ * orijinal resimden alınmış, gri kopyanın en çok INCE_KAT katı büyüklükte
+ * gri kopyası (kutu_oturtma.js SEKIL.daginikYogunluk). Orijinal küçükse
+ * onun boyutunda.
+ */
+function inceGriKopya(bitmap, d, gri) {
+  const g = Math.min(bitmap.width, Math.round(gri.genislik * INCE_KAT));
+  const h = Math.max(1, Math.round(((d.y1 - d.y0) * g) / bitmap.width));
   const tuval = new OffscreenCanvas(g, h);
   const ctx = tuval.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(kaynak, 0, 0, g, h);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, g, h);
+  ctx.drawImage(bitmap, 0, d.y0, bitmap.width, d.y1 - d.y0, 0, 0, g, h);
+  return griVerisi(ctx, g, h);
+}
+
+function griVerisi(ctx, g, h) {
   const { data } = ctx.getImageData(0, 0, g, h);
   const gri = new Uint8Array(g * h);
   for (let i = 0, j = 0; j < gri.length; i += 4, j++) {
     gri[j] = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
   }
   return { gri, genislik: g, yukseklik: h };
+}
+
+function griKopya(kaynak) {
+  const g = griBoyutu(kaynak.width, kaynak.height);
+  const h = Math.max(1, Math.round((kaynak.height * g) / kaynak.width));
+  const tuval = new OffscreenCanvas(g, h);
+  const ctx = tuval.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(kaynak, 0, 0, g, h);
+  return griVerisi(ctx, g, h);
 }
 
 /** Uzun resmi dar bir tuvale çizip her satırın tek düzelik skorunu çıkarır. */

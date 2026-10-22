@@ -147,7 +147,22 @@ const SEKIL = Object.freeze({
    * balon "UAH" ~%10; %5'lik bir enkaz parçası yanlışlıkla balon sayılıyordu).
    */
   enAzGenislik: 0.06,
+  /**
+   * Yoğunluğu bundan az bölgede yazı düzeni ince gri kopyada (en az
+   * INCE_EN_AZ_KAT kat) ölçülür; hizalılık daginikHizali'den azsa balon
+   * değil. Boruto'nun sade çizgili sayfalarında beyaz yüzler, saç ve
+   * giysiler balon sanılıp numara alıyordu (OCR ile etiketlenen 36 örnekte
+   * 22'si yanlış bulgu). 500 px'lik kopyada ince yazı tipinin harfleri
+   * parçalandığı için hizalılık gerçek balonları da eliyordu; 2 katta
+   * yanlış bulguların 25'inden 20'si 0,40'ın altında, gerçek balonların
+   * neredeyse hepsi üstünde.
+   */
+  daginikYogunluk: 0.28,
+  daginikHizali: 0.42,
 });
+
+/** İnce gri kopya en az bu kat büyükse yazı düzeni onunla ölçülür. */
+const INCE_EN_AZ_KAT = 1.5;
 
 /**
  * @typedef {{gri: Uint8Array, genislik: number, yukseklik: number}} GriResim
@@ -167,9 +182,11 @@ const SEKIL = Object.freeze({
  * @param {GriResim} resim
  * @param {(b: {kutu: PikselKutu, sebep: string}) => void} [tani]  Her aday
  *   bölge için çağrılır (balon değilse sebebiyle); hata ayıklama ve testler için.
+ * @param {GriResim} [ince]  Aynı resmin daha büyük gri kopyası: belirsiz
+ *   bölgelerde yazı düzeni onunla ölçülür (bkz. SEKIL.daginikYogunluk).
  * @returns {BulunanBalon[]}
  */
-export function balonlariBul(resim, tani) {
+export function balonlariBul(resim, tani, ince) {
   const { gri, genislik: G, yukseklik: Y } = resim;
   const etiket = new Int32Array(G * Y);
   const azamiAlan = SEKIL.enCokAlan * G * Y;
@@ -188,7 +205,7 @@ export function balonlariBul(resim, tani) {
         tani?.({ kutu: bolge.kutu, sebep: 'dar' });
         continue;
       }
-      const sonuc = balonMu(resim, etiket, bolge);
+      const sonuc = balonMu(resim, etiket, bolge, ince);
       tani?.({ kutu: sonuc.kutu ?? bolge.govde, sebep: sonuc.sebep ?? 'balon', ozellik: sonuc.ozellik });
       if (sonuc.bloklar) {
         // Ortak beyaz alanda birden çok blok: her bloğun zemini kendi kutusu
@@ -599,7 +616,7 @@ function doldur(resim, etiket, x, y, no, azamiAlan) {
  * içinde kalan) sınırlarını ve şeklini ({yazi, elips}), değilse null döndürür. Delikler = bölgeye ait
  * olmayan ama bölge kutusunun kenarından da ulaşılamayan pikseller.
  */
-function balonMu(resim, etiket, bolge) {
+function balonMu(resim, etiket, bolge, ince) {
   const G = resim.genislik;
   const { x0, y0, x1, y1 } = bolge.kutu;
   const w = x1 - x0 + 1;
@@ -743,6 +760,17 @@ function balonMu(resim, etiket, bolge) {
   if (yogunluk < SEKIL.enAzYogunluk) return { sebep: `seyrek ${yogunluk.toFixed(3)}` };
   if (azDelik && !(blokHarfli && yogunluk >= SEKIL.kisaYaziYogunluk)) return { sebep: `delik ${delikOrani.toFixed(3)}` };
   if (parcaSayisi < SEKIL.azParca && yogunluk < SEKIL.azParcaYogunluk) return { sebep: `seyrek kısa ${yogunluk.toFixed(3)}` };
+  let inceHizali = null;
+  if (ince && ince.genislik >= INCE_EN_AZ_KAT * G && yogunluk < SEKIL.daginikYogunluk) {
+    // Bir harf boyu paylı: sıkı kutuda kenardaki harfler kenara değip
+    // (balon çizgisi gibi) atılıyordu.
+    const p = Math.max(2, ortanca);
+    inceHizali = hizalilik(inceParcalar(ince, ince.genislik / G, {
+      x0: x0 + Math.max(0, yazi.x0 - p), y0: y0 + Math.max(0, yazi.y0 - p),
+      x1: x0 + Math.min(w - 1, yazi.x1 + p), y1: y0 + Math.min(h - 1, yazi.y1 + p),
+    }));
+    if (inceHizali < SEKIL.daginikHizali) return { sebep: `dağınık ${inceHizali.toFixed(2)}` };
+  }
 
   // Yazı satırları arasına ve kenarına pay; balonun içinde kalarak.
   const pay = Math.round(Math.min(w, h) * 0.06) + 1;
@@ -754,6 +782,8 @@ function balonMu(resim, etiket, bolge) {
     tutarli: +tutarli.toFixed(2),
     yaziOrani: +(((yazi.x1 - yazi.x0 + 1) * (yazi.y1 - yazi.y0 + 1)) / (w * h)).toFixed(2),
     yogunluk: +yogunluk.toFixed(3),
+    hizali: +hizalilik(parcalar).toFixed(2),
+    ...(inceHizali != null ? { inceHizali: +inceHizali.toFixed(2) } : {}),
   };
   const payli = (k) => ({
     x0: x0 + Math.max(0, k.x0 - pay),
@@ -858,6 +888,84 @@ function isaretYeri(I, w, h, x0, y0, hedef, kacinilacak, { digerleri = [], yerle
 
 function noktaKutuUzakligi(x, y, k) {
   return Math.hypot(Math.max(k.x0 - x, 0, x - k.x1), Math.max(k.y0 - y, 0, y - k.y1));
+}
+
+/**
+ * Yazı düzeni: parçaların satır arkadaşı (aynı üst ve alt çizgide, yakın)
+ * ya da ortalı satırlarda hemen alt/üstünde benzer boyda ve hizalı bir
+ * parçası olanların oranı. Harfler (bu çözünürlükte çoğu zaman kelimeler)
+ * satır hâlinde dizilir; yüzdeki göz, burun, saç telleri dağınıktır.
+ * @param {PikselKutu[]} parcalar
+ */
+export function hizalilik(parcalar) {
+  return hizaliSayisi(parcalar) / Math.max(1, parcalar.length);
+}
+
+/** Satır ya da alt alta hizalı arkadaşı olan parça sayısı (bkz. hizalilik). */
+export function hizaliSayisi(parcalar) {
+  if (parcalar.length < 2) return 0;
+  const boy = (p) => p.y1 - p.y0 + 1;
+  const satirda = (p, q) => Math.abs(p.y0 - q.y0) <= Math.max(1, 0.25 * boy(p)) && Math.abs(p.y1 - q.y1) <= Math.max(1, 0.25 * boy(p)) &&
+    Math.max(q.x0 - p.x1, p.x0 - q.x1) <= 1.5 * Math.max(boy(p), boy(q));
+  const ustuste = (p, q) => {
+    const bosluk = Math.max(q.y0 - p.y1, p.y0 - q.y1);
+    const h = Math.max(boy(p), boy(q));
+    return boy(q) >= 0.7 * boy(p) && boy(q) <= 1.4 * boy(p) && bosluk >= 0 && bosluk <= 0.8 * h &&
+      Math.min(p.x1 - p.x0, q.x1 - q.x0) >= 1.5 * h &&
+      Math.abs(p.x0 + p.x1 - q.x0 - q.x1) / 2 <= 0.25 * Math.max(p.x1 - p.x0, q.x1 - q.x0);
+  };
+  return parcalar.filter((p) => parcalar.some((q) => q !== p && (satirda(p, q) || ustuste(p, q)))).length;
+}
+
+/**
+ * İnce gri kopyada, büyütülmüş yazı kutusunun içindeki koyu parçalar
+ * (kutunun kenarına değenler hariç: balon çizgisi, kesilmiş çizim).
+ * @param {GriResim} ince
+ * @param {number} kat  İnce kopyanın asıl kopyaya oranı.
+ * @param {PikselKutu} k  Asıl kopyadaki kutu.
+ */
+export function inceParcalar(ince, kat, k) {
+  const G = ince.genislik;
+  const kx0 = Math.max(0, Math.floor(k.x0 * kat));
+  const ky0 = Math.max(0, Math.floor(k.y0 * kat));
+  const w = Math.min(G - 1, Math.ceil((k.x1 + 1) * kat) - 1) - kx0 + 1;
+  const h = Math.min(ince.yukseklik - 1, Math.ceil((k.y1 + 1) * kat) - 1) - ky0 + 1;
+  if (w <= 0 || h <= 0) return [];
+  const koyu = (lx, ly) => ince.gri[(ky0 + ly) * G + kx0 + lx] < BEYAZ_ESIGI;
+  const gorulen = new Uint8Array(w * h);
+  const yigin = [];
+  const sonuc = [];
+  for (let i = 0; i < w * h; i++) {
+    if (gorulen[i] || !koyu(i % w, (i - (i % w)) / w)) continue;
+    const p = { x0: w, y0: h, x1: -1, y1: -1 };
+    let kenar = false;
+    gorulen[i] = 1;
+    yigin.push(i);
+    while (yigin.length) {
+      const j = yigin.pop();
+      const lx = j % w;
+      const ly = (j - lx) / w;
+      if (lx < p.x0) p.x0 = lx;
+      if (lx > p.x1) p.x1 = lx;
+      if (ly < p.y0) p.y0 = ly;
+      if (ly > p.y1) p.y1 = ly;
+      if (lx === 0 || ly === 0 || lx === w - 1 || ly === h - 1) kenar = true;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = lx + dx;
+          const ny = ly + dy;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const q = ny * w + nx;
+          if (!gorulen[q] && koyu(nx, ny)) {
+            gorulen[q] = 1;
+            yigin.push(q);
+          }
+        }
+      }
+    }
+    if (!kenar && p.y1 - p.y0 + 1 >= 3) sonuc.push(p);
+  }
+  return sonuc;
 }
 
 /** Bu kadar parçalı metnin yanında, onun bu oranından az parçalı bloklar leke sayılır. */

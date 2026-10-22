@@ -229,6 +229,48 @@ describe('tramlı çizim', () => {
   });
 });
 
+describe('beyaz yüz / giysi (ince gri kopyayla yazı düzeni)', () => {
+  /** Gri resmin [kat] kat büyütülmüş kopyası (en yakın komşu). */
+  const buyut = (r, kat) => {
+    const g = { gri: new Uint8Array(G * kat * Y * kat), genislik: G * kat, yukseklik: Y * kat };
+    for (let y = 0; y < Y * kat; y++) for (let x = 0; x < G * kat; x++) g.gri[y * G * kat + x] = r.gri[Math.floor(y / kat) * G + Math.floor(x / kat)];
+    return g;
+  };
+  const kutuCiz = (r, x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) boya(r, x, y, 20); };
+
+  it('dağınık lekeli beyaz alan (göz, burun, ağız, saç) ince kopyada yazı düzeni olmadığı için balon sayılmaz', () => {
+    // Kullanıcının denediği Boruto sayfalarında beyaz yüzler numara alıyordu.
+    const r = resim();
+    balonCiz(r, 200, 300, 60, 70);
+    kutuCiz(r, 178, 280, 14, 7); // sol göz
+    kutuCiz(r, 210, 284, 14, 8); // sağ göz (farklı hizada)
+    kutuCiz(r, 198, 295, 4, 12); // burun
+    kutuCiz(r, 188, 312, 24, 3); // ağız
+    kutuCiz(r, 182, 268, 3, 9); // saç telleri
+    kutuCiz(r, 220, 268, 3, 10);
+    kutuCiz(r, 176, 296, 5, 7); // yanak gölgesi
+    assert.equal(balonlariBul(r).length, 1, 'ince kopya yoksa eski davranış');
+    const t = [];
+    assert.equal(balonlariBul(r, (x) => t.push(x), buyut(r, 2)).length, 0, JSON.stringify(t.filter((x) => x.kutu.x0 > 100 && x.kutu.x0 < 200)));
+  });
+
+  it('seyrek ama satır düzenli yazı ince kopyayla da balon kalır', () => {
+    const r = resim();
+    balonCiz(r, 200, 300, 70, 60);
+    // İnce çizgili "L" harfleri: yoğunluk düşük, satırlar düzenli.
+    for (let y = 270; y <= 318; y += 16) {
+      for (let x = 165; x + 7 <= 235; x += 10) {
+        kutuCiz(r, x, y, 2, 10);
+        kutuCiz(r, x, y + 8, 7, 2);
+      }
+    }
+    const t = [];
+    const b = balonlariBul(r, (x) => t.push(x), buyut(r, 2));
+    assert.equal(b.length, 1, JSON.stringify(t.filter((x) => x.kutu.x0 > 100 && x.kutu.x0 < 200)));
+    assert.ok(t.find((x) => x.sebep === 'balon').ozellik.yogunluk < 0.28, 'test seyrek yazıyı sınamalı');
+  });
+});
+
 describe('ortak beyaz alanda birden çok metin', () => {
   it('birbirinden uzak iki yazı bloğu ayrı balon sayılır; yakın satırlar ve tek kelimelik parçalar bölünmez', () => {
     const r = resim();
