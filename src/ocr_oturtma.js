@@ -40,7 +40,7 @@ const UZUN_KELIME = 7;
  * Eşleme kurallarının sürümü: önbellekteki kayıtlar daha eski sürümle
  * denenmişse bir kez daha denenir (true = 1).
  */
-export const OCR_SURUMU = 12;
+export const OCR_SURUMU = 13;
 /** Model kutusundan uzakta bu uzunlukta (ve üstü) kelimeler "uzun" sayılır. */
 const UZAK_KELIME = 4;
 /**

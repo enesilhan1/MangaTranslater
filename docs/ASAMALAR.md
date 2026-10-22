@@ -463,3 +463,10 @@ denemeler benim yazdığım model yanıtıyla):
 Güncel kodla kelimesiz işaretlerdeki yanlış bulgu oranı örnekte ~%60'tan
 ~%22'ye indi; kalan kelimesizlerin çoğu OCR'nin okuyamadığı gerçek kısa
 balonlar ("?!", "GAH...").
+
+## Sürüm 1.9.4 (2026-10-22)
+- Modelin kutusu yakınında arada okunmamış satır varsa eşleşen kelimeler
+  geniş aralıkla yeniden kümeleniyor ("AM / CER O / FAVOARE.").
+- Çevirisi orijinaliyle aynı, yalnızca noktalama olan balonlar ("...",
+  "?!") çizilmiyor.
+- OCR sürümü 13.
