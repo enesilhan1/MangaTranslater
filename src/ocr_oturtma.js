@@ -222,7 +222,11 @@ export function ocrIleOturt(balonlar, { kelimeler, genislik: G, yukseklik: Y }, 
     const yakinda = (km) => km.length >= 2 && km.some((i) => sozluk[i].sade.length >= YAKIN_UZUN_KELIME &&
       kelimelerB.some((tk) => tk.length >= YAKIN_UZUN_KELIME && kelimeEslesir(tk, sozluk[i].sade)));
     // Eşleşen kelimelerin en kalabalık yakın kümesi (aynı metnin satırları).
-    let kume = kumeler(eslesmeAra((cx, cy) => cx >= alan.x0 && cx <= alan.x1 && cy >= alan.y0 && cy <= alan.y1), undefined, yakinda)[0];
+    const yakindakiler = eslesmeAra((cx, cy) => cx >= alan.x0 && cx <= alan.x1 && cy >= alan.y0 && cy <= alan.y1);
+    // Tutmazsa geniş dikey aralıkla bir daha: eşleşen kelimeler arasında
+    // bozuk okunmuş bir satır olabilir ("AM / CER O / FAVOARE." içinde
+    // "CER O" okunmadı, AM ile FAVOARE iki ayrı küme kalıyordu).
+    let kume = kumeler(yakindakiler, undefined, yakinda)[0] ?? kumeler(yakindakiler, UZAK_ARALIK, yakinda)[0];
     // Yakında yoksa bütün sayfada, kesin eşleşen tek bir küme varsa: model
     // kutuyu başka bir yere koymuş olabilir (kullanıcının sayfasında "È
     // ALICE!" kutusu üstteki balonun "...ALICE?!" satırındaydı; asıl yazı

@@ -179,6 +179,14 @@ describe('ocrIleOturt', () => {
     assert.notEqual(uzak.ocrOturdu, true);
   });
 
+  it('modelin kutusu yakınında arada bozuk okunmuş satır olsa da eşleşen kelimeler birleşir', () => {
+    // "...AM / SĂ-ȚI / CER O / FAVOARE.": yalnızca AM ve FAVOARE eşleşiyor,
+    // aradaki satırlar okunmadığı için ikisi arası iki kelime boyundan fazla.
+    const kelimeler = [k('AM', 120, 300), k('XQZW', 105, 330, 5), k('FAVOARE.', 95, 380)];
+    const [b] = ocrIleOturt([balon(80, 280, 250, 420, { orijinal: '...AM SĂ-ȚI CER O FAVOARE.' })], { kelimeler, genislik: G, yukseklik: Y });
+    assert.ok(b.ocrOturdu && b.y * Y < 300 && (b.y + b.h) * Y > 400, JSON.stringify(b));
+  });
+
   it('okunmayan kısa baş kelime ("Va bene così?" içinde "Va") kutuyu üst satıra uzatmaz', () => {
     const kelimeler = [k('BENE', 120, 300), k('COSI?', 110, 326)];
     const [b] = ocrIleOturt([balon(100, 290, 200, 360, { orijinal: 'VA BENE COSI?' })], { kelimeler, genislik: G, yukseklik: Y });
