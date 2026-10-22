@@ -86,6 +86,16 @@ const STIL = `
 @media (prefers-reduced-motion: reduce) { .rozet.cevriliyor { animation: none; } }
 `;
 
+/**
+ * Çevirisi orijinaliyle aynı, yalnızca noktalama olan balon ("...", "?!")
+ * çizilmez: beyaz kutu çizimin bir kısmını kapatıp orijinalin yanına
+ * fazladan nokta koyuyordu (Boruto denemesinde "..." balonları).
+ */
+export function cizilmeli(b) {
+  const ceviri = String(b.ceviri ?? '').trim();
+  return /[\p{L}\p{N}]/u.test(ceviri) || ceviri !== String(b.orijinal ?? '').trim();
+}
+
 export class Gorunum {
   /**
    * @param {{dil?: () => string, hedefDil?: () => string,
@@ -142,6 +152,7 @@ export class Gorunum {
 
     // Yeni gelen balonlar (dilimler sırayla geldikçe) eklenir.
     for (const b of durum.balonlar.slice(r.cizilen)) {
+      if (!cizilmeli(b)) continue;
       if (b.balon && b.tur !== 'ses') r.kap.insertBefore(this._ortu(b), r.rozet);
       r.kap.insertBefore(this._balon(b), r.rozet);
     }
