@@ -479,3 +479,8 @@ almayan balonlar, OCR kutularındaki küçük punto"):
   işaret, 76'sı gerçek yazı; 01_05'in 14 balonunun hepsi numaralı.
 - OCR ile oturan, balon şekli olmayan metnin kutusu çevresindeki boş
   beyaz alana doğru (en çok 1,8 kat) genişliyor; punto büyüyor.
+
+## Sürüm 1.9.6 (2026-10-22)
+- Model bir dilim için 3'ten az metin döndürdüyse atlanan yazı denetimi
+  de çalışıyor (comix.to, LV999 no Murabito 106/18: bulanık kenarlı dört
+  balon numara almamış, model yalnızca "HEYYY!!"i döndürmüştü).

@@ -31,7 +31,7 @@ kapsayan yanıt kalır. OCR çalıştığında, onun güvenle okuduğu ama hiçb
 verilmemiş bir yazı kümesi kalırsa model bu alanlar söylenerek bir kez daha
 sorulur; yanıttan yalnızca o yazılara ait metinler eklenir (sayfa başına
 bir kez). Bu denetim için OCR, dilimde balonsuz metin varsa ya da model bir
-işaretli balonu kullanmadıysa çalışır (önbellekteki sayfalarda da bir kez).
+işaretli balonu kullanmadıysa ya da 3'ten az metin döndürdüyse çalışır (önbellekteki sayfalarda da bir kez).
 - Sağlayıcılar: **Gemini (Google)** (varsayılan), **Claude (Anthropic)**,
   **ChatGPT (OpenAI)**. (DeepSeek resim okuyamadığı için yok.)
 - Web Asistanı'ndaki yapı: her sağlayıcı için hazır model listesi (ilki
