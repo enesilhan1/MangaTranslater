@@ -424,3 +424,16 @@ Yeni özellik: siyah balonlardaki beyaz yazılar.
   ayırt edilemiyor. Haleleri birbirine değen yan yana iki yazı tek numara
   alabiliyor.
 - İşaretleri değişen sayfalar bir kez yeniden çevrilir.
+
+## Sürüm 1.9.1 (2026-10-22)
+- Kısa kelimeleri okunmayan altyazı ("BUT THE SITUATION WOULDN'T EVEN
+  ALLOW HER TO DO THAT...", eb7ace20…/26): OCR yalnızca 10 kelimenin 3'ünü
+  okuyordu (%40 kelime şartı tutmuyordu), çeviri modelin başka paneldeki
+  kutusunda kalıyordu. En az üç kelime metnin harflerinin %40'ını
+  tutuyorsa artık yeterli.
+- OCR'nin hiç okumadığı ilk/son satırlar metinden tahmin edilip kutuya
+  katılıyor (okunan kelimelerin harf genişliğiyle satır kırma, en çok üç
+  satır). Bu, 1.8.5'te "düzeltilemeyen" diye not edilen "MA PERCHÉ…"
+  ilk satırını ve 350df388…/13 sayfasındaki "SE DAVVERO…", "CAPISCO…"
+  ilk satırlarını da örtüyor.
+- OCR sürümü 11.
