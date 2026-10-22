@@ -445,7 +445,56 @@ export function kutulariOturt(resim, balonlar, bulunanlar = []) {
   }
   // Kutusu bozuk gelip numarasıyla da bir balona oturamayan kayıt için
   // gösterilecek yer yok.
+  // OCR ile oturmuş, balon şekli olmayan metin: kutusu yazının sıkı
+  // çevresi; çevirinin daha rahat (büyük puntoyla) sığması için çevresindeki
+  // boş beyaz alana doğru genişler.
+  for (const [i, x] of sonuc.entries()) {
+    if (!x || !x.ocrOturdu || x.balon || x.tur === 'ses') continue;
+    const k = tahminKutusu(x);
+    const g = beyazaGenislet(resim, k);
+    if (g !== k) sonuc[i] = { ...x, ...oran(g) };
+  }
   return sonuc.filter((x) => x && !(x.kutusuz && !x.oturdu));
+}
+
+/** Boş beyaz alana genişleme sınırı (her eksende özgün boyun katı) ve şeridin en çok mürekkep oranı. */
+const GENISLEME_KATI = 1.8;
+const GENISLEME_MUREKKEP = 0.02;
+/** Bundan koyu piksel mürekkep sayılır (gri tonlu tram zemini engellemesin diye beyaz eşiğinin altında). */
+const MUREKKEP_ESIGI = 160;
+
+/**
+ * Kutuyu kenar kenar, eklenecek şerit boş (mürekkebi GENISLEME_MUREKKEP
+ * oranından az) kaldıkça büyütür; her eksende en çok GENISLEME_KATI kat.
+ * Komşu yazı, balon çizgisi ya da çizim mürekkep olduğu için orada durur.
+ * Boruto denemesinde OCR ile oturan metinler sıkı kutularında küçük
+ * puntoyla ("...senden bir iyilik isteyeceğim.") yazılıyordu; balonun boş
+ * kısmı kullanılmıyordu.
+ * @param {GriResim} resim
+ * @param {PikselKutu} k
+ * @returns {PikselKutu}  Değişmediyse aynı nesne.
+ */
+export function beyazaGenislet({ gri, genislik: G, yukseklik: Y }, k) {
+  const g = { ...k };
+  const enW = Math.round((k.x1 - k.x0 + 1) * GENISLEME_KATI);
+  const enH = Math.round((k.y1 - k.y0 + 1) * GENISLEME_KATI);
+  const bos = (x0, y0, x1, y1) => {
+    let koyu = 0;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (gri[y * G + x] < MUREKKEP_ESIGI) koyu++;
+    return koyu <= GENISLEME_MUREKKEP * (x1 - x0 + 1) * (y1 - y0 + 1);
+  };
+  const acik = { sol: true, sag: true, ust: true, alt: true };
+  let degisti = false;
+  while (acik.sol || acik.sag || acik.ust || acik.alt) {
+    const enDolu = g.x1 - g.x0 + 1 >= enW;
+    const boyDolu = g.y1 - g.y0 + 1 >= enH;
+    if (acik.sol) acik.sol = !enDolu && g.x0 > 0 && bos(g.x0 - 1, g.y0, g.x0 - 1, g.y1) && (g.x0--, true);
+    if (acik.sag) acik.sag = !enDolu && g.x1 < G - 1 && bos(g.x1 + 1, g.y0, g.x1 + 1, g.y1) && (g.x1++, true);
+    if (acik.ust) acik.ust = !boyDolu && g.y0 > 0 && bos(g.x0, g.y0 - 1, g.x1, g.y0 - 1) && (g.y0--, true);
+    if (acik.alt) acik.alt = !boyDolu && g.y1 < Y - 1 && bos(g.x0, g.y1 + 1, g.x1, g.y1 + 1) && (g.y1++, true);
+    degisti ||= acik.sol || acik.sag || acik.ust || acik.alt;
+  }
+  return degisti ? g : k;
 }
 
 /**

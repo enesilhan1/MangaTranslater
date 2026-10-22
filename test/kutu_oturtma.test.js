@@ -528,7 +528,10 @@ describe('OCR ile oturmuş metin', () => {
     // Balonun tamamen içindeki OCR kutusu (yazı zaten yerinde) taşınmaz.
     const [ic] = kutulariOturt(r, [balon(250, 400, 330, 440, { bolge: 0, ceviri: 'ic', orijinal: 'ABCDEFGHIJKL', ocrOturdu: true })], bulunanlar);
     assert.equal(ic.ocrOturdu, true);
-    assert.ok(Math.abs(piksel(ic).y0 - 400) < 1);
+    // Yerinde kalır; yalnızca balonun boş beyazına doğru (en çok 1,8 kat) genişler.
+    const p = piksel(ic);
+    assert.ok(p.y0 <= 400.5 && p.y1 >= 439.5 && p.x0 <= 250.5 && p.x1 >= 329.5, JSON.stringify(p));
+    assert.ok(p.y1 - p.y0 <= 1.8 * 42 + 1 && p.x1 - p.x0 <= 1.8 * 82 + 1, JSON.stringify(p)); // kutu piksele yuvarlanınca 1-2 px büyür
     const uc = s.find((b) => b.ceviri === 'uc');
     assert.equal(uc.ocrOturdu, true);
     assert.ok(Math.abs(piksel(uc).y0 - 520) < 1);
