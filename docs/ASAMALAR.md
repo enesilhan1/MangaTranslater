@@ -484,3 +484,8 @@ almayan balonlar, OCR kutularındaki küçük punto"):
 - Model bir dilim için 3'ten az metin döndürdüyse atlanan yazı denetimi
   de çalışıyor (comix.to, LV999 no Murabito 106/18: bulanık kenarlı dört
   balon numara almamış, model yalnızca "HEYYY!!"i döndürmüştü).
+
+## Sürüm 1.9.7 (2026-10-24)
+- MANGA Plus'ta sayfalar "Failed to fetch" ile çevrilmiyordu: görüntüleyici
+  çözülmüş resmin blob: adresini yüklenince iptal ediyor. Okunamayan
+  yerel adresli resim artık öğeden tuvale çizilerek alınıyor.
