@@ -506,3 +506,20 @@ Yeni özellik (kullanıcı onayladı; ChatGPT incelemesindeki izin önerisi):
 - Gerçek Chrome'da denendi: temiz kurulumda site izni yok, betik kaydı
   yapılmıyor; 1.9.7'den güncellemede verilmiş izin korunuyor ve kayıt
   çalışıyor. web-ext lint'te yeni hata/uyarı yok.
+
+## Sürüm 1.11.0 (2026-10-24)
+Yeni özellik (kullanıcı istedi): canvas okuyucuları.
+- src/icerik/canvas.js: canvas'ın küçültülmüş kopyasından parmak izi
+  (boş canvas için null), canvas'ı okuma (toBlob; kirliyse null).
+- ana.js yeterince büyük canvas'ları da aday sayıyor; canvas'lar saniyede
+  bir denetleniyor: içerik değişince eski çeviri hemen kalkıyor, iz iki
+  denetim üst üste aynı kalınca yeni sayfa çevriliyor.
+- Kirli (başka kökenli resimle çizilmiş) canvas için "hata.canvasOkunamadi".
+- test/canvas_deneme.html: canvas'a çizen, sonra aynı canvas'a başka sayfa
+  çizen deneme okuyucusu; ?kirli=1 kirli canvas.
+- Gerçek Chrome'da denendi: sayfa okunuyor ve yerel motorla çeviri katmanı
+  canvas'ın üstünde doğru balonlara çiziliyor; yeniden çizimde yeni kayıt
+  açılıyor; kirli canvas doğru hatayı veriyor.
+- sadscans.net denenemedi: site otomatik tarayıcıda sayfaları hiç
+  yüklemiyor (doğrulama + geliştirici araçları engeli). Kullanıcının
+  tarayıcısında denenmeli; site canvas'ı kirli bırakıyorsa çalışmaz.
