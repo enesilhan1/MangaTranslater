@@ -36,7 +36,20 @@ export async function resimBaytlari(img) {
   const adres = img.currentSrc || img.src;
   const yerel = adres.startsWith('blob:') || adres.startsWith('data:') ||
     new URL(adres, location.href).origin === location.origin;
-  if (yerel) return (await fetch(adres)).blob();
+  if (yerel) {
+    try {
+      return await (await fetch(adres)).blob();
+    } catch (e) {
+      // Bazı okuyucular (MANGA Plus) şifreli resmi çözüp blob: adresiyle
+      // gösteriyor, resim yüklenince adresi iptal ediyor: yeniden okumak
+      // "Failed to fetch" veriyordu ve hiçbir sayfa çevrilmiyordu. Resim
+      // sayfada zaten çözülmüş durumda; aynı kökenli olduğu için tuvale
+      // çizilip okunabilir.
+      const kopya = await ogedenOku(img);
+      if (kopya) return kopya;
+      throw e;
+    }
+  }
 
   try {
     const { veri, tur } = await arkaPlanaGonder({ tip: 'resimGetir', adres });
@@ -49,6 +62,24 @@ export async function resimBaytlari(img) {
       // arka planın hatası bildirilir
     }
     throw arkaPlanHatasi;
+  }
+}
+
+/**
+ * Yüklenmiş resmi öğenin kendisinden (tuvale çizerek) PNG olarak okur.
+ * Tuval "kirlenirse" (başka kökenli resim) ya da resim çözülemezse null.
+ * @param {HTMLImageElement} img
+ * @returns {Promise<Blob | null>}
+ */
+async function ogedenOku(img) {
+  try {
+    const bitmap = await createImageBitmap(img);
+    const tuval = new OffscreenCanvas(bitmap.width, bitmap.height);
+    tuval.getContext('2d').drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return await tuval.convertToBlob({ type: 'image/png' });
+  } catch {
+    return null;
   }
 }
 
