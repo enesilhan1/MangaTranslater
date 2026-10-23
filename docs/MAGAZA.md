@@ -16,9 +16,10 @@ sayfasını depo kökünden bir HTTP sunucusuyla açıp 1280x800 (tanıtım kutu
 4. **Gizlilik** sekmesi: tek amaç, izin gerekçeleri, uzak kod ve veri
    kullanımı cevaplarını aşağıdan gir; gizlilik politikası adresini yapıştır.
 5. **Dağıtım** sekmesi: görünürlük (aşağıdaki öneriye bak), bölgeler: tümü.
-6. **İncelemeye gönder.** Geniş site erişimi (`<all_urls>`) yüzünden
-   inceleme birkaç gün sürebilir; ek açıklama isterlerse aşağıdaki
-   gerekçeler yeterli olmalı.
+6. **İncelemeye gönder.** Site erişimi (`<all_urls>`) 1.10.0'dan beri
+   isteğe bağlı (`optional_host_permissions`): kurulumda istenmez, kullanıcı
+   ilk kez bir siteyi açınca istenir. İnceleme yine birkaç gün sürebilir;
+   ek açıklama isterlerse aşağıdaki gerekçeler yeterli olmalı.
 
 Sonraki sürümlerde: `manifest.json`'da sürümü yükselt, `npm run paketle`,
 Geliştirici Konsolu → Paket → **Yeni paket yükle** → incelemeye gönder.
@@ -91,7 +92,7 @@ Translates the text inside comic and manga images on the web pages the user choo
 
 | İzin | Gerekçe (forma İngilizce yaz) |
 |---|---|
-| Site erişimi `<all_urls>` | `Comic and manga sites can be on any domain; the user picks them. The extension needs to read the comic images on those pages, draw the translation on top, and load the images from the sites' image servers (often a different domain). It only runs on sites the user added to its list, or on the current tab when the user turns it on.` |
+| Site erişimi `<all_urls>` (isteğe bağlı) | `Optional host permission, not requested at install. It is requested from the popup the first time the user turns a site on or translates a page. Comic and manga sites can be on any domain; the user picks them. The extension needs to read the comic images on those pages, draw the translation on top, and load the images from the sites' image servers (often a different, changing domain), so a per-site grant is not enough. It only runs on sites the user added to its list, or on the current tab when the user asks.` |
 | `scripting` | `Registers the content script only for the sites the user added, and injects it into the current tab when the user turns translation on, so the page does not need a reload.` |
 | `activeTab` | `Lets the popup start translating on the tab the user is looking at when they turn it on.` |
 | `storage` | `Stores the user's settings, site list and API keys locally.` |

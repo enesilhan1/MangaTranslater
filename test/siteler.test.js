@@ -81,3 +81,15 @@ describe('betikKaydiniEsitle', () => {
     assert.deepEqual(bos.cagrilar, []);
   });
 });
+
+describe('betikKaydiniEsitle: site izni', () => {
+  it('site erişim izni yoksa eski kayıt silinir, yenisi yapılmaz', async () => {
+    const s = { kayitlar: [{ id: BETIK_KIMLIGI }], cagrilar: [],
+      getRegisteredContentScripts: async () => s.kayitlar,
+      unregisterContentScripts: async () => { s.cagrilar.push('sil'); s.kayitlar = []; },
+      registerContentScripts: async (k) => { s.cagrilar.push('kaydet'); s.kayitlar.push(...k); } };
+    await betikKaydiniEsitle(s, ['mangadex.org'], false);
+    assert.deepEqual(s.cagrilar, ['sil']);
+    assert.equal(s.kayitlar.length, 0);
+  });
+});

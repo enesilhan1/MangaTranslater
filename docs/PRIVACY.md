@@ -46,10 +46,12 @@ The extension sends nothing else: no analytics, no tracking, no data to the
 developer.
 
 ## Permissions
-- `<all_urls>` (host access): to read images and draw translations on the
-  comic sites you choose, which can be any site, and to load those images
-  from the sites' image servers. The extension only runs on sites in your
-  list (or the tab where you turn it on).
+- `<all_urls>` (optional host access): to read images and draw
+  translations on the comic sites you choose, which can be any site, and to
+  load those images from the sites' image servers. It is not requested at
+  install; the browser asks for it the first time you turn a site on or
+  translate a page. The extension only runs on sites in your list (or the
+  tab where you turn it on).
 - `scripting`, `activeTab`: to start translating on the current tab when you
   turn it on, without reloading.
 - `storage`, `unlimitedStorage`: settings and the translation cache.
@@ -105,10 +107,12 @@ Eklenti başka hiçbir şey göndermez: istatistik, izleme ya da geliştiriciye
 veri yoktur.
 
 ## İzinler
-- `<all_urls>` (site erişimi): seçtiğin, herhangi bir alan adında olabilen
-  çizgi roman sitelerinde resimleri okumak ve çevirileri çizmek, o resimleri
-  sitelerin resim sunucularından yüklemek için. Eklenti yalnızca listendeki
-  sitelerde (ya da açtığın sekmede) çalışır.
+- `<all_urls>` (isteğe bağlı site erişimi): seçtiğin, herhangi bir alan
+  adında olabilen çizgi roman sitelerinde resimleri okumak ve çevirileri
+  çizmek, o resimleri sitelerin resim sunucularından yüklemek için.
+  Kurulumda istenmez; ilk kez bir siteyi açtığında ya da bir sayfayı
+  çevirdiğinde tarayıcı sorar. Eklenti yalnızca listendeki sitelerde (ya da
+  açtığın sekmede) çalışır.
 - `scripting`, `activeTab`: açtığında, sayfayı yenilemeden o sekmede
   çevirmeye başlamak için.
 - `storage`, `unlimitedStorage`: ayarlar ve çeviri önbelleği.

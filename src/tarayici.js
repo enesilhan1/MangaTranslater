@@ -4,7 +4,15 @@
 
 export const tarayici = globalThis.browser ?? globalThis.chrome;
 
-/** Resimleri almak, içerik betiğini çalıştırmak ve çeviri servislerine bağlanmak için gereken site erişimi. */
+/**
+ * Resimleri almak ve içerik betiğini çalıştırmak için gereken site erişimi.
+ * Kurulumda istenmez (manifest optional_host_permissions); kullanıcı bir
+ * siteyi listeye eklerken ya da "şimdi çevir"e basınca açılır pencereden
+ * istenir. Bütün siteler: manga resimleri çoğu zaman sitenin kendisinden
+ * değil, alan adı değişen ayrı sunuculardan geliyor. Çeviri servisleri
+ * (Gemini, OpenAI, Anthropic, MyMemory) eklentiye CORS ile izin verdiği
+ * için onlara erişim izni gerekmez.
+ */
 export const SITE_IZNI = { origins: ['<all_urls>'] };
 
 /**

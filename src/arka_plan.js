@@ -8,7 +8,7 @@ import { Kuyruk } from './kuyruk.js';
 import { mesajIsle } from './mesajlar.js';
 import { Onbellek, idbArkaUcu } from './onbellek.js';
 import { betikKaydiniEsitle } from './siteler.js';
-import { tarayici } from './tarayici.js';
+import { siteIzniVarMi, tarayici } from './tarayici.js';
 
 const kuyruk = new Kuyruk();
 const ayarDeposu = new AyarDeposu(tarayici.storage.local);
@@ -32,19 +32,21 @@ tarayici.commands.onCommand.addListener(async (komut, sekme) => {
 });
 
 // İçerik betiği yalnızca "her zaman çevir" listesindeki sitelere kayıtlı
-// (src/siteler.js). Liste açılır pencerede değişince ve tarayıcı açılınca
-// kayıt eşitlenir (Firefox dinamik kayıtları oturumlar arasında
-// tutmayabiliyor). Eşitlemeler sıraya konur ki hızlı art arda değişiklikte
-// iki kayıt işlemi çakışmasın.
+// (src/siteler.js). Liste açılır pencerede değişince, site erişim izni
+// verilip geri alınınca ve tarayıcı açılınca kayıt eşitlenir (Firefox
+// dinamik kayıtları oturumlar arasında tutmayabiliyor). Eşitlemeler sıraya
+// konur ki hızlı art arda değişiklikte iki kayıt işlemi çakışmasın.
 let esitleme = Promise.resolve();
 function kaydiEsitle(siteler) {
   esitleme = esitleme
-    .then(() => betikKaydiniEsitle(tarayici.scripting, siteler))
+    .then(async () => betikKaydiniEsitle(tarayici.scripting, siteler, await siteIzniVarMi()))
     .catch((e) => console.warn('[Manga Çevirmen] içerik betiği kaydı:', e));
 }
 const listeyleEsitle = async () => kaydiEsitle((await ayarDeposu.oku()).siteler);
 tarayici.runtime.onInstalled.addListener(listeyleEsitle);
 tarayici.runtime.onStartup.addListener(listeyleEsitle);
+tarayici.permissions.onAdded.addListener(listeyleEsitle);
+tarayici.permissions.onRemoved.addListener(listeyleEsitle);
 tarayici.storage.onChanged.addListener((d, alan) => {
   if (alan !== 'local' || !d.ayarlar) return;
   const eski = ayarlariTamamla(d.ayarlar.oldValue).siteler;

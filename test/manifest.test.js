@@ -19,7 +19,9 @@ describe('manifest ve Chrome + Firefox uyumu', () => {
     assert.equal(g.strict_min_version, '140.0');
     // Resimler çeviri motoruna gönderildiği için yalnızca site içeriği.
     assert.deepEqual(g.data_collection_permissions.required, ['websiteContent']);
-    assert.deepEqual(m.host_permissions, SITE_IZNI.origins);
+    // Site erişimi kurulumda istenmez; açılır pencere gerektiğinde ister.
+    assert.equal(m.host_permissions, undefined);
+    assert.deepEqual(m.optional_host_permissions, SITE_IZNI.origins);
   });
 
   it('manifestteki her __MSG_x__ iki dil dosyasında da var', () => {

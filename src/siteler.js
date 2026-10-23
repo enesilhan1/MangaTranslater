@@ -50,13 +50,14 @@ export function desenler(siteler) {
 
 /**
  * İçerik betiği kaydını site listesine eşitler: önce eski kayıt silinir,
- * liste boş değilse yenisi yapılır. Arka planda liste değişince ve tarayıcı
+ * liste boş değilse ve site erişim izni varsa yenisi yapılır (izin yokken
+ * kayıt reddediliyor). Arka planda liste ya da izin değişince ve tarayıcı
  * açılınca çağrılır (Firefox kayıtları oturumlar arasında tutmayabiliyor).
  */
-export async function betikKaydiniEsitle(scripting, siteler) {
+export async function betikKaydiniEsitle(scripting, siteler, izinVar = true) {
   const kayitli = await scripting.getRegisteredContentScripts({ ids: [BETIK_KIMLIGI] });
   if (kayitli.length) await scripting.unregisterContentScripts({ ids: [BETIK_KIMLIGI] });
-  if (!siteler.length) return;
+  if (!siteler.length || !izinVar) return;
   await scripting.registerContentScripts([
     {
       id: BETIK_KIMLIGI,
