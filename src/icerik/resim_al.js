@@ -6,6 +6,7 @@ import { dilimleriPlanla, satirSkoru } from '../dilimleme.js';
 import { bolgeListesi, isaretKonumlari } from '../isaretler.js';
 import { balonlariBul } from '../kutu_oturtma.js';
 import { YzHatasi } from '../yz/ortak.js';
+import { canvasBaytlari } from './canvas.js';
 import { arkaPlanaGonder } from './mesaj.js';
 
 /** Dilimler bu kalitede JPEG olarak gönderilir (PNG'ye göre çok daha küçük). */
@@ -33,6 +34,13 @@ const INCE_KAT = 2;
  * @returns {Promise<Blob>}
  */
 export async function resimBaytlari(img) {
+  // Canvas okuyucusu: çizilmiş sayfa doğrudan canvas'tan okunur. Başka
+  // kökenli resim çizilmiş (kirli) canvas okunamaz.
+  if (typeof HTMLCanvasElement !== 'undefined' && img instanceof HTMLCanvasElement) {
+    const b = await canvasBaytlari(img);
+    if (!b) throw new YzHatasi('hata.canvasOkunamadi');
+    return b;
+  }
   const adres = img.currentSrc || img.src;
   const yerel = adres.startsWith('blob:') || adres.startsWith('data:') ||
     new URL(adres, location.href).origin === location.origin;

@@ -28,6 +28,7 @@ export const METINLER = {
     'hata.durduruldu': 'Durduruldu.',
     'hata.beklenmeyen': 'Beklenmeyen bir hata oluştu: {mesaj}',
     'hata.resimAlinamadi': 'Resim alınamadı ({mesaj}).',
+    'hata.canvasOkunamadi': 'Sayfa bir tuvale (canvas) çizilmiş ama site okunmasına izin vermiyor.',
     'hata.eklentiYenilendi': 'Eklenti güncellendi; çevirmek için sayfayı yenile.',
     'hata.cevirmen.hazirla':
       "Chrome'un çevirmeni bu dil için henüz hazır değil. Eklentinin penceresinden “Çevirmeni hazırla” düğmesine bas.",
@@ -102,6 +103,7 @@ export const METINLER = {
     'hata.durduruldu': 'Stopped.',
     'hata.beklenmeyen': 'An unexpected error occurred: {mesaj}',
     'hata.resimAlinamadi': 'Could not get the image ({mesaj}).',
+    'hata.canvasOkunamadi': 'The page is drawn on a canvas, but the site does not allow reading it.',
     'hata.eklentiYenilendi': 'The extension was updated; reload the page to translate.',
     'hata.cevirmen.hazirla':
       "Chrome's translator is not ready for this language yet. Press “Prepare translator” in the extension window.",

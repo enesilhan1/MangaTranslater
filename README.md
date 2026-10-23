@@ -112,8 +112,10 @@ Bir sayfa çevrilmediyse ya da çeviri yanlış yere düştüyse:
 - Ayrıntılı gizlilik politikası: [docs/PRIVACY.md](docs/PRIVACY.md) (Türkçe ve İngilizce).
 
 ## Bilinen sınırlar
-- Yalnızca `<img>` olarak gösterilen resimler çevrilir; sayfayı `<canvas>`'a
-  çizen okuyucular henüz desteklenmiyor.
+- Sayfayı `<canvas>`'a çizen okuyucularda canvas başka bir sunucudan
+  izinsiz yüklenmiş resimle çizilmişse tarayıcı okumaya izin vermez; resmin
+  köşesinde "canvas okunamadı" hatası çıkar. Sayfayı kasıtlı olarak koruyan
+  siteler (geliştirici araçlarını engelleyenler) çalışmayabilir.
 - Yerel motor yalnızca İngilizce kaynak yazıyı okur; çizimin üstüne yazılmış
   ses efektlerini ve süslü yazıları çoğunlukla okuyamaz.
 - Görsel yapay zekâda yazıların yerini model tahmin eder; balonsuz yazılarda

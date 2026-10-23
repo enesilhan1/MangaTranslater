@@ -16,6 +16,7 @@ import { Kuyruk, Oncelik } from '../kuyruk.js';
 import { tarayici } from '../tarayici.js';
 import { hatayiPaketle } from '../yz/ortak.js';
 import { adayMi } from './aday.js';
+import { canvasIzi } from './canvas.js';
 import { Gorunum, KATMAN_ETIKETI } from './gorunum.js';
 import { arkaPlanaBildir, arkaPlanaGonder, eklentiKoptuMu } from './mesaj.js';
 import { dilimlereAyir, resimBaytlari } from './resim_al.js';
@@ -39,6 +40,12 @@ const YAKIN_PAYI = '300%';
  * önceliğe göre (ekrandaki önce).
  */
 const ES_ZAMANLI_HAZIRLIK = 2;
+/**
+ * Canvas okuyucularında canvas'lar bu aralıkla denetlenir: canvas'ın adresi
+ * olmadığı için yeni sayfanın çizildiği ancak içeriğine (parmak izine)
+ * bakılarak anlaşılır.
+ */
+const CANVAS_DENETIM_MS = 1000;
 
 class Cevirmen {
   constructor() {
@@ -59,6 +66,8 @@ class Cevirmen {
     this.yukleniyor = new WeakSet();
     this.gorunur = new Set();
     this.yakin = new Set();
+    /** Canvas → son görülen adresi (parmak izi); oturmuş sayılmak için iki kez aynı görülmeli. */
+    this.canvasAdaylari = new WeakMap();
 
     this.gorunurGozcu = new IntersectionObserver((g) => this._gorunurluk(g, this.gorunur));
     this.yakinGozcu = new IntersectionObserver((g) => this._gorunurluk(g, this.yakin), {
@@ -79,9 +88,10 @@ class Cevirmen {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['src', 'srcset'],
+      attributeFilter: ['src', 'srcset', 'width', 'height'],
     });
-    document.querySelectorAll('img').forEach((img) => this._incele(img));
+    document.querySelectorAll('img, canvas').forEach((img) => this._incele(img));
+    this._canvasDenetimi = setInterval(() => this._canvaslariDenetle(), CANVAS_DENETIM_MS);
     // Sayfadan çıkılırken (sekme kapanmadan başka sayfaya geçiş) işler boşa çevrilmesin.
     this._sayfadanCikis = () => arkaPlanaBildir({ tip: 'iptal' });
     addEventListener('pagehide', this._sayfadanCikis);
@@ -112,19 +122,48 @@ class Cevirmen {
     if (eklentiKoptuMu()) return this.sahipsizKal();
     for (const d of degisimler) {
       if (d.type === 'attributes') {
-        if (d.target instanceof HTMLImageElement) this._incele(d.target);
+        if (d.target instanceof HTMLImageElement || d.target instanceof HTMLCanvasElement) this._incele(d.target);
         continue;
       }
       for (const n of d.addedNodes) {
-        if (n instanceof HTMLImageElement) this._incele(n);
-        else if (n instanceof Element) n.querySelectorAll('img').forEach((img) => this._incele(img));
+        if (n instanceof HTMLImageElement || n instanceof HTMLCanvasElement) this._incele(n);
+        else if (n instanceof Element) n.querySelectorAll('img, canvas').forEach((img) => this._incele(img));
       }
       if (d.removedNodes.length) this._kaldirilanlariTemizle();
     }
   }
 
+  /**
+   * Sayfadaki canvas'lar: yeni çizilen sayfa (parmak izi değişti) yeniden
+   * çevrilir. Canvas yoksa iş yok.
+   */
+  _canvaslariDenetle() {
+    if (eklentiKoptuMu()) return this.sahipsizKal();
+    for (const c of document.getElementsByTagName('canvas')) this._incele(c);
+  }
+
+  /**
+   * Canvas aday mı, içeriği değişti mi? Okuyucu çizerken (ara kareler)
+   * çevrilmesin diye parmak izi iki denetim üst üste aynı kalınca adres
+   * sayılır. Boş canvas atlanır.
+   */
+  _inceleCanvas(c) {
+    const kutu = c.getBoundingClientRect();
+    if (!adayMi({ dogalGenislik: c.width, dogalYukseklik: c.height, gorunenGenislik: kutu.width, gorunuyorMu: kutu.width > 0 && kutu.height > 0 })) return null;
+    const { iz, kirli } = canvasIzi(c);
+    const adres = kirli ? 'canvas:kirli' : iz && `canvas:${c.width}x${c.height}:${iz}`;
+    const onceki = this.canvasAdaylari.get(c);
+    this.canvasAdaylari.set(c, adres);
+    // Yeni sayfa çiziliyor: eski sayfanın çevirisi hemen kalksın.
+    const kayitli = this.kayitlar.get(c);
+    if (adres && kayitli && kayitli.adres !== adres) this._birak(c, kayitli);
+    if (!adres || adres !== onceki) return null; // boş ya da henüz oturmadı
+    return { adres, kutu };
+  }
+
   /** Resim aday mı, yeni mi, adresi değişti mi? Gerekirse çeviriyi başlatır. */
   _incele(img) {
+    if (img instanceof HTMLCanvasElement) return this._kaydet(img, this._inceleCanvas(img));
     if (!img.complete || !img.naturalWidth) {
       if (this.yukleniyor.has(img)) return;
       this.yukleniyor.add(img);
@@ -139,10 +178,21 @@ class Cevirmen {
       return;
     }
     const adres = img.currentSrc || img.src;
+    if (this.kayitlar.get(img)?.adres === adres) return;
+    const kutu = img.getBoundingClientRect();
+    this._kaydet(img, { adres, kutu });
+  }
+
+  /** Yeni ya da adresi değişen aday resmi (ya da canvas'ı) kaydeder ve çevirmeye başlar. */
+  _kaydet(img, bulgu) {
+    if (!bulgu) return;
+    const { adres, kutu } = bulgu;
     const eski = this.kayitlar.get(img);
     if (eski?.adres === adres) return;
-
-    const kutu = img.getBoundingClientRect();
+    if (img instanceof HTMLCanvasElement) {
+      if (eski) this._birak(img, eski);
+      return this._yeniKayit(img, adres, kutu);
+    }
     const aday = adayMi({
       dogalGenislik: img.naturalWidth,
       dogalYukseklik: img.naturalHeight,
@@ -157,7 +207,10 @@ class Cevirmen {
       }
       return;
     }
+    this._yeniKayit(img, adres, kutu);
+  }
 
+  _yeniKayit(img, adres, kutu) {
     const kayit = {
       kimlik: `r${++this._sayac}`,
       adres,
@@ -296,6 +349,7 @@ class Cevirmen {
 
   durdur() {
     clearInterval(this._sahipsizDenetimi);
+    clearInterval(this._canvasDenetimi);
     this.degisimGozcu.disconnect();
     this.gorunurGozcu.disconnect();
     this.yakinGozcu.disconnect();

@@ -83,6 +83,12 @@ listesi).
   resimleri atlanır).
 - Sayfaya sonradan eklenen resimler de yakalanır.
 - Çok uzun dikey resimler (webtoon şeritleri) parçalara bölünerek çevrilir.
+- Sayfayı `<canvas>`'a çizen okuyucular da desteklenir: yeterince büyük
+  canvas'lar resim gibi çevrilir. Okuyucu sayfa çevirince aynı canvas'a
+  yeni sayfayı çizdiği için canvas'ın küçük bir parmak izi saniyede bir
+  denetlenir; değişince eski çeviri hemen kalkar, iz oturunca (iki denetim
+  üst üste aynı) yeni sayfa çevrilir. Boş canvas atlanır. Başka kökenli
+  resimle çizilmiş (kirli) canvas okunamaz; hata işaretiyle bildirilir.
 
 ## 6. Hız
 - Resimler ekrana gelmeden önce (birkaç ekran ileriden) sıraya alınır;

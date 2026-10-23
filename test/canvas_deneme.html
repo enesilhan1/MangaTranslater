@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Canvas okuyucusu denemesi (src/icerik/canvas.js): sayfa <img> yerine bir
+     <canvas>'a çizilir; 6 sn sonra aynı canvas'a başka bir "sayfa" (aynalanmış
+     örnek) çizilir (?gecikme=ms ile değişir). Eklenti iki sayfayı ayrı ayrı çevirmeli, eskisinin
+     çevirisini kaldırmalı.
+     ?kirli=1: resim başka kökenden (127.0.0.1 ↔ localhost) çizilir; canvas
+     okunamaz, eklenti "canvas okunamadı" hatası göstermeli.
+     python -m http.server ile depo kökünden açılır (.claude/launch.json). -->
+<html lang="tr">
+<meta charset="utf-8">
+<title>Canvas okuyucu denemesi</title>
+<style>
+  body { margin: 0; background: #222; }
+  canvas { display: block; margin: 16px auto; width: min(640px, calc(100vw - 32px)); }
+</style>
+<canvas id="sayfa"></canvas>
+<script>
+  const p = new URLSearchParams(location.search);
+  const c = document.getElementById('sayfa');
+  const ctx = c.getContext('2d');
+  const resim = new Image();
+  if (p.has('kirli')) {
+    const diger = location.hostname === 'localhost' ? '127.0.0.1' : 'localhost';
+    resim.src = `${location.protocol}//${diger}:${location.port}/test/ornek_sayfa.png`;
+  } else {
+    resim.src = 'ornek_sayfa.png';
+  }
+  resim.onload = () => {
+    c.width = resim.naturalWidth;
+    c.height = resim.naturalHeight;
+    ctx.drawImage(resim, 0, 0);
+    window.cizilen = 1;
+    setTimeout(() => {
+      // İkinci "sayfa": aynı canvas'a aynalanmış çizim.
+      ctx.save();
+      ctx.translate(c.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(resim, 0, 0);
+      ctx.restore();
+      window.cizilen = 2;
+    }, Number(p.get("gecikme") ?? 6000));
+  };
+</script>
+</html>

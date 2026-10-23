@@ -47,6 +47,7 @@
         "src/dilimleme.js",
         "src/diller.js",
         "src/icerik/aday.js",
+        "src/icerik/canvas.js",
         "src/icerik/ana.js",
         "src/icerik/gorunum.js",
         "src/icerik/heceleme.js",
