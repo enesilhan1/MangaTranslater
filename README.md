@@ -56,7 +56,12 @@ gerekir.
 1. Bir manga sitesinde (ör. MangaDex) bir bölüm aç.
 2. Eklenti simgesine bas ve **"Bu sitede her zaman çevir"** anahtarını aç.
    Açık sayfa hemen çevrilmeye başlar; o sitedeki bundan sonraki bütün sayfalar
-   da kendiliğinden çevrilir.
+   da kendiliğinden çevrilir. Siteyi listeye eklemeden yalnızca o sayfayı
+   çevirmek için **"Bu sayfayı şimdi çevir"**e bas.
+   İlk seferde tarayıcı sitelere erişim izni ister (kurulumda istenmez).
+   Manga resimleri çoğu zaman sitenin kendisinden değil, ayrı resim
+   sunucularından geldiği için izin tüm siteler için istenir; eklenti yine de
+   yalnızca senin açtığın sitelerde ve sekmelerde çalışır.
 3. Motoru seç:
    - **Görsel yapay zekâ:** sağlayıcıyı ve modeli seç, API anahtarını yapıştır.
    - **Yerel:** Chrome'da ilk kullanımda **"Çevirmeni hazırla"**ya bas; Chrome

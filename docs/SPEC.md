@@ -69,6 +69,14 @@ listesi).
 - Tek sayfalık uygulamalarda (MangaDex gibi, adres değişip sayfa yenilenmeyen
   siteler) yeni bölüme geçince de çalışmaya devam eder.
 - Listedeki siteden çıkarmak da açılır pencereden yapılır.
+- **"Bu sayfayı şimdi çevir":** listede olmayan sitede yalnızca açık sekme
+  bir kez çevrilir (sayfa yenilenince durur).
+- Site erişim izni kurulumda istenmez. Kullanıcı ilk kez bir siteyi açınca ya
+  da "şimdi çevir"e basınca bir kez istenir; resimler çoğu zaman ayrı ve
+  alan adı değişen sunuculardan geldiği için tüm siteler için. İzin yoksa
+  ya da geri alındıysa listedeki siteler çalışmaz, açılır pencere uyarır.
+  Çeviri servisleri (Gemini, OpenAI, Anthropic, MyMemory) için izin
+  gerekmez (CORS ile izin veriyorlar).
 
 ## 5. Hangi resimler çevrilir
 - Yalnızca yeterince büyük resimler (küçük ikon, avatar, reklam küçük

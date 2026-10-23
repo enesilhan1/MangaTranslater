@@ -489,3 +489,20 @@ almayan balonlar, OCR kutularındaki küçük punto"):
 - MANGA Plus'ta sayfalar "Failed to fetch" ile çevrilmiyordu: görüntüleyici
   çözülmüş resmin blob: adresini yüklenince iptal ediyor. Okunamayan
   yerel adresli resim artık öğeden tuvale çizilerek alınıyor.
+
+## Sürüm 1.10.0 (2026-10-24)
+Yeni özellik (kullanıcı onayladı; ChatGPT incelemesindeki izin önerisi):
+- Site erişimi (`<all_urls>`) kurulumda istenmiyor
+  (`optional_host_permissions`). Açılır pencere ilk kez bir site açılınca
+  ya da "şimdi çevir"e basılınca bir kez istiyor. Siteye özel izin yeterli
+  değil: resimler çoğu zaman alan adı değişen ayrı sunuculardan geliyor
+  (comix.to); kullanıcı bu yüzden geniş ama sonradan istenen izni seçti.
+  Çeviri servisleri CORS ile izin verdiği için onlara izin gerekmiyor.
+- **"Bu sayfayı şimdi çevir":** listede olmayan sitede yalnızca açık sekme
+  bir kez çevriliyor.
+- İçerik betiği kaydı izin yoksa yapılmıyor; izin verilip geri alınınca
+  yeniden eşitleniyor. Listede site varken izin yoksa açılır pencere
+  uyarıyor.
+- Gerçek Chrome'da denendi: temiz kurulumda site izni yok, betik kaydı
+  yapılmıyor; 1.9.7'den güncellemede verilmiş izin korunuyor ve kayıt
+  çalışıyor. web-ext lint'te yeni hata/uyarı yok.
