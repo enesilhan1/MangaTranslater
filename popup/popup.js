@@ -55,14 +55,28 @@ async function guncelle(degistir) {
 // ---------------------------------------------------------------------------
 // Bölümler
 
+/**
+ * Site erişim iznini ister. Tıklama olayının içinde, başka bir await'ten
+ * önce çağrılmalı: tarayıcı izni yalnızca kullanıcı hareketinin hemen
+ * ardından ister. Firefox izin penceresi açılınca açılır pencereyi
+ * kapatabilir; o zaman sonuç sonraki açılışta okunur.
+ */
+async function izinIste() {
+  if (durum.izin) return true;
+  durum.izin = await tarayici.permissions.request(SITE_IZNI).catch(() => false);
+  return durum.izin;
+}
+
+// Kurulumda site izni istenmiyor (manifest optional_host_permissions).
+// Listede site varken izin yoksa (eski sürümden güncelleme, ya da kullanıcı
+// tarayıcı ayarlarından geri aldıysa) uyarılır.
 function izinBolumu() {
-  if (durum.izin) return null;
+  if (durum.izin || !durum.a.siteler.length) return null;
   return el('p', { class: 'uyari' }, t('ui.izinYok'),
     el('button', {
       class: 'ana',
       onclick: async () => {
-        // İzin isteği kullanıcı tıklamasının hemen ardından yapılmalı.
-        durum.izin = await tarayici.permissions.request(SITE_IZNI).catch(() => false);
+        await izinIste();
         ciz();
       },
     }, t('ui.izinVer')));
@@ -84,10 +98,24 @@ function siteBolumu() {
           onchange: (e) => siteDegistir(ad, e.target.checked),
         }),
         el('span'))),
-    acik ? el('p', { class: 'aciklama' }, t('ui.buSiteAciklama', { site: ad })) : null);
+    acik
+      ? el('p', { class: 'aciklama' }, t('ui.buSiteAciklama', { site: ad }))
+      : el('div', { class: 'simdi' },
+        el('button', { onclick: simdiCevir }, t('ui.simdiCevir')),
+        el('small', { class: 'aciklama' }, durum.bilgi === 'simdi' ? t('ui.simdiCevrildi') : t('ui.simdiCevirAciklama'))),
+    !durum.izin ? el('p', { class: 'aciklama' }, t('ui.izinGerekecek')) : null);
+}
+
+/** Siteyi listeye eklemeden yalnızca bu sekmeyi bir kez çevirir. */
+async function simdiCevir() {
+  if (!(await izinIste())) return ciz();
+  await tarayici.scripting.executeScript({ target: { tabId: durum.sekme.id }, files: [YUKLEYICI] }).catch(() => {});
+  durum.bilgi = 'simdi';
+  ciz();
 }
 
 async function siteDegistir(ad, acik) {
+  if (acik && !(await izinIste())) return ciz(); // izin verilmedi: anahtar kapalı kalır
   await guncelle((a) => ({ ...a, siteler: acik ? siteEkle(a.siteler, ad) : siteCikar(a.siteler, ad) }));
   const id = durum.sekme.id;
   if (acik) {

@@ -46,6 +46,9 @@ section { display: grid; gap: 8px; }
          display: flex; gap: 8px; align-items: center; justify-content: space-between; }
 .hata { color: var(--hata); }
 
+/* Bu sayfayı şimdi çevir (site listede değilken) */
+.simdi { display: grid; gap: 4px; justify-items: start; }
+
 /* Bu sitede çevir anahtarı */
 .anahtar-satir { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .anahtar-satir strong { display: block; }
